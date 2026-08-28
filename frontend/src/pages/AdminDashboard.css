@@ -1756,3 +1756,236 @@ textarea:focus-visible {
     transition: none;
   }
 }
+
+/* =====================================================
+   FINAL MOBILE FIX
+   - Compact top header
+   - Logout on the right
+   - Bottom navigation stays in one horizontal row
+   - Swipe left/right when buttons don't fit
+===================================================== */
+
+@media (max-width: 650px) {
+
+  .admin-layout {
+    display: block;
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: 72px;
+    overflow-x: hidden;
+  }
+
+  /* Top header */
+  .admin-sidebar {
+    position: relative;
+    top: auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 64px;
+    height: 64px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10px 14px;
+
+    background: #ffffff;
+    border-right: none;
+    border-bottom: 1px solid #e5edf6;
+
+    z-index: 100;
+  }
+
+  .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+    padding: 0;
+  }
+
+  .brand-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+
+    border-radius: 10px;
+    font-size: 19px;
+  }
+
+  .brand-name {
+    font-size: 17px;
+  }
+
+  .brand-subtitle {
+    font-size: 9px;
+  }
+
+  /* Compact logout */
+  .sidebar-logout {
+    flex: 0 0 auto;
+
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+
+    margin: 0;
+    padding: 8px 12px;
+
+    border: 1px solid #f3d6d9;
+    border-radius: 9px;
+
+    background: #fff5f5;
+    color: #d64545;
+
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Bottom horizontal navigation */
+  .sidebar-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 999;
+
+    width: 100%;
+    height: 64px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    gap: 6px;
+
+    padding: 7px 10px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 1px solid #e3eaf2;
+
+    box-shadow: 0 -5px 20px rgba(30, 60, 90, 0.08);
+
+    scrollbar-width: none;
+
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-item {
+    flex: 0 0 auto;
+
+    width: auto;
+    min-width: 82px;
+    height: 50px;
+    min-height: 50px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    padding: 5px 9px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: transparent;
+    color: #718096;
+
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .sidebar-item span {
+    width: auto;
+    min-width: 0;
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .sidebar-item:hover,
+  .sidebar-item.active {
+    background: #edf5ff;
+    color: #1769e0;
+  }
+
+  .sidebar-divider {
+    display: none;
+  }
+
+  /* Main content */
+  .admin-main {
+    width: 100%;
+    max-width: none;
+    padding: 20px 14px 25px;
+  }
+
+  .admin-profile {
+    display: none;
+  }
+}
+
+
+/* Small phones */
+@media (max-width: 380px) {
+
+  .admin-sidebar {
+    padding: 9px 10px;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .brand-name {
+    font-size: 15px;
+  }
+
+  .brand-subtitle {
+    font-size: 8px;
+  }
+
+  .sidebar-logout {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 10px;
+  }
+
+  .sidebar-nav {
+    gap: 5px;
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .sidebar-item {
+    min-width: 76px;
+    padding-left: 7px;
+    padding-right: 7px;
+    font-size: 9px;
+  }
+
+  .sidebar-item span {
+    font-size: 15px;
+  }
+}
