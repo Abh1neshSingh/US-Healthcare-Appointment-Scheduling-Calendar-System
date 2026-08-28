@@ -1,0 +1,34 @@
+/* =========================================================
+   APP LEVEL STYLES
+   Shared styles only
+========================================================= */
+
+.app {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Keep React application content full width */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Shared button behavior */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Shared form element font */
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Images should not overflow their containers */
+img {
+  max-width: 100%;
+  display: block;
+}

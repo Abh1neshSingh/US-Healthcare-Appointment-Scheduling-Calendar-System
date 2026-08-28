@@ -1,0 +1,1302 @@
+/* =========================================================
+   APPOINTMENT BOOKING
+========================================================= */
+
+.appointment-booking {
+  position: relative;
+  width: 100%;
+  padding: 30px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 18px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.booking-header {
+  margin-bottom: 28px;
+}
+
+.booking-label {
+  margin: 0 0 8px;
+
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+
+  color: #2563eb;
+}
+
+.booking-header h2 {
+  margin: 0;
+
+  color: #172033;
+
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.booking-header p:not(.booking-label) {
+  margin: 8px 0 0;
+
+  color: #6b7280;
+
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   DOCTOR + DATE
+========================================================= */
+
+.booking-selection {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 20px;
+
+  padding-bottom: 25px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.booking-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.booking-field label {
+  color: #263246;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.booking-field select,
+.booking-field input {
+  width: 100%;
+  height: 50px;
+
+  padding: 0 15px;
+
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #263246;
+
+  font-family: inherit;
+  font-size: 15px;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.booking-field select:focus,
+.booking-field input:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+.booking-message {
+  margin-top: 18px;
+
+  padding: 13px 16px;
+
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.booking-message.error {
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+
+  color: #be123c;
+}
+
+.booking-message.success {
+  background: #ecfdf5;
+
+  border: 1px solid #bbf7d0;
+
+  color: #15803d;
+}
+
+
+/* =========================================================
+   AVAILABILITY
+========================================================= */
+
+.availability-section {
+  margin-top: 28px;
+}
+
+.availability-header {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 20px;
+
+  margin-bottom: 20px;
+}
+
+.availability-header h3 {
+  margin: 0;
+
+  color: #172033;
+
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.availability-header p {
+  margin: 7px 0 0;
+
+  color: #6b7280;
+
+  font-size: 14px;
+}
+
+.availability-status {
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  color: #667085;
+
+  font-size: 13px;
+
+  white-space: nowrap;
+}
+
+.availability-status span {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+}
+
+
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
+
+.availability-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 16px;
+
+  margin-bottom: 20px;
+}
+
+.availability-summary > div {
+  padding: 18px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+}
+
+.availability-summary strong {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #172033;
+
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.availability-summary span {
+  color: #6b7280;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   TIME SLOTS
+========================================================= */
+
+.time-slots {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 13px;
+}
+
+.time-slot {
+  min-height: 74px;
+
+  padding: 12px;
+
+  border-radius: 11px;
+
+  font-family: inherit;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.time-slot span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.time-slot small {
+  display: block;
+
+  font-size: 12px;
+}
+
+
+/* Available */
+
+.time-slot.available {
+  border: 1px solid #a7f3d0;
+
+  background: #f0fdf4;
+
+  color: #047857;
+}
+
+.time-slot.available:hover {
+  border-color: #34d399;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 4px 12px rgba(16, 185, 129, 0.12);
+}
+
+
+/* Few */
+
+.time-slot.few {
+  border: 1px solid #fde68a;
+
+  background: #fffbeb;
+
+  color: #a16207;
+}
+
+.time-slot.few:hover {
+  border-color: #f59e0b;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 4px 12px rgba(245, 158, 11, 0.12);
+}
+
+
+/* Booked */
+
+.time-slot.booked {
+  border: 1px solid #fecdd3;
+
+  background: #fff1f2;
+
+  color: #be123c;
+
+  cursor: not-allowed;
+
+  opacity: 0.8;
+}
+
+
+/* Selected */
+
+.time-slot.selected {
+  border: 2px solid #2563eb;
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+
+  box-shadow:
+    0 0 0 2px rgba(37, 99, 235, 0.08);
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.availability-loading {
+  padding: 45px 20px;
+
+  text-align: center;
+
+  color: #64748b;
+
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   NO AVAILABILITY
+========================================================= */
+
+.no-availability {
+  margin-top: 20px;
+
+  padding: 20px;
+
+  border: 1px solid #fecdd3;
+
+  border-radius: 11px;
+
+  background: #fff1f2;
+
+  color: #be123c;
+
+  text-align: center;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   SELECTED APPOINTMENT
+========================================================= */
+
+.selected-appointment {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  margin-top: 28px;
+
+  padding: 20px;
+
+  border: 1px solid #bfdbfe;
+
+  border-radius: 13px;
+
+  background: #eff6ff;
+}
+
+.selected-appointment > div {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.selected-appointment span {
+  margin-bottom: 5px;
+
+  color: #2563eb;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.selected-appointment strong {
+  color: #172033;
+
+  font-size: 18px;
+}
+
+.selected-appointment p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.confirm-booking-button {
+  min-width: 190px;
+
+  height: 46px;
+
+  padding: 0 20px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.confirm-booking-button:hover {
+  background: #1d4ed8;
+}
+
+.confirm-booking-button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   CONFIRMATION OVERLAY
+========================================================= */
+
+.confirmation-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+
+  backdrop-filter: blur(5px);
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CONFIRMATION CARD
+========================================================= */
+
+.confirmation-card {
+  position: relative;
+
+  width: min(520px, 100%);
+
+  padding: 34px;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.2);
+
+  box-sizing: border-box;
+}
+
+.confirmation-close {
+  position: absolute;
+
+  top: 16px;
+  right: 16px;
+
+  width: 38px;
+  height: 38px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  font-size: 24px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.confirmation-close:hover {
+  background: #f8fafc;
+
+  color: #172033;
+}
+
+.confirmation-icon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 52px;
+  height: 52px;
+
+  margin-bottom: 18px;
+
+  border-radius: 50%;
+
+  background: #ecfdf5;
+
+  color: #16a34a;
+
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.confirmation-label {
+  margin: 0 0 7px;
+
+  color: #2563eb;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+}
+
+.confirmation-card h3 {
+  margin: 0;
+
+  color: #172033;
+
+  font-size: 25px;
+  line-height: 1.3;
+}
+
+.confirmation-subtitle {
+  margin: 8px 0 24px;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   CONFIRMATION DETAILS
+========================================================= */
+
+.confirmation-details {
+  display: flex;
+
+  flex-direction: column;
+
+  margin-bottom: 25px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  overflow: hidden;
+}
+
+.confirmation-details > div {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+
+  padding: 14px 16px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.confirmation-details > div:last-child {
+  border-bottom: none;
+}
+
+.confirmation-details span {
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.confirmation-details strong {
+  color: #172033;
+
+  font-size: 14px;
+
+  text-align: right;
+}
+
+
+/* =========================================================
+   CONFIRMATION ACTIONS
+========================================================= */
+
+.confirmation-actions {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1.5fr;
+
+  gap: 12px;
+}
+
+.confirmation-cancel,
+.confirmation-submit {
+  height: 48px;
+
+  border-radius: 9px;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.confirmation-cancel {
+  border: 1px solid #d7dce5;
+
+  background: #ffffff;
+
+  color: #475569;
+}
+
+.confirmation-cancel:hover {
+  background: #f8fafc;
+}
+
+.confirmation-submit {
+  border: none;
+
+  background: #2563eb;
+
+  color: #ffffff;
+}
+
+.confirmation-submit:hover {
+  background: #1d4ed8;
+}
+
+.confirmation-cancel:disabled,
+.confirmation-submit:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .appointment-booking {
+    padding: 24px;
+  }
+
+  .booking-header h2 {
+    font-size: 25px;
+  }
+
+  .time-slots {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .availability-status {
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
+
+    white-space: normal;
+
+    gap: 8px 14px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .appointment-booking {
+    width: 100%;
+
+    padding: 20px 16px;
+
+    border-radius: 14px;
+  }
+
+
+  /* Header */
+
+  .booking-header {
+    margin-bottom: 22px;
+  }
+
+  .booking-label {
+    margin-bottom: 6px;
+
+    font-size: 11px;
+  }
+
+  .booking-header h2 {
+    font-size: 23px;
+
+    line-height: 1.25;
+  }
+
+  .booking-header p:not(.booking-label) {
+    margin-top: 7px;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+  }
+
+
+  /* Doctor + Date */
+
+  .booking-selection {
+    grid-template-columns: 1fr;
+
+    gap: 15px;
+
+    padding-bottom: 20px;
+  }
+
+  .booking-field {
+    gap: 7px;
+  }
+
+  .booking-field label {
+    font-size: 13px;
+  }
+
+  .booking-field select,
+  .booking-field input {
+
+    height: 48px;
+
+    padding: 0 13px;
+
+    /*
+      16px prevents iPhone Safari
+      from automatically zooming.
+    */
+
+    font-size: 16px;
+
+    border-radius: 9px;
+  }
+
+
+  /* Messages */
+
+  .booking-message {
+    margin-top: 15px;
+
+    padding: 11px 13px;
+
+    font-size: 13px;
+  }
+
+
+  /* Availability */
+
+  .availability-section {
+    margin-top: 22px;
+  }
+
+  .availability-header {
+    flex-direction: column;
+
+    gap: 13px;
+
+    margin-bottom: 16px;
+  }
+
+  .availability-header h3 {
+    font-size: 19px;
+  }
+
+  .availability-header p {
+    margin-top: 5px;
+
+    font-size: 12px;
+  }
+
+  .availability-status {
+    width: 100%;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: flex-start;
+
+    gap: 7px 13px;
+
+    font-size: 11px;
+  }
+
+
+  /* Summary */
+
+  .availability-summary {
+    grid-template-columns:
+      repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin-bottom: 16px;
+  }
+
+  .availability-summary > div {
+    padding: 12px 8px;
+
+    border-radius: 10px;
+
+    text-align: center;
+  }
+
+  .availability-summary strong {
+    margin-bottom: 3px;
+
+    font-size: 20px;
+  }
+
+  .availability-summary span {
+    font-size: 10px;
+  }
+
+
+  /* Time slots */
+
+  .time-slots {
+    grid-template-columns:
+      repeat(2, 1fr);
+
+    gap: 9px;
+  }
+
+  .time-slot {
+    min-height: 65px;
+
+    padding: 10px 8px;
+
+    border-radius: 9px;
+  }
+
+  .time-slot span {
+    margin-bottom: 4px;
+
+    font-size: 14px;
+  }
+
+  .time-slot small {
+    font-size: 10px;
+  }
+
+
+  /* Loading */
+
+  .availability-loading {
+    padding: 35px 15px;
+
+    font-size: 13px;
+  }
+
+
+  /* No availability */
+
+  .no-availability {
+    margin-top: 15px;
+
+    padding: 15px 12px;
+
+    font-size: 12px;
+  }
+
+
+  /* Selected appointment */
+
+  .selected-appointment {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 15px;
+
+    margin-top: 20px;
+
+    padding: 16px;
+
+    border-radius: 11px;
+  }
+
+  .selected-appointment span {
+    margin-bottom: 4px;
+
+    font-size: 10px;
+  }
+
+  .selected-appointment strong {
+    font-size: 16px;
+  }
+
+  .selected-appointment p {
+    margin-top: 4px;
+
+    font-size: 12px;
+  }
+
+  .confirm-booking-button {
+    width: 100%;
+
+    min-width: 0;
+
+    height: 46px;
+
+    padding: 0 15px;
+
+    font-size: 13px;
+  }
+
+
+  /* Confirmation overlay */
+
+  .confirmation-overlay {
+    align-items: center;
+
+    padding: 15px;
+
+    overflow-y: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+
+  /* Confirmation card */
+
+  .confirmation-card {
+    width: 100%;
+
+    max-width: 430px;
+
+    max-height:
+      calc(100svh - 30px);
+
+    overflow-y: auto;
+
+    padding: 25px 18px 20px;
+
+    border-radius: 16px;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .confirmation-close {
+    top: 12px;
+    right: 12px;
+
+    width: 34px;
+    height: 34px;
+
+    font-size: 21px;
+  }
+
+  .confirmation-icon {
+    width: 46px;
+    height: 46px;
+
+    margin-bottom: 14px;
+
+    font-size: 21px;
+  }
+
+  .confirmation-label {
+    margin-bottom: 5px;
+
+    font-size: 10px;
+  }
+
+  .confirmation-card h3 {
+    padding-right: 30px;
+
+    font-size: 21px;
+
+    line-height: 1.3;
+  }
+
+  .confirmation-subtitle {
+    margin: 7px 0 18px;
+
+    font-size: 12px;
+  }
+
+
+  /* Confirmation details */
+
+  .confirmation-details {
+    margin-bottom: 18px;
+
+    border-radius: 10px;
+  }
+
+  .confirmation-details > div {
+    padding: 12px 13px;
+  }
+
+  .confirmation-details span {
+    font-size: 11px;
+  }
+
+  .confirmation-details strong {
+    font-size: 12px;
+  }
+
+
+  /* Confirmation buttons */
+
+  .confirmation-actions {
+    grid-template-columns:
+      1fr 1fr;
+
+    gap: 9px;
+  }
+
+  .confirmation-cancel,
+  .confirmation-submit {
+    height: 45px;
+
+    font-size: 12px;
+
+    border-radius: 8px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   iPhone SE / 360px
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .appointment-booking {
+    padding: 18px 13px;
+  }
+
+  .booking-header h2 {
+    font-size: 21px;
+  }
+
+  .booking-header p:not(.booking-label) {
+    font-size: 12px;
+  }
+
+
+  /* Summary */
+
+  .availability-summary {
+    gap: 6px;
+  }
+
+  .availability-summary > div {
+    padding: 10px 5px;
+  }
+
+  .availability-summary strong {
+    font-size: 18px;
+  }
+
+  .availability-summary span {
+    font-size: 9px;
+  }
+
+
+  /* Slots */
+
+  .time-slots {
+    gap: 7px;
+  }
+
+  .time-slot {
+    min-height: 62px;
+
+    padding: 9px 6px;
+  }
+
+  .time-slot span {
+    font-size: 13px;
+  }
+
+  .time-slot small {
+    font-size: 9px;
+  }
+
+
+  /* Confirmation */
+
+  .confirmation-overlay {
+    padding: 10px;
+  }
+
+  .confirmation-card {
+    max-height:
+      calc(100svh - 20px);
+
+    padding: 23px 15px 17px;
+  }
+
+  .confirmation-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-cancel,
+  .confirmation-submit {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONE
+========================================================= */
+
+@media (max-width: 330px) {
+
+  .appointment-booking {
+    padding: 16px 11px;
+  }
+
+  .booking-header h2 {
+    font-size: 20px;
+  }
+
+  .booking-selection {
+    gap: 12px;
+  }
+
+  .availability-header h3 {
+    font-size: 18px;
+  }
+
+  .availability-status {
+    font-size: 10px;
+
+    gap: 6px 10px;
+  }
+
+  .availability-summary strong {
+    font-size: 17px;
+  }
+
+  .time-slots {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   TOUCH DEVICES
+========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .time-slot {
+    min-height: 68px;
+  }
+
+  .confirm-booking-button,
+  .confirmation-cancel,
+  .confirmation-submit {
+    min-height: 46px;
+  }
+}
+
+
+/* =========================================================
+   IOS / SAFARI
+========================================================= */
+
+@supports (-webkit-touch-callout: none) {
+
+  .booking-field input,
+  .booking-field select {
+    font-size: 16px;
+  }
+
+  .confirmation-overlay {
+    min-height: -webkit-fill-available;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .time-slot,
+  .confirm-booking-button,
+  .confirmation-close,
+  .confirmation-cancel,
+  .confirmation-submit {
+    transition: none;
+  }
+}

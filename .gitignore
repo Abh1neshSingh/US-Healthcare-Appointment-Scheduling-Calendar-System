@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python virtual environment
+ushcs_env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Node
+node_modules/
+
+# Frontend build
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
