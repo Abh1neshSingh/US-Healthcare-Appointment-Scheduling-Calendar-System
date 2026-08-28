@@ -60,7 +60,7 @@ function AppointmentBooking({
         const token = localStorage.getItem("access_token");
 
         const response = await fetch(
-          "http://127.0.0.1:8000/users/doctors",
+          "https://ushcs.onrender.com/users/doctors",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -150,7 +150,7 @@ function AppointmentBooking({
         });
 
         const response = await fetch(
-          `http://127.0.0.1:8000/appointments/availability?${params.toString()}`,
+          `https://ushcs.onrender.com/appointments/availability?${params.toString()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -238,7 +238,7 @@ function AppointmentBooking({
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
-        "http://127.0.0.1:8000/appointments",
+        "https://ushcs.onrender.com/appointments",
         {
           method: "POST",
           headers: {
@@ -277,7 +277,7 @@ function AppointmentBooking({
       });
 
       const availabilityResponse = await fetch(
-        `http://127.0.0.1:8000/appointments/availability?${params.toString()}`,
+        `https://ushcs.onrender.com/appointments/availability?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

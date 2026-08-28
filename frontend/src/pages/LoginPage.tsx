@@ -3,7 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://ushcs.onrender.com";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
