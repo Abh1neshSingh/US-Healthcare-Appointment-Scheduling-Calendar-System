@@ -15,6 +15,10 @@ from app.models.patient import Patient
 
 from app.schemas.appointment import AppointmentCreate
 
+from app.services.email_service import (
+    send_appointment_confirmation_email,
+)
+
 
 router = APIRouter(
     prefix="/appointments",
@@ -684,6 +688,27 @@ def create_appointment(
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+
+    # ----------------------------------------------
+    # Send appointment confirmation email
+    # ----------------------------------------------
+
+    send_appointment_confirmation_email(
+        patient_email=patient.user.email,
+        patient_name=patient.user.name,
+        doctor_name=doctor.user.name,
+        appointment_date=appointment.appointment_date.strftime(
+            "%B %d, %Y"
+        ),
+        start_time=appointment.start_time.strftime(
+            "%I:%M %p"
+        ),
+        end_time=appointment.end_time.strftime(
+            "%I:%M %p"
+        ),
+        appointment_type=appointment.appointment_type,
+        appointment_id=appointment.id,
+    )
 
     # ----------------------------------------------
     # Return appointment
