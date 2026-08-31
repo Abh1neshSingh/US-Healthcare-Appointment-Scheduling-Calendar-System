@@ -1,10 +1,10 @@
 import os
-import smtplib
-from email.message import EmailMessage
+import requests
 
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_NAME = "US Healthcare Appointment Scheduler"
 
 
 def send_appointment_confirmation_email(
@@ -18,53 +18,94 @@ def send_appointment_confirmation_email(
     appointment_id: int,
 ):
     """
-    Send appointment confirmation email to patient.
+    Send appointment confirmation email using Brevo API.
     """
 
-    message = EmailMessage()
+    url = "https://api.brevo.com/v3/smtp/email"
 
-    message["Subject"] = (
-        "Appointment Confirmation"
-    )
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
 
-    message["From"] = SMTP_EMAIL
-    message["To"] = patient_email
+    payload = {
+        "sender": {
+            "name": SENDER_NAME,
+            "email": SENDER_EMAIL,
+        },
+        "to": [
+            {
+                "email": patient_email,
+                "name": patient_name,
+            }
+        ],
+        "subject": "Appointment Confirmation",
+        "htmlContent": f"""
+        <html>
+            <body>
+                <h2>Appointment Confirmed</h2>
 
-    message.set_content(
-        f"""
-Hello {patient_name},
+                <p>Hello {patient_name},</p>
 
-Your appointment has been successfully booked.
+                <p>
+                    Your appointment has been successfully booked.
+                </p>
 
-Appointment Details
--------------------
-Appointment ID: #{appointment_id}
-Doctor: {doctor_name}
-Date: {appointment_date}
-Time: {start_time} - {end_time}
-Appointment Type: {appointment_type}
+                <h3>Appointment Details</h3>
 
-Please arrive on time for your appointment.
+                <ul>
+                    <li>
+                        <strong>Appointment ID:</strong>
+                        #{appointment_id}
+                    </li>
 
-Thank you,
-US Healthcare Appointment Scheduling Calendar
-"""
-    )
+                    <li>
+                        <strong>Doctor:</strong>
+                        {doctor_name}
+                    </li>
+
+                    <li>
+                        <strong>Date:</strong>
+                        {appointment_date}
+                    </li>
+
+                    <li>
+                        <strong>Time:</strong>
+                        {start_time} - {end_time}
+                    </li>
+
+                    <li>
+                        <strong>Appointment Type:</strong>
+                        {appointment_type}
+                    </li>
+                </ul>
+
+                <p>Please arrive on time for your appointment.</p>
+
+                <br>
+
+                <p>
+                    Thank you,<br>
+                    <strong>
+                        US Healthcare Appointment Scheduling Calendar
+                    </strong>
+                </p>
+            </body>
+        </html>
+        """,
+    }
 
     try:
-        with smtplib.SMTP(
-            "smtp.gmail.com",
-            587,
-        ) as server:
 
-            server.starttls()
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=15,
+        )
 
-            server.login(
-                SMTP_EMAIL,
-                SMTP_PASSWORD,
-            )
-
-            server.send_message(message)
+        response.raise_for_status()
 
         print(
             f"Appointment confirmation email sent to "
