@@ -76,16 +76,13 @@ STATE_TIMEZONES = {
     "WA": "America/Los_Angeles",
     "WV": "America/New_York",
     "WI": "America/Chicago",
-    "WY": "America/Denver",
+    "WY": "America/New_York",
 }
 
 
 def get_doctor_timezone(doctor: Doctor) -> ZoneInfo:
     """
     Get doctor's local timezone from clinic state.
-
-    Doctor model currently stores state but does not have
-    a separate timezone column.
     """
 
     state = (doctor.state or "").strip().upper()
@@ -117,15 +114,6 @@ def is_past_slot(
 ) -> bool:
     """
     Check whether a slot has already started.
-
-    For today's date:
-        past slots are unavailable.
-
-    For future dates:
-        slots are not past.
-
-    For past dates:
-        all slots are past.
     """
 
     doctor_now = get_current_doctor_datetime(doctor)
@@ -146,7 +134,6 @@ def is_past_slot(
 
 # ==================================================
 # DOCTOR AVAILABILITY
-# Patient selects doctor + date
 # ==================================================
 
 @router.get("/availability")
@@ -158,10 +145,6 @@ def get_doctor_availability(
     ),
     db: Session = Depends(get_db),
 ):
-
-    # ----------------------------------------------
-    # Check doctor
-    # ----------------------------------------------
 
     doctor = (
         db.query(Doctor)
@@ -177,10 +160,6 @@ def get_doctor_availability(
             status_code=404,
             detail="Doctor not found",
         )
-
-    # ----------------------------------------------
-    # Find doctor's local date/time
-    # ----------------------------------------------
 
     doctor_now = get_current_doctor_datetime(
         doctor
@@ -324,10 +303,6 @@ def get_doctor_availability(
 
             slot_end = slot_end_datetime.time()
 
-            # --------------------------------------
-            # Don't create slot beyond schedule
-            # --------------------------------------
-
             if slot_end_datetime > schedule_end:
                 break
 
@@ -335,17 +310,13 @@ def get_doctor_availability(
             # Check lunch/break
             # --------------------------------------
 
-            is_break = False
-
-            if (
+            is_break = bool(
                 schedule.break_start
                 and schedule.break_end
-            ):
-                if (
-                    slot_start >= schedule.break_start
-                    and slot_start < schedule.break_end
-                ):
-                    is_break = True
+                and schedule.break_start
+                <= slot_start
+                < schedule.break_end
+            )
 
             if is_break:
                 current_time = slot_end_datetime
@@ -365,31 +336,21 @@ def get_doctor_availability(
             # Check existing appointment
             # --------------------------------------
 
-            is_booked = False
-
-            for appointment in existing_appointments:
-
-                if (
-                    slot_start
-                    < appointment.end_time
-                    and slot_end
-                    > appointment.start_time
-                ):
-                    is_booked = True
-                    break
+            is_booked = any(
+                slot_start < appointment.end_time
+                and slot_end > appointment.start_time
+                for appointment in existing_appointments
+            )
 
             # --------------------------------------
             # Determine slot status
             # --------------------------------------
 
-            if is_booked:
-                slot_status = "booked"
-
-            elif past_slot:
-                slot_status = "booked"
-
-            else:
-                slot_status = "available"
+            slot_status = (
+                "booked"
+                if is_booked or past_slot
+                else "available"
+            )
 
             slots.append(
                 {
@@ -440,7 +401,6 @@ def get_doctor_availability(
 
 # ==================================================
 # CREATE APPOINTMENT
-# Patient books an available slot
 # ==================================================
 
 @router.post(
@@ -524,10 +484,7 @@ def create_appointment(
     # Reject past time for today
     # ----------------------------------------------
 
-    if (
-        appointment_date
-        == doctor_now.date()
-    ):
+    if appointment_date == doctor_now.date():
 
         selected_datetime = datetime.combine(
             appointment_date,
@@ -584,10 +541,8 @@ def create_appointment(
         .filter(
             DoctorSchedule.doctor_id
             == appointment_data.doctor_id,
-
             DoctorSchedule.day_of_week
             == day_of_week,
-
             DoctorSchedule.is_available == True,
         )
         .all()
@@ -640,32 +595,27 @@ def create_appointment(
             # Skip lunch/break
             # --------------------------------------
 
-            is_break = False
-
-            if (
+            is_break = bool(
                 schedule.break_start
                 and schedule.break_end
-            ):
-                if (
-                    slot_start >= schedule.break_start
-                    and slot_start < schedule.break_end
-                ):
-                    is_break = True
+                and schedule.break_start
+                <= slot_start
+                < schedule.break_end
+            )
 
             # --------------------------------------
             # Match requested slot
             # --------------------------------------
 
-            if not is_break:
-
-                if (
-                    appointment_data.start_time
-                    == slot_start
-                    and appointment_data.end_time
-                    == slot_end
-                ):
-                    valid_slot = True
-                    break
+            if (
+                not is_break
+                and appointment_data.start_time
+                == slot_start
+                and appointment_data.end_time
+                == slot_end
+            ):
+                valid_slot = True
+                break
 
             current_time = slot_end_datetime
 
@@ -685,7 +635,7 @@ def create_appointment(
     # Check overlapping appointment
     # ----------------------------------------------
 
-    overlapping_appointment = (
+    if overlapping_appointment := (
         db.query(Appointment)
         .filter(
             Appointment.doctor_id
@@ -703,9 +653,7 @@ def create_appointment(
             > appointment_data.start_time,
         )
         .first()
-    )
-
-    if overlapping_appointment:
+    ):
 
         raise HTTPException(
             status_code=409,
@@ -720,25 +668,16 @@ def create_appointment(
 
     appointment = Appointment(
         patient_id=patient.id,
-
         doctor_id=appointment_data.doctor_id,
-
         appointment_date=appointment_date,
-
         start_time=appointment_data.start_time,
-
         end_time=appointment_data.end_time,
-
         status="SCHEDULED",
-
         appointment_type=(
             appointment_data.appointment_type
         ),
-
         reason=appointment_data.reason,
-
         notes=appointment_data.notes,
-
         created_by=patient.user_id,
     )
 
@@ -755,27 +694,18 @@ def create_appointment(
 
         "appointment": {
             "id": appointment.id,
-
             "patient_id": appointment.patient_id,
-
             "doctor_id": appointment.doctor_id,
-
             "appointment_date": (
                 appointment.appointment_date
             ),
-
             "start_time": appointment.start_time,
-
             "end_time": appointment.end_time,
-
             "status": appointment.status,
-
             "appointment_type": (
                 appointment.appointment_type
             ),
-
             "reason": appointment.reason,
-
             "notes": appointment.notes,
         },
     }
@@ -783,7 +713,6 @@ def create_appointment(
 
 # ==================================================
 # GET MY APPOINTMENTS
-# Patient dashboard calendar
 # ==================================================
 
 @router.get("/my")
@@ -840,33 +769,24 @@ def get_my_appointments(
         "appointments": [
             {
                 "id": appointment.id,
-
                 "doctor_id": appointment.doctor_id,
-
                 "doctor_name": (
                     appointment.doctor.user.name
                 ),
-
                 "appointment_date": (
                     appointment.appointment_date
                 ),
-
                 "start_time": (
                     appointment.start_time
                 ),
-
                 "end_time": (
                     appointment.end_time
                 ),
-
                 "status": appointment.status,
-
                 "appointment_type": (
                     appointment.appointment_type
                 ),
-
                 "reason": appointment.reason,
-
                 "notes": appointment.notes,
             }
             for appointment in appointments
