@@ -45,6 +45,9 @@ class DoctorCreate(BaseModel):
         max_length=100,
     )
 
+    # Referral / authorization policy
+    requires_referral: bool = False
+
     # Practice information
     clinic_name: Optional[str] = Field(
         default=None,

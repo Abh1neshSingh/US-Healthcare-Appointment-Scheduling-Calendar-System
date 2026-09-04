@@ -2,7 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 
-const API_URL = "https://ushcs.onrender.com";
+import API_URL from "../config";
 
 function AdminDashboard() {
   const navigate = useNavigate();

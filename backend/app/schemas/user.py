@@ -41,7 +41,12 @@ class PatientRegister(BaseModel):
 
     state: str | None = None
 
+    # Insurance information
     insurance_provider: str | None = None
+    insurance_member_id: str | None = None
+
+    # Primary Care Provider
+    pcp_doctor_id: int | None = None
 
 
 class AdminCreate(BaseModel):

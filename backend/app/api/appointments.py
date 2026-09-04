@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_roles
@@ -12,6 +13,7 @@ from app.models.doctor import Doctor
 from app.models.doctor_schedule import DoctorSchedule
 from app.models.schedule_exception import ScheduleException
 from app.models.patient import Patient
+from app.models.referral import Referral
 
 from app.schemas.appointment import AppointmentCreate
 
@@ -154,7 +156,7 @@ def get_doctor_availability(
         db.query(Doctor)
         .filter(
             Doctor.id == doctor_id,
-            Doctor.active == True,
+            Doctor.active.is_(True),
         )
         .first()
     )
@@ -182,6 +184,7 @@ def get_doctor_availability(
         return {
             "doctor_id": doctor_id,
             "doctor_name": doctor.user.name,
+            "requires_referral": doctor.requires_referral,
             "date": appointment_date,
             "day": day_of_week,
             "available": False,
@@ -215,6 +218,7 @@ def get_doctor_availability(
         return {
             "doctor_id": doctor_id,
             "doctor_name": doctor.user.name,
+            "requires_referral": doctor.requires_referral,
             "date": appointment_date,
             "day": day_of_week,
             "available": False,
@@ -239,7 +243,7 @@ def get_doctor_availability(
             == doctor_id,
             DoctorSchedule.day_of_week
             == day_of_week,
-            DoctorSchedule.is_available == True,
+            DoctorSchedule.is_available.is_(True),
         )
         .all()
     )
@@ -249,6 +253,7 @@ def get_doctor_availability(
         return {
             "doctor_id": doctor_id,
             "doctor_name": doctor.user.name,
+            "requires_referral": doctor.requires_referral,
             "date": appointment_date,
             "day": day_of_week,
             "available": False,
@@ -393,6 +398,7 @@ def get_doctor_availability(
     return {
         "doctor_id": doctor_id,
         "doctor_name": doctor.user.name,
+        "requires_referral": doctor.requires_referral,
         "date": appointment_date,
         "day": day_of_week,
         "available": available_slots > 0,
@@ -447,7 +453,7 @@ def create_appointment(
         .filter(
             Doctor.id
             == appointment_data.doctor_id,
-            Doctor.active == True,
+            Doctor.active.is_(True),
         )
         .first()
     )
@@ -459,15 +465,88 @@ def create_appointment(
         )
 
     # ----------------------------------------------
+    # Get appointment date
+    # ----------------------------------------------
+
+    appointment_date = (
+        appointment_data.appointment_date
+    )
+
+    # ----------------------------------------------
+    # Check patient insurance
+    # ----------------------------------------------
+
+    has_insurance = (
+        bool(patient.insurance_provider)
+        or bool(patient.insurance_member_id)
+    )
+
+    # ----------------------------------------------
+    # Referral check
+    #
+    # Referral is checked only when:
+    # 1. Doctor requires referral
+    # 2. Patient has insurance
+    #
+    # No insurance -> direct booking
+    # ----------------------------------------------
+
+    if doctor.requires_referral and has_insurance:
+
+        valid_referral = (
+            db.query(Referral)
+            .filter(
+                Referral.patient_id == patient.id,
+                Referral.specialist_doctor_id
+                == doctor.id,
+                Referral.status == "ACTIVE",
+                Referral.issued_date
+                <= appointment_date,
+                or_(
+                    Referral.expiry_date.is_(None),
+                    Referral.expiry_date
+                    >= appointment_date,
+                ),
+            )
+            .order_by(
+                Referral.created_at.desc()
+            )
+            .first()
+        )
+
+        if not valid_referral:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "A valid referral is required "
+                    "before booking an appointment "
+                    "with this doctor."
+                ),
+            )
+
+        # ------------------------------------------
+        # Prior authorization check
+        # ------------------------------------------
+
+        if (
+            valid_referral.authorization_required
+            and valid_referral.authorization_status
+            != "APPROVED"
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Prior authorization is required "
+                    "and has not been approved yet."
+                ),
+            )
+
+    # ----------------------------------------------
     # Get doctor's current local date/time
     # ----------------------------------------------
 
     doctor_now = get_current_doctor_datetime(
         doctor
-    )
-
-    appointment_date = (
-        appointment_data.appointment_date
     )
 
     # ----------------------------------------------
@@ -547,7 +626,7 @@ def create_appointment(
             == appointment_data.doctor_id,
             DoctorSchedule.day_of_week
             == day_of_week,
-            DoctorSchedule.is_available == True,
+            DoctorSchedule.is_available.is_(True),
         )
         .all()
     )
@@ -658,7 +737,6 @@ def create_appointment(
         )
         .first()
     ):
-
         raise HTTPException(
             status_code=409,
             detail=(
@@ -721,6 +799,8 @@ def create_appointment(
             "id": appointment.id,
             "patient_id": appointment.patient_id,
             "doctor_id": appointment.doctor_id,
+            "doctor_name": doctor.user.name,
+            "requires_referral": doctor.requires_referral,
             "appointment_date": (
                 appointment.appointment_date
             ),

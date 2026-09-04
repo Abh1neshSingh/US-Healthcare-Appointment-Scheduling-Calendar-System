@@ -30,8 +30,16 @@ class Patient(Base):
     emergency_contact_name = Column(String, nullable=True)
     emergency_contact_phone = Column(String, nullable=True)
 
+    # Insurance information
     insurance_provider = Column(String, nullable=True)
     insurance_member_id = Column(String, nullable=True)
+
+    # Primary Care Provider (PCP)
+    pcp_doctor_id = Column(
+        Integer,
+        ForeignKey("doctors.id"),
+        nullable=True,
+    )
 
     active = Column(
         Boolean,
@@ -48,6 +56,12 @@ class Patient(Base):
     user = relationship(
         "User",
         back_populates="patient",
+    )
+
+    # Relationship with PCP / Primary Care Provider
+    pcp_doctor = relationship(
+        "Doctor",
+        foreign_keys=[pcp_doctor_id],
     )
 
     # Relationship with appointments

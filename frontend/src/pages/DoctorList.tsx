@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./DoctorList.css";
 
-const API_URL = "https://ushcs.onrender.com";
+import API_URL from "../config";
 
 interface Doctor {
   id: number;

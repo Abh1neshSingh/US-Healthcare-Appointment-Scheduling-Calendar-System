@@ -1,9 +1,9 @@
-import os
+from app.database.connection import settings
 import requests
 
 
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+BREVO_API_KEY = settings.BREVO_API_KEY
+SENDER_EMAIL = settings.SENDER_EMAIL
 SENDER_NAME = "US Healthcare Appointment Scheduler"
 
 

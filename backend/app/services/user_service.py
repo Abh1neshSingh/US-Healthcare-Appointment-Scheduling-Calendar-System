@@ -88,8 +88,17 @@ def create_patient(
         city=patient_data.city,
         state=patient_data.state,
 
+        # Insurance information
         insurance_provider=(
             patient_data.insurance_provider
+        ),
+        insurance_member_id=(
+            patient_data.insurance_member_id
+        ),
+
+        # Primary Care Provider
+        pcp_doctor_id=(
+            patient_data.pcp_doctor_id
         ),
     )
 
@@ -145,6 +154,11 @@ def create_doctor(
             doctor_data.years_of_experience
         ),
         department=doctor_data.department,
+
+        # Referral / authorization policy
+        requires_referral=(
+            doctor_data.requires_referral
+        ),
 
         clinic_name=doctor_data.clinic_name,
         clinic_address=(

@@ -53,6 +53,7 @@ class PatientCreate(BaseModel):
         max_length=30,
     )
 
+    # Insurance information
     insurance_provider: Optional[str] = Field(
         default=None,
         max_length=200,
@@ -62,3 +63,6 @@ class PatientCreate(BaseModel):
         default=None,
         max_length=100,
     )
+
+    # Primary Care Provider (PCP)
+    pcp_doctor_id: Optional[int] = None

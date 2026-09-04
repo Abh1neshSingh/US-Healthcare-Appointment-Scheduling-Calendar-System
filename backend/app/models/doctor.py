@@ -22,6 +22,13 @@ class Doctor(Base):
     years_of_experience = Column(Integer, nullable=True)
     department = Column(String, nullable=True)
 
+    # Referral / authorization policy
+    requires_referral = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     # Practice information
     clinic_name = Column(String, nullable=True)
     clinic_address = Column(String, nullable=True)

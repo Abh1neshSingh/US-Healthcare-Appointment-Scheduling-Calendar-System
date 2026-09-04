@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import require_roles
+from app.core.dependencies import (
+    get_current_user,
+    require_roles,
+)
 from app.database.connection import get_db
 
 from app.schemas.user import PatientRegister, AdminCreate
@@ -40,12 +43,10 @@ def register_patient(
     user_data: PatientRegister,
     db: Session = Depends(get_db),
 ):
-    existing_user = get_user_by_email(
+    if existing_user := get_user_by_email(
         db,
         user_data.email,
-    )
-
-    if existing_user:
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -68,6 +69,55 @@ def register_patient(
 
 
 # ==================================================
+# CURRENT LOGGED-IN PATIENT
+# ==================================================
+
+@router.get("/me")
+def get_current_user_profile(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user["role"] != UserRole.PATIENT.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is available for patients only",
+        )
+
+    user_id = int(current_user["user_id"])
+
+    if not (
+        patient := (
+            db.query(Patient)
+            .filter(
+                Patient.user_id == user_id
+            )
+            .first()
+        )
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient profile not found",
+        )
+
+    return {
+        "id": patient.user.id,
+        "patient_id": patient.id,
+        "name": patient.user.name,
+        "email": patient.user.email,
+        "role": patient.user.role,
+        "date_of_birth": patient.date_of_birth,
+        "gender": patient.gender,
+        "phone": patient.phone,
+        "address": patient.address,
+        "city": patient.city,
+        "state": patient.state,
+        "zip_code": patient.zip_code,
+        "insurance_provider": patient.insurance_provider,
+        "insurance_member_id": patient.insurance_member_id,
+        "pcp_doctor_id": patient.pcp_doctor_id,
+    }
+
+# ==================================================
 # ADMIN CREATES DOCTOR
 # ==================================================
 
@@ -77,17 +127,15 @@ def register_patient(
 )
 def create_doctor_by_admin(
     doctor_data: DoctorCreate,
-    current_user=Depends(
+    _current_user=Depends(
         require_roles(["ADMIN"])
     ),
     db: Session = Depends(get_db),
 ):
-    existing_user = get_user_by_email(
+    if existing_user := get_user_by_email(
         db,
         doctor_data.email,
-    )
-
-    if existing_user:
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -110,6 +158,7 @@ def create_doctor_by_admin(
             "license_number": doctor.license_number,
             "npi_number": doctor.npi_number,
             "department": doctor.department,
+            "requires_referral": doctor.requires_referral,
         },
     }
 
@@ -124,17 +173,15 @@ def create_doctor_by_admin(
 )
 def create_receptionist_by_admin(
     receptionist_data: ReceptionistCreate,
-    current_user=Depends(
+    _current_user=Depends(
         require_roles(["ADMIN"])
     ),
     db: Session = Depends(get_db),
 ):
-    existing_user = get_user_by_email(
+    if existing_user := get_user_by_email(
         db,
         receptionist_data.email,
-    )
-
-    if existing_user:
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -169,17 +216,15 @@ def create_receptionist_by_admin(
 )
 def create_admin_by_admin(
     user_data: AdminCreate,
-    current_user=Depends(
+    _current_user=Depends(
         require_roles(["ADMIN"])
     ),
     db: Session = Depends(get_db),
 ):
-    existing_user = get_user_by_email(
+    if existing_user := get_user_by_email(
         db,
         user_data.email,
-    )
-
-    if existing_user:
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -201,6 +246,7 @@ def create_admin_by_admin(
             "role": user.role,
         },
     }
+
 
 # ==================================================
 # VIEW DOCTORS
@@ -257,12 +303,16 @@ def get_doctors(
                         doctor.consultation_fee,
                     "consultation_mode":
                         doctor.consultation_mode,
-                    "bio": doctor.bio,
-                    "languages": doctor.languages,
+                    "bio":
+                        doctor.bio,
+                    "languages":
+                        doctor.languages,
                     "profile_photo":
                         doctor.profile_photo,
                     "accepting_new_patients":
                         doctor.accepting_new_patients,
+                    "requires_referral":
+                        doctor.requires_referral,
                 }
                 for doctor in doctors
             ],
@@ -280,6 +330,7 @@ def get_doctors(
                 "user_id": doctor.user_id,
                 "name": doctor.user.name,
                 "email": doctor.user.email,
+                "role": doctor.user.role,
                 "specialization":
                     doctor.specialization,
                 "sub_specialization":
@@ -296,14 +347,18 @@ def get_doctors(
                     doctor.years_of_experience,
                 "clinic_name":
                     doctor.clinic_name,
-                "city": doctor.city,
-                "state": doctor.state,
+                "city":
+                    doctor.city,
+                "state":
+                    doctor.state,
                 "consultation_fee":
                     doctor.consultation_fee,
                 "consultation_mode":
                     doctor.consultation_mode,
                 "accepting_new_patients":
                     doctor.accepting_new_patients,
+                "requires_referral":
+                    doctor.requires_referral,
             }
             for doctor in doctors
         ],
@@ -319,7 +374,7 @@ def get_doctors(
     "/receptionists",
 )
 def get_receptionists(
-    current_user=Depends(
+    _current_user=Depends(
         require_roles(["ADMIN"])
     ),
     db: Session = Depends(get_db),
@@ -343,12 +398,18 @@ def get_receptionists(
                 "user_id": receptionist.user_id,
                 "name": receptionist.user.name,
                 "email": receptionist.user.email,
-                "employee_id": receptionist.employee_id,
-                "department": receptionist.department,
-                "phone": receptionist.phone,
-                "hire_date": receptionist.hire_date,
-                "shift": receptionist.shift,
-                "clinic_location": receptionist.clinic_location,
+                "employee_id":
+                    receptionist.employee_id,
+                "department":
+                    receptionist.department,
+                "phone":
+                    receptionist.phone,
+                "hire_date":
+                    receptionist.hire_date,
+                "shift":
+                    receptionist.shift,
+                "clinic_location":
+                    receptionist.clinic_location,
             }
             for receptionist in receptionists
         ],
@@ -364,7 +425,7 @@ def get_receptionists(
     "/patients",
 )
 def get_patients(
-    current_user=Depends(
+    _current_user=Depends(
         require_roles(["ADMIN"])
     ),
     db: Session = Depends(get_db),
@@ -388,17 +449,30 @@ def get_patients(
                 "user_id": patient.user_id,
                 "name": patient.user.name,
                 "email": patient.user.email,
-                "date_of_birth": patient.date_of_birth,
-                "gender": patient.gender,
-                "phone": patient.phone,
-                "address": patient.address,
-                "city": patient.city,
-                "state": patient.state,
-                "zip_code": patient.zip_code,
-                "emergency_contact_name": patient.emergency_contact_name,
-                "emergency_contact_phone": patient.emergency_contact_phone,
-                "insurance_provider": patient.insurance_provider,
-                "insurance_member_id": patient.insurance_member_id,
+                "date_of_birth":
+                    patient.date_of_birth,
+                "gender":
+                    patient.gender,
+                "phone":
+                    patient.phone,
+                "address":
+                    patient.address,
+                "city":
+                    patient.city,
+                "state":
+                    patient.state,
+                "zip_code":
+                    patient.zip_code,
+                "emergency_contact_name":
+                    patient.emergency_contact_name,
+                "emergency_contact_phone":
+                    patient.emergency_contact_phone,
+                "insurance_provider":
+                    patient.insurance_provider,
+                "insurance_member_id":
+                    patient.insurance_member_id,
+                "pcp_doctor_id":
+                    patient.pcp_doctor_id,
             }
             for patient in patients
         ],

@@ -1,0 +1,54 @@
+services:
+
+  db:
+    image: postgres:18
+    container_name: ushcs-db
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Abhi@79057052"
+      POSTGRES_DB: ushcs_db
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+
+  backend:
+    build: ./backend
+    container_name: ushcs-backend
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:Abhi%4079057052@db:5432/ushcs_db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+
+    depends_on:
+      - db
+
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+
+    container_name: ushcs-frontend
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+
+volumes:
+  postgres_data:
