@@ -7,7 +7,11 @@ from app.core.dependencies import (
 )
 from app.database.connection import get_db
 
-from app.schemas.user import PatientRegister, AdminCreate
+from app.schemas.user import (
+    PatientRegister,
+    AdminCreate,
+    PatientProfileUpdate,
+)
 from app.schemas.doctor import DoctorCreate
 from app.schemas.receptionist import ReceptionistCreate
 
@@ -23,6 +27,7 @@ from app.models.doctor import Doctor
 from app.models.receptionist import Receptionist
 from app.models.patient import Patient
 from app.models.enums import UserRole
+from app.models.user import User
 
 
 router = APIRouter(
@@ -43,10 +48,12 @@ def register_patient(
     user_data: PatientRegister,
     db: Session = Depends(get_db),
 ):
-    if existing_user := get_user_by_email(
+    existing_user = get_user_by_email(
         db,
         user_data.email,
-    ):
+    )
+
+    if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -80,20 +87,25 @@ def get_current_user_profile(
     if current_user["role"] != UserRole.PATIENT.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is available for patients only",
+            detail=(
+                "This endpoint is available "
+                "for patients only"
+            ),
         )
 
-    user_id = int(current_user["user_id"])
+    user_id = int(
+        current_user["user_id"]
+    )
 
-    if not (
-        patient := (
-            db.query(Patient)
-            .filter(
-                Patient.user_id == user_id
-            )
-            .first()
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.user_id == user_id
         )
-    ):
+        .first()
+    )
+
+    if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient profile not found",
@@ -117,6 +129,156 @@ def get_current_user_profile(
         "pcp_doctor_id": patient.pcp_doctor_id,
     }
 
+
+# ==================================================
+# UPDATE CURRENT LOGGED-IN PATIENT
+# ==================================================
+
+@router.put("/me")
+def update_current_user_profile(
+    user_data: PatientProfileUpdate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user["role"] != UserRole.PATIENT.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "This endpoint is available "
+                "for patients only"
+            ),
+        )
+
+    user_id = int(
+        current_user["user_id"]
+    )
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.user_id == user_id
+        )
+        .first()
+    )
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient profile not found",
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == user_id
+        )
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found",
+        )
+
+    # --------------------------------------------------
+    # ACCOUNT / PERSONAL INFORMATION
+    # --------------------------------------------------
+
+    if user_data.name is not None:
+        user.name = user_data.name.strip()
+
+        if not user.name:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Name cannot be empty",
+            )
+
+    if user_data.phone is not None:
+        patient.phone = (
+            user_data.phone.strip()
+            or None
+        )
+
+    if user_data.date_of_birth is not None:
+        patient.date_of_birth = (
+            user_data.date_of_birth
+        )
+
+    if user_data.gender is not None:
+        patient.gender = user_data.gender
+
+    # --------------------------------------------------
+    # ADDRESS
+    # --------------------------------------------------
+
+    if user_data.address is not None:
+        patient.address = (
+            user_data.address.strip()
+            or None
+        )
+
+    if user_data.city is not None:
+        patient.city = (
+            user_data.city.strip()
+            or None
+        )
+
+    if user_data.state is not None:
+        patient.state = (
+            user_data.state.strip()
+            or None
+        )
+
+    if user_data.zip_code is not None:
+        patient.zip_code = (
+            user_data.zip_code.strip()
+            or None
+        )
+
+    # --------------------------------------------------
+    # INSURANCE
+    # --------------------------------------------------
+
+    if user_data.insurance_provider is not None:
+        patient.insurance_provider = (
+            user_data.insurance_provider.strip()
+            or None
+        )
+
+    if user_data.insurance_member_id is not None:
+        patient.insurance_member_id = (
+            user_data.insurance_member_id.strip()
+            or None
+        )
+
+    db.commit()
+
+    db.refresh(user)
+    db.refresh(patient)
+
+    return {
+        "message": "Patient profile updated successfully",
+        "user": {
+            "id": user.id,
+            "patient_id": patient.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "date_of_birth": patient.date_of_birth,
+            "gender": patient.gender,
+            "phone": patient.phone,
+            "address": patient.address,
+            "city": patient.city,
+            "state": patient.state,
+            "zip_code": patient.zip_code,
+            "insurance_provider": patient.insurance_provider,
+            "insurance_member_id": patient.insurance_member_id,
+            "pcp_doctor_id": patient.pcp_doctor_id,
+        },
+    }
+
+
 # ==================================================
 # ADMIN CREATES DOCTOR
 # ==================================================
@@ -132,10 +294,12 @@ def create_doctor_by_admin(
     ),
     db: Session = Depends(get_db),
 ):
-    if existing_user := get_user_by_email(
+    existing_user = get_user_by_email(
         db,
         doctor_data.email,
-    ):
+    )
+
+    if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -178,10 +342,12 @@ def create_receptionist_by_admin(
     ),
     db: Session = Depends(get_db),
 ):
-    if existing_user := get_user_by_email(
+    existing_user = get_user_by_email(
         db,
         receptionist_data.email,
-    ):
+    )
+
+    if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -221,10 +387,12 @@ def create_admin_by_admin(
     ),
     db: Session = Depends(get_db),
 ):
-    if existing_user := get_user_by_email(
+    existing_user = get_user_by_email(
         db,
         user_data.email,
-    ):
+    )
+
+    if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -248,17 +416,176 @@ def create_admin_by_admin(
     }
 
 
+
+
+# ==================================================
+# CURRENT LOGGED-IN ADMIN
+# ==================================================
+
+@router.get("/admin/me")
+def get_current_admin_profile(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user["role"] != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is available for administrators only",
+        )
+
+    user_id = int(current_user["user_id"])
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin account not found",
+        )
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+    }
+
+
+# ==================================================
+# ADMIN CREATES PATIENT
+# ==================================================
+
+@router.post(
+    "/patients",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_patient_by_admin(
+    patient_data: PatientRegister,
+    _current_user=Depends(
+        require_roles(["ADMIN"])
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Create a patient portal account from the admin console.
+
+    Uses the same PatientRegister schema/service as public
+    patient registration so both flows create the same
+    Patient + User records and preserve all supported
+    patient fields, including insurance and PCP.
+    """
+
+    existing_user = get_user_by_email(
+        db,
+        patient_data.email,
+    )
+
+    if existing_user is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    # Validate PCP when one is supplied.
+    if patient_data.pcp_doctor_id is not None:
+        pcp = (
+            db.query(Doctor)
+            .filter(
+                Doctor.id == patient_data.pcp_doctor_id
+            )
+            .first()
+        )
+
+        if pcp is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Selected PCP doctor not found",
+            )
+
+        if not pcp.active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected PCP doctor is inactive",
+            )
+
+    patient = create_patient(
+        db,
+        patient_data,
+    )
+
+    return {
+        "message": "Patient created successfully",
+        "patient": {
+            "id": patient.id,
+            "user_id": patient.user_id,
+            "name": patient.user.name,
+            "email": patient.user.email,
+            "role": patient.user.role,
+            "date_of_birth": patient.date_of_birth,
+            "gender": patient.gender,
+            "phone": patient.phone,
+            "address": patient.address,
+            "city": patient.city,
+            "state": patient.state,
+            "zip_code": patient.zip_code,
+            "insurance_provider": patient.insurance_provider,
+            "insurance_member_id": patient.insurance_member_id,
+            "pcp_doctor_id": patient.pcp_doctor_id,
+        },
+    }
+
+
+# ==================================================
+# VIEW ADMINS
+# Admin only
+# ==================================================
+
+@router.get("/admins")
+def get_admins(
+    _current_user=Depends(
+        require_roles(["ADMIN"])
+    ),
+    db: Session = Depends(get_db),
+):
+    admins = (
+        db.query(User)
+        .filter(
+            User.role == UserRole.ADMIN.value
+        )
+        .order_by(User.name.asc())
+        .all()
+    )
+
+    return {
+        "admins": [
+            {
+                "id": admin.id,
+                "name": admin.name,
+                "email": admin.email,
+                "role": admin.role,
+                "is_active": admin.is_active,
+            }
+            for admin in admins
+        ]
+    }
+
+
 # ==================================================
 # VIEW DOCTORS
 # Admin + Patient
 # ==================================================
 
-@router.get(
-    "/doctors",
-)
+@router.get("/doctors")
 def get_doctors(
     current_user=Depends(
-        require_roles(["ADMIN", "PATIENT"])
+        require_roles(
+            ["ADMIN", "PATIENT"]
+        )
     ),
     db: Session = Depends(get_db),
 ):
@@ -273,146 +600,24 @@ def get_doctors(
         .all()
     )
 
-    # ----------------------------------------------
-    # Patient view
-    # ----------------------------------------------
-
-    if current_user["role"] == "PATIENT":
-        return {
-            "count": len(doctors),
-            "doctors": [
-                {
-                    "id": doctor.id,
-                    "name": doctor.user.name,
-                    "specialization": doctor.specialization,
-                    "sub_specialization":
-                        doctor.sub_specialization,
-                    "qualification":
-                        doctor.qualification,
-                    "years_of_experience":
-                        doctor.years_of_experience,
-                    "department":
-                        doctor.department,
-                    "clinic_name":
-                        doctor.clinic_name,
-                    "city":
-                        doctor.city,
-                    "state":
-                        doctor.state,
-                    "consultation_fee":
-                        doctor.consultation_fee,
-                    "consultation_mode":
-                        doctor.consultation_mode,
-                    "bio":
-                        doctor.bio,
-                    "languages":
-                        doctor.languages,
-                    "profile_photo":
-                        doctor.profile_photo,
-                    "accepting_new_patients":
-                        doctor.accepting_new_patients,
-                    "requires_referral":
-                        doctor.requires_referral,
-                }
-                for doctor in doctors
-            ],
-        }
-
-    # ----------------------------------------------
-    # Admin view
-    # ----------------------------------------------
-
     return {
-        "count": len(doctors),
         "doctors": [
             {
                 "id": doctor.id,
                 "user_id": doctor.user_id,
                 "name": doctor.user.name,
                 "email": doctor.user.email,
-                "role": doctor.user.role,
-                "specialization":
-                    doctor.specialization,
-                "sub_specialization":
-                    doctor.sub_specialization,
-                "license_number":
-                    doctor.license_number,
-                "npi_number":
-                    doctor.npi_number,
-                "qualification":
-                    doctor.qualification,
-                "department":
-                    doctor.department,
-                "years_of_experience":
-                    doctor.years_of_experience,
-                "clinic_name":
-                    doctor.clinic_name,
-                "city":
-                    doctor.city,
-                "state":
-                    doctor.state,
-                "consultation_fee":
-                    doctor.consultation_fee,
-                "consultation_mode":
-                    doctor.consultation_mode,
-                "accepting_new_patients":
-                    doctor.accepting_new_patients,
-                "requires_referral":
-                    doctor.requires_referral,
+                "specialization": doctor.specialization,
+                "department": doctor.department,
+                "license_number": doctor.license_number,
+                "npi_number": doctor.npi_number,
+                "requires_referral": doctor.requires_referral,
+                "active": doctor.active,
+                "state": doctor.state,
+                "profile_photo": doctor.profile_photo,
             }
             for doctor in doctors
-        ],
-    }
-
-
-# ==================================================
-# VIEW RECEPTIONISTS
-# Admin only
-# ==================================================
-
-@router.get(
-    "/receptionists",
-)
-def get_receptionists(
-    _current_user=Depends(
-        require_roles(["ADMIN"])
-    ),
-    db: Session = Depends(get_db),
-):
-    receptionists = (
-        db.query(Receptionist)
-        .join(Receptionist.user)
-        .filter(
-            Receptionist.user.has(
-                role=UserRole.RECEPTIONIST.value
-            )
-        )
-        .all()
-    )
-
-    return {
-        "count": len(receptionists),
-        "receptionists": [
-            {
-                "id": receptionist.id,
-                "user_id": receptionist.user_id,
-                "name": receptionist.user.name,
-                "email": receptionist.user.email,
-                "employee_id":
-                    receptionist.employee_id,
-                "department":
-                    receptionist.department,
-                "phone":
-                    receptionist.phone,
-                "hire_date":
-                    receptionist.hire_date,
-                "shift":
-                    receptionist.shift,
-                "clinic_location":
-                    receptionist.clinic_location,
-            }
-            for receptionist in receptionists
-        ],
+        ]
     }
 
 
@@ -421,9 +626,7 @@ def get_receptionists(
 # Admin only
 # ==================================================
 
-@router.get(
-    "/patients",
-)
+@router.get("/patients")
 def get_patients(
     _current_user=Depends(
         require_roles(["ADMIN"])
@@ -442,38 +645,61 @@ def get_patients(
     )
 
     return {
-        "count": len(patients),
         "patients": [
             {
                 "id": patient.id,
                 "user_id": patient.user_id,
                 "name": patient.user.name,
                 "email": patient.user.email,
-                "date_of_birth":
-                    patient.date_of_birth,
-                "gender":
-                    patient.gender,
-                "phone":
-                    patient.phone,
-                "address":
-                    patient.address,
-                "city":
-                    patient.city,
-                "state":
-                    patient.state,
-                "zip_code":
-                    patient.zip_code,
-                "emergency_contact_name":
-                    patient.emergency_contact_name,
-                "emergency_contact_phone":
-                    patient.emergency_contact_phone,
-                "insurance_provider":
-                    patient.insurance_provider,
-                "insurance_member_id":
-                    patient.insurance_member_id,
-                "pcp_doctor_id":
-                    patient.pcp_doctor_id,
+                "date_of_birth": patient.date_of_birth,
+                "gender": patient.gender,
+                "phone": patient.phone,
+                "address": patient.address,
+                "city": patient.city,
+                "state": patient.state,
+                "zip_code": patient.zip_code,
+                "insurance_provider": patient.insurance_provider,
+                "insurance_member_id": patient.insurance_member_id,
+                "pcp_doctor_id": patient.pcp_doctor_id,
             }
             for patient in patients
-        ],
+        ]
+    }
+
+
+# ==================================================
+# VIEW RECEPTIONISTS
+# Admin only
+# ==================================================
+
+@router.get("/receptionists")
+def get_receptionists(
+    _current_user=Depends(
+        require_roles(["ADMIN"])
+    ),
+    db: Session = Depends(get_db),
+):
+    receptionists = (
+        db.query(Receptionist)
+        .join(Receptionist.user)
+        .filter(
+            Receptionist.user.has(
+                role=UserRole.RECEPTIONIST.value
+            )
+        )
+        .all()
+    )
+
+    return {
+        "receptionists": [
+            {
+                "id": receptionist.id,
+                "user_id": receptionist.user_id,
+                "name": receptionist.user.name,
+                "email": receptionist.user.email,
+                "employee_id": receptionist.employee_id,
+                "department": receptionist.department,
+            }
+            for receptionist in receptionists
+        ]
     }

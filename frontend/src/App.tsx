@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
+import CalendarPage from "./pages/CalendarPage";
 import LoginPage from "./pages/LoginPage";
 import PatientRegister from "./pages/PatientRegister";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -21,6 +22,12 @@ function App() {
         <Route
           path="/"
           element={<HomePage />}
+        />
+
+        {/* Public Appointment Calendar */}
+        <Route
+          path="/calendar"
+          element={<CalendarPage />}
         />
 
         {/* Authentication */}

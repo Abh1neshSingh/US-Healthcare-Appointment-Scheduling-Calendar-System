@@ -179,14 +179,20 @@ function DayView({
     getTodayDate();
 
   /*
-   * Day View is intentionally fixed
-   * to the current date.
+   * IMPORTANT DATE CONTRACT
+   * -----------------------
+   * Day View is a detail view of the date
+   * selected by the parent calendar.
    *
-   * Month and Week views handle
-   * date navigation.
+   * Month / Week -> selected date -> Day View
+   *
+   * Never replace selectedDate with today here.
+   * Today is only used to visually identify the
+   * current date.
    */
-  const dayDate =
-    todayDate;
+  const dayDate = selectedDate;
+
+  const isToday = dayDate === todayDate;
 
   // ==================================================
   // STATE
@@ -573,6 +579,66 @@ function DayView({
   }, [availability]);
 
   // ==================================================
+  // DATE NAVIGATION
+  // ==================================================
+
+  const shiftDay = (days: number) => {
+    const date = new Date(`${dayDate}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+      return;
+    }
+
+    date.setDate(date.getDate() + days);
+
+    const nextDate = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+    onDateChange(nextDate);
+    setSelectedSlot(null);
+    setAvailability(null);
+    setAvailabilityError("");
+  };
+
+  const handlePreviousDay = () => {
+    if (isToday) {
+      return;
+    }
+
+    const date = new Date(`${dayDate}T00:00:00`);
+    date.setDate(date.getDate() - 1);
+
+    const previousDate = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+    if (previousDate < todayDate) {
+      return;
+    }
+
+    onDateChange(previousDate);
+    setSelectedSlot(null);
+    setAvailability(null);
+    setAvailabilityError("");
+  };
+
+  const handleNextDay = () => {
+    shiftDay(1);
+  };
+
+  const handleToday = () => {
+    if (isToday) {
+      return;
+    }
+
+    onDateChange(todayDate);
+    setSelectedSlot(null);
+    setAvailability(null);
+    setAvailabilityError("");
+  };
+
+  // ==================================================
   // DOCTOR CHANGE
   // ==================================================
 
@@ -637,25 +703,6 @@ function DayView({
   };
 
   // ==================================================
-  // KEEP PARENT DATE IN SYNC
-  // ==================================================
-
-  useEffect(() => {
-    if (
-      selectedDate !==
-      dayDate
-    ) {
-      onDateChange(
-        dayDate
-      );
-    }
-  }, [
-    selectedDate,
-    dayDate,
-    onDateChange,
-  ]);
-
-  // ==================================================
   // ESCAPE KEY
   // ==================================================
 
@@ -717,14 +764,11 @@ function DayView({
             <div className="day-view-spinner" />
 
             <h3>
-              Loading today's
-              appointments
+              Loading appointments
             </h3>
 
             <p>
-              Checking patient,
-              doctors and available
-              appointment times...
+              Checking patient, doctors and appointment availability...
             </p>
 
           </div>
@@ -834,7 +878,7 @@ function DayView({
             <div>
 
               <span className="day-booking-eyebrow">
-                TODAY'S APPOINTMENTS
+                {isToday ? "TODAY'S APPOINTMENTS" : "SELECTED DATE"}
               </span>
 
               <h2 id="day-booking-title">
@@ -844,24 +888,59 @@ function DayView({
               </h2>
 
               <p>
-                View availability
-                and book an
-                appointment for
-                today.
+                {isToday
+                  ? "View availability and book an appointment for today."
+                  : "View availability and book an appointment for the selected date."}
               </p>
 
             </div>
 
           </div>
 
-          <button
-            type="button"
-            className="day-booking-close"
-            onClick={onClose}
-            aria-label="Close day view"
-          >
-            ×
-          </button>
+          <div className="day-booking-header-actions">
+
+            <div className="day-date-navigation" aria-label="Day navigation">
+              <button
+                type="button"
+                className="day-date-nav-button"
+                onClick={handlePreviousDay}
+                disabled={isToday}
+                aria-label="Previous day"
+                title={isToday ? "Previous day is not available before today" : "Previous day"}
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                className={`day-date-today-button ${isToday ? "current" : ""}`}
+                onClick={handleToday}
+                disabled={isToday}
+              >
+                {isToday ? "Today" : "Go to Today"}
+              </button>
+
+              <button
+                type="button"
+                className="day-date-nav-button"
+                onClick={handleNextDay}
+                aria-label="Next day"
+                title="Next day"
+              >
+                ›
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="day-booking-close"
+              onClick={onClose}
+              aria-label="Close day view"
+            >
+              ×
+            </button>
+
+          </div>
 
         </div>
 
@@ -1116,8 +1195,7 @@ function DayView({
             <div>
 
               <span>
-                TODAY'S APPOINTMENT
-                SLOTS
+                {isToday ? "TODAY'S APPOINTMENT SLOTS" : "APPOINTMENT SLOTS"}
               </span>
 
               <h3>
@@ -1370,7 +1448,7 @@ function DayView({
             <div className="day-section-heading">
 
               <span>
-                YOUR APPOINTMENTS TODAY
+                YOUR APPOINTMENTS {isToday ? "TODAY" : "ON SELECTED DATE"}
               </span>
 
               <small>

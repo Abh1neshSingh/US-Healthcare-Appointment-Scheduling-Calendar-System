@@ -1,12 +1,12 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
+  type FormEvent,
 } from "react";
 
-import {
-  useNavigate,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import API_URL from "../config";
 
@@ -33,6 +33,63 @@ interface Appointment {
   notes?: string | null;
 }
 
+interface PatientUser {
+  id: number;
+  patient_id?: number;
+  name: string;
+  email: string;
+  role: string;
+  is_active?: boolean;
+
+  date_of_birth?: string | null;
+  gender?: string | null;
+  phone?: string | null;
+
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+
+  insurance_provider?: string | null;
+  insurance_member_id?: string | null;
+
+  pcp_doctor_id?: number | null;
+}
+
+interface PatientProfileForm {
+  name: string;
+  email: string;
+  date_of_birth: string;
+  gender: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  insurance_provider: string;
+  insurance_member_id: string;
+}
+
+type CalendarView =
+  | "month"
+  | "week"
+  | "day";
+
+type DashboardPanel =
+  | "profile"
+  | "records"
+  | "settings"
+  | "help"
+  | "notifications"
+  | null;
+
+const ACTIVE_APPOINTMENT_STATUSES = [
+  "SCHEDULED",
+  "CONFIRMED",
+  "CHECKED_IN",
+  "IN_PROGRESS",
+];
+
 function getTodayDate(): string {
   const today = new Date();
 
@@ -40,31 +97,210 @@ function getTodayDate(): string {
     today.getFullYear();
 
   const month = String(
-    today.getMonth() + 1
+    today.getMonth() + 1,
   ).padStart(2, "0");
 
   const day = String(
-    today.getDate()
+    today.getDate(),
   ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
+function getFirstName(
+  name: string,
+): string {
+  const cleanedName =
+    name.trim();
+
+  if (!cleanedName) {
+    return "Patient";
+  }
+
+  return cleanedName
+    .split(/\s+/)[0];
+}
+
+function getInitials(
+  name: string,
+): string {
+  const parts =
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "PT";
+  }
+
+  if (parts.length === 1) {
+    return parts[0]
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  return (
+    parts[0][0] +
+    parts[parts.length - 1][0]
+  ).toUpperCase();
+}
+
+function getGreeting(
+  date = new Date(),
+): string {
+  const hour =
+    date.getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return "Good afternoon";
+  }
+
+  if (hour >= 17 && hour < 21) {
+    return "Good evening";
+  }
+
+  return "Good night";
+}
+
+function getGreetingIcon(
+  date = new Date(),
+): string {
+  const hour =
+    date.getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return "☀";
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return "◐";
+  }
+
+  if (hour >= 17 && hour < 21) {
+    return "◒";
+  }
+
+  return "☾";
+}
+
 function PatientDashboard() {
   const navigate = useNavigate();
 
+  const todayDate =
+    getTodayDate();
+
   // ==================================================
-  // TODAY
+  // USER
   // ==================================================
 
-  const todayDate = getTodayDate();
+  const [
+    patient,
+    setPatient,
+  ] = useState<PatientUser | null>(
+    null,
+  );
+
+  const [
+    loadingPatient,
+    setLoadingPatient,
+  ] = useState(true);
+
+  // ==================================================
+  // PROFILE EDITING
+  // ==================================================
+
+  const [
+    editingProfile,
+    setEditingProfile,
+  ] = useState(false);
+
+  const [
+    profileForm,
+    setProfileForm,
+  ] = useState<PatientProfileForm>({
+    name: "",
+    email: "",
+    date_of_birth: "",
+    gender: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    insurance_provider: "",
+    insurance_member_id: "",
+  });
+
+  const [
+    savingProfile,
+    setSavingProfile,
+  ] = useState(false);
+
+  const [
+    profileMessage,
+    setProfileMessage,
+  ] = useState("");
+
+  const [
+    profileError,
+    setProfileError,
+  ] = useState("");
+
+  // ==================================================
+  // LIVE TIME
+  // ==================================================
+
+  const [
+    currentTime,
+    setCurrentTime,
+  ] = useState(
+    () => new Date(),
+  );
+
+  // ==================================================
+  // UI PANELS
+  // ==================================================
+
+  const [
+    activePanel,
+    setActivePanel,
+  ] = useState<DashboardPanel>(
+    null,
+  );
+
+  // ==================================================
+  // SETTINGS
+  // ==================================================
+
+  const [
+    autoRefresh,
+    setAutoRefresh,
+  ] = useState(() => {
+    return (
+      localStorage.getItem(
+        "patient_dashboard_auto_refresh",
+      ) !== "false"
+    );
+  });
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
 
   // ==================================================
   // MODALS
   // ==================================================
 
-  const [showBooking, setShowBooking] =
-    useState(false);
+  const [
+    showBooking,
+    setShowBooking,
+  ] = useState(false);
 
   const [
     showAllAppointments,
@@ -80,7 +316,7 @@ function PatientDashboard() {
     selectedAppointment,
     setSelectedAppointment,
   ] = useState<Appointment | null>(
-    null
+    null,
   );
 
   // ==================================================
@@ -97,6 +333,11 @@ function PatientDashboard() {
     setLoadingAppointments,
   ] = useState(true);
 
+  const [
+    appointmentsError,
+    setAppointmentsError,
+  ] = useState("");
+
   // ==================================================
   // CALENDAR
   // ==================================================
@@ -105,21 +346,22 @@ function PatientDashboard() {
     currentMonth,
     setCurrentMonth,
   ] = useState(() => {
-    const today = new Date();
+    const today =
+      new Date();
 
     return new Date(
       today.getFullYear(),
       today.getMonth(),
-      1
+      1,
     );
   });
 
   const [
     calendarView,
     setCalendarView,
-  ] = useState<
-    "month" | "week" | "day"
-  >("month");
+  ] = useState<CalendarView>(
+    "month",
+  );
 
   const [
     selectedDate,
@@ -139,7 +381,7 @@ function PatientDashboard() {
     bookingDoctorId,
     setBookingDoctorId,
   ] = useState<number | null>(
-    null
+    null,
   );
 
   const [
@@ -148,54 +390,22 @@ function PatientDashboard() {
   ] = useState("");
 
   // ==================================================
-  // LOAD APPOINTMENTS
+  // LIVE CLOCK
   // ==================================================
 
-  const fetchAppointments = async () => {
-    try {
-      setLoadingAppointments(true);
-
-      const token =
-        localStorage.getItem(
-          "access_token"
-        );
-
-      const response = await fetch(
-        `${API_URL}/appointments/my`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail ||
-            "Unable to load appointments."
-        );
-      }
-
-      setAppointments(
-        data.appointments || []
-      );
-    } catch (error) {
-      console.error(
-        "Error loading appointments:",
-        error
-      );
-
-      setAppointments([]);
-    } finally {
-      setLoadingAppointments(false);
-    }
-  };
-
   useEffect(() => {
-    fetchAppointments();
+    const timer =
+      window.setInterval(() => {
+        setCurrentTime(
+          new Date(),
+        );
+      }, 60_000);
+
+    return () => {
+      window.clearInterval(
+        timer,
+      );
+    };
   }, []);
 
   // ==================================================
@@ -204,35 +414,558 @@ function PatientDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem(
-      "access_token"
+      "access_token",
     );
 
-    navigate("/login");
+    localStorage.removeItem(
+      "patient_user",
+    );
+
+    navigate("/login", {
+      replace: true,
+    });
   };
+
+  // ==================================================
+  // LOAD CURRENT PATIENT
+  // ==================================================
+
+  const fetchPatient =
+    useCallback(
+      async () => {
+        try {
+          setLoadingPatient(true);
+
+          const token =
+            localStorage.getItem(
+              "access_token",
+            );
+
+          if (!token) {
+            navigate("/login", {
+              replace: true,
+            });
+
+            return;
+          }
+
+          const response =
+            await fetch(
+              `${API_URL}/users/me`,
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              },
+            );
+
+          if (
+            response.status ===
+            401
+          ) {
+            handleLogout();
+
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              "Unable to load patient profile.",
+            );
+          }
+
+          const data =
+            (await response.json()) as PatientUser;
+
+          setPatient(data);
+
+          setProfileForm({
+            name:
+              data.name || "",
+            email:
+              data.email || "",
+            date_of_birth:
+              data.date_of_birth || "",
+            gender:
+              data.gender || "",
+            phone:
+              data.phone || "",
+            address:
+              data.address || "",
+            city:
+              data.city || "",
+            state:
+              data.state || "",
+            zip_code:
+              data.zip_code || "",
+            insurance_provider:
+              data.insurance_provider || "",
+            insurance_member_id:
+              data.insurance_member_id || "",
+          });
+
+          localStorage.setItem(
+            "patient_user",
+            JSON.stringify(data),
+          );
+        } catch (error) {
+          console.error(
+            "Error loading patient:",
+            error,
+          );
+
+          const cached =
+            localStorage.getItem(
+              "patient_user",
+            );
+
+          if (cached) {
+            try {
+              const cachedPatient =
+                JSON.parse(
+                  cached,
+                ) as PatientUser;
+
+              setPatient(
+                cachedPatient,
+              );
+
+              setProfileForm({
+                name:
+                  cachedPatient.name ||
+                  "",
+                email:
+                  cachedPatient.email ||
+                  "",
+                date_of_birth:
+                  cachedPatient.date_of_birth ||
+                  "",
+                gender:
+                  cachedPatient.gender ||
+                  "",
+                phone:
+                  cachedPatient.phone ||
+                  "",
+                address:
+                  cachedPatient.address ||
+                  "",
+                city:
+                  cachedPatient.city ||
+                  "",
+                state:
+                  cachedPatient.state ||
+                  "",
+                zip_code:
+                  cachedPatient.zip_code ||
+                  "",
+                insurance_provider:
+                  cachedPatient.insurance_provider ||
+                  "",
+                insurance_member_id:
+                  cachedPatient.insurance_member_id ||
+                  "",
+              });
+            } catch {
+              setPatient(null);
+            }
+          }
+        } finally {
+          setLoadingPatient(false);
+        }
+      },
+      [navigate],
+    );
+
+  // ==================================================
+  // LOAD APPOINTMENTS
+  // ==================================================
+
+  const fetchAppointments =
+    useCallback(
+      async (
+        showLoader = true,
+      ) => {
+        try {
+          if (showLoader) {
+            setLoadingAppointments(
+              true,
+            );
+          }
+
+          setAppointmentsError("");
+
+          const token =
+            localStorage.getItem(
+              "access_token",
+            );
+
+          if (!token) {
+            navigate("/login", {
+              replace: true,
+            });
+
+            return;
+          }
+
+          const response =
+            await fetch(
+              `${API_URL}/appointments/my`,
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              },
+            );
+
+          if (
+            response.status ===
+            401
+          ) {
+            handleLogout();
+
+            return;
+          }
+
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.detail ||
+                "Unable to load appointments.",
+            );
+          }
+
+          setAppointments(
+            data.appointments || [],
+          );
+        } catch (error) {
+          console.error(
+            "Error loading appointments:",
+            error,
+          );
+
+          setAppointmentsError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load appointments.",
+          );
+        } finally {
+          if (showLoader) {
+            setLoadingAppointments(
+              false,
+            );
+          }
+        }
+      },
+      [navigate],
+    );
+
+  // ==================================================
+  // INITIAL LOAD
+  // ==================================================
+
+  useEffect(() => {
+    void fetchPatient();
+
+    void fetchAppointments();
+  }, [
+    fetchPatient,
+    fetchAppointments,
+  ]);
+
+  // ==================================================
+  // AUTO REFRESH
+  // ==================================================
+
+  useEffect(() => {
+    localStorage.setItem(
+      "patient_dashboard_auto_refresh",
+      String(autoRefresh),
+    );
+  }, [autoRefresh]);
+
+  useEffect(() => {
+    if (!autoRefresh) {
+      return;
+    }
+
+    const interval =
+      window.setInterval(() => {
+        void fetchAppointments(
+          false,
+        );
+      }, 30_000);
+
+    return () => {
+      window.clearInterval(
+        interval,
+      );
+    };
+  }, [
+    autoRefresh,
+    fetchAppointments,
+  ]);
+
+  // ==================================================
+  // MANUAL REFRESH
+  // ==================================================
+
+  const handleRefresh =
+    async () => {
+      try {
+        setRefreshing(true);
+
+        await Promise.all([
+          fetchPatient(),
+          fetchAppointments(false),
+        ]);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+  // ==================================================
+  // PROFILE FORM
+  // ==================================================
+
+  const updateProfileField = (
+    field: keyof PatientProfileForm,
+    value: string,
+  ) => {
+    setProfileForm(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      }),
+    );
+  };
+
+  const startProfileEdit = () => {
+    if (!patient) {
+      return;
+    }
+
+    setProfileForm({
+      name:
+        patient.name || "",
+      email:
+        patient.email || "",
+      date_of_birth:
+        patient.date_of_birth || "",
+      gender:
+        patient.gender || "",
+      phone:
+        patient.phone || "",
+      address:
+        patient.address || "",
+      city:
+        patient.city || "",
+      state:
+        patient.state || "",
+      zip_code:
+        patient.zip_code || "",
+      insurance_provider:
+        patient.insurance_provider || "",
+      insurance_member_id:
+        patient.insurance_member_id || "",
+    });
+
+    setProfileMessage("");
+    setProfileError("");
+    setEditingProfile(true);
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileMessage("");
+    setProfileError("");
+    setEditingProfile(false);
+  };
+
+  const saveProfile =
+    async (
+      event: FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      setSavingProfile(true);
+      setProfileMessage("");
+      setProfileError("");
+
+      try {
+        const token =
+          localStorage.getItem(
+            "access_token",
+          );
+
+        if (!token) {
+          navigate("/login", {
+            replace: true,
+          });
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `${API_URL}/users/me`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type":
+                  "application/json",
+                Authorization:
+                  `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                name:
+                  profileForm.name.trim(),
+                phone:
+                  profileForm.phone.trim() ||
+                  null,
+                date_of_birth:
+                  profileForm.date_of_birth ||
+                  null,
+                gender:
+                  profileForm.gender ||
+                  null,
+                address:
+                  profileForm.address.trim() ||
+                  null,
+                city:
+                  profileForm.city.trim() ||
+                  null,
+                state:
+                  profileForm.state.trim() ||
+                  null,
+                zip_code:
+                  profileForm.zip_code.trim() ||
+                  null,
+                insurance_provider:
+                  profileForm.insurance_provider.trim() ||
+                  null,
+                insurance_member_id:
+                  profileForm.insurance_member_id.trim() ||
+                  null,
+              }),
+            },
+          );
+
+        if (
+          response.status ===
+          401
+        ) {
+          handleLogout();
+
+          return;
+        }
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.detail ||
+              "Unable to update profile.",
+          );
+        }
+
+        const updatedPatient =
+          data as PatientUser;
+
+        setPatient(
+          updatedPatient,
+        );
+
+        setProfileForm({
+          name:
+            updatedPatient.name ||
+            "",
+          email:
+            updatedPatient.email ||
+            "",
+          date_of_birth:
+            updatedPatient.date_of_birth ||
+            "",
+          gender:
+            updatedPatient.gender ||
+            "",
+          phone:
+            updatedPatient.phone ||
+            "",
+          address:
+            updatedPatient.address ||
+            "",
+          city:
+            updatedPatient.city ||
+            "",
+          state:
+            updatedPatient.state ||
+            "",
+          zip_code:
+            updatedPatient.zip_code ||
+            "",
+          insurance_provider:
+            updatedPatient.insurance_provider ||
+            "",
+          insurance_member_id:
+            updatedPatient.insurance_member_id ||
+            "",
+        });
+
+        localStorage.setItem(
+          "patient_user",
+          JSON.stringify(
+            updatedPatient,
+          ),
+        );
+
+        setProfileMessage(
+          "Profile updated successfully.",
+        );
+
+        setEditingProfile(false);
+      } catch (error) {
+        console.error(
+          "Error updating profile:",
+          error,
+        );
+
+        setProfileError(
+          error instanceof Error
+            ? error.message
+            : "Unable to update profile.",
+        );
+      } finally {
+        setSavingProfile(false);
+      }
+    };
 
   // ==================================================
   // DATE HELPERS
   // ==================================================
 
   const getDateKey = (
-    date: Date
+    date: Date,
   ): string => {
     const year =
       date.getFullYear();
 
     const month = String(
-      date.getMonth() + 1
+      date.getMonth() + 1,
     ).padStart(2, "0");
 
     const day = String(
-      date.getDate()
+      date.getDate(),
     ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   };
 
   const formatTime = (
-    time: string
+    time: string,
   ): string => {
     const [
       hours,
@@ -241,13 +974,21 @@ function PatientDashboard() {
       .split(":")
       .map(Number);
 
-    const date = new Date();
+    if (
+      Number.isNaN(hours) ||
+      Number.isNaN(minutes)
+    ) {
+      return time;
+    }
+
+    const date =
+      new Date();
 
     date.setHours(
       hours,
       minutes,
       0,
-      0
+      0,
     );
 
     return date.toLocaleTimeString(
@@ -255,16 +996,17 @@ function PatientDashboard() {
       {
         hour: "numeric",
         minute: "2-digit",
-      }
+      },
     );
   };
 
   const formatDate = (
-    dateString: string
+    dateString: string,
   ): string => {
-    const date = new Date(
-      `${dateString}T00:00:00`
-    );
+    const date =
+      new Date(
+        `${dateString}T00:00:00`,
+      );
 
     return date.toLocaleDateString(
       "en-US",
@@ -272,9 +1014,57 @@ function PatientDashboard() {
         month: "short",
         day: "numeric",
         year: "numeric",
-      }
+      },
     );
   };
+
+  const formatLongDate =
+    (date = new Date()) =>
+      date.toLocaleDateString(
+        "en-US",
+        {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        },
+      );
+
+  // ==================================================
+  // USER DISPLAY DATA
+  // ==================================================
+
+  const patientName =
+    patient?.name?.trim() ||
+    "Patient";
+
+  const firstName =
+    getFirstName(
+      patientName,
+    );
+
+  const initials =
+    getInitials(
+      patientName,
+    );
+
+  const greeting =
+    getGreeting(
+      currentTime,
+    );
+
+  const greetingIcon =
+    getGreetingIcon(
+      currentTime,
+    );
+
+  const profileName =
+    patient?.name ||
+    "Patient";
+
+  const profileEmail =
+    patient?.email ||
+    "Email unavailable";
 
   // ==================================================
   // MONTH TITLE
@@ -286,113 +1076,116 @@ function PatientDashboard() {
       {
         month: "long",
         year: "numeric",
-      }
+      },
     );
 
   // ==================================================
   // MONTH CALENDAR DAYS
   // ==================================================
 
-  const calendarDays = useMemo(() => {
-    const year =
-      currentMonth.getFullYear();
+  const calendarDays =
+    useMemo(() => {
+      const year =
+        currentMonth.getFullYear();
 
-    const month =
-      currentMonth.getMonth();
+      const month =
+        currentMonth.getMonth();
 
-    const firstDay =
-      new Date(
-        year,
-        month,
-        1
-      ).getDay();
-
-    const daysInMonth =
-      new Date(
-        year,
-        month + 1,
-        0
-      ).getDate();
-
-    const previousMonthDays =
-      new Date(
-        year,
-        month,
-        0
-      ).getDate();
-
-    const days: {
-      date: Date;
-      currentMonth: boolean;
-    }[] = [];
-
-    for (
-      let index = firstDay - 1;
-      index >= 0;
-      index--
-    ) {
-      days.push({
-        date: new Date(
-          year,
-          month - 1,
-          previousMonthDays -
-            index
-        ),
-        currentMonth: false,
-      });
-    }
-
-    for (
-      let day = 1;
-      day <= daysInMonth;
-      day++
-    ) {
-      days.push({
-        date: new Date(
+      const firstDay =
+        new Date(
           year,
           month,
-          day
-        ),
-        currentMonth: true,
-      });
-    }
+          1,
+        ).getDay();
 
-    let nextDay = 1;
-
-    while (
-      days.length < 42
-    ) {
-      days.push({
-        date: new Date(
+      const daysInMonth =
+        new Date(
           year,
           month + 1,
-          nextDay
-        ),
-        currentMonth: false,
-      });
+          0,
+        ).getDate();
 
-      nextDay++;
-    }
+      const previousMonthDays =
+        new Date(
+          year,
+          month,
+          0,
+        ).getDate();
 
-    return days;
-  }, [currentMonth]);
+      const days: {
+        date: Date;
+        currentMonth: boolean;
+      }[] = [];
+
+      for (
+        let index =
+          firstDay - 1;
+        index >= 0;
+        index--
+      ) {
+        days.push({
+          date: new Date(
+            year,
+            month - 1,
+            previousMonthDays -
+              index,
+          ),
+          currentMonth: false,
+        });
+      }
+
+      for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+      ) {
+        days.push({
+          date: new Date(
+            year,
+            month,
+            day,
+          ),
+          currentMonth: true,
+        });
+      }
+
+      let nextDay = 1;
+
+      while (
+        days.length < 42
+      ) {
+        days.push({
+          date: new Date(
+            year,
+            month + 1,
+            nextDay,
+          ),
+          currentMonth: false,
+        });
+
+        nextDay++;
+      }
+
+      return days;
+    }, [currentMonth]);
 
   // ==================================================
   // GET APPOINTMENTS FOR DATE
   // ==================================================
 
-  const getAppointmentsForDate = (
-    date: Date
-  ) => {
-    const dateKey =
-      getDateKey(date);
+  const getAppointmentsForDate =
+    (
+      date: Date,
+    ) => {
+      const dateKey =
+        getDateKey(date);
 
-    return appointments.filter(
-      (appointment) =>
-        appointment.appointment_date ===
-        dateKey
-    );
-  };
+      return appointments.filter(
+        (appointment) =>
+          appointment.appointment_date ===
+          dateKey,
+      );
+    };
 
   // ==================================================
   // UPCOMING APPOINTMENTS
@@ -400,39 +1193,53 @@ function PatientDashboard() {
 
   const upcomingAppointments =
     useMemo(() => {
-      const today =
+      const now =
         new Date();
-
-      today.setHours(
-        0,
-        0,
-        0,
-        0
-      );
 
       return appointments
         .filter(
           (appointment) => {
             const appointmentDate =
               new Date(
-                `${appointment.appointment_date}T00:00:00`
+                `${appointment.appointment_date}T${appointment.start_time}`,
               );
 
             return (
               appointmentDate >=
-                today &&
+                now &&
               appointment.status !==
                 "CANCELLED"
             );
-          }
+          },
         )
         .sort(
           (first, second) =>
             `${first.appointment_date}T${first.start_time}`.localeCompare(
-              `${second.appointment_date}T${second.start_time}`
-            )
+              `${second.appointment_date}T${second.start_time}`,
+            ),
         );
     }, [appointments]);
+
+  // ==================================================
+  // NOTIFICATIONS
+  // ==================================================
+
+  const notificationAppointments =
+    useMemo(() => {
+      return upcomingAppointments
+        .filter(
+          (appointment) =>
+            ACTIVE_APPOINTMENT_STATUSES.includes(
+              appointment.status,
+            ),
+        )
+        .slice(0, 5);
+    }, [
+      upcomingAppointments,
+    ]);
+
+  const notificationCount =
+    notificationAppointments.length;
 
   // ==================================================
   // THIS WEEK
@@ -447,7 +1254,7 @@ function PatientDashboard() {
         0,
         0,
         0,
-        0
+        0,
       );
 
       const startOfWeek =
@@ -455,24 +1262,24 @@ function PatientDashboard() {
 
       startOfWeek.setDate(
         today.getDate() -
-          today.getDay()
+          today.getDay(),
       );
 
       const endOfWeek =
         new Date(
-          startOfWeek
+          startOfWeek,
         );
 
       endOfWeek.setDate(
         startOfWeek.getDate() +
-          7
+          7,
       );
 
       return upcomingAppointments.filter(
         (appointment) => {
           const appointmentDate =
             new Date(
-              `${appointment.appointment_date}T00:00:00`
+              `${appointment.appointment_date}T00:00:00`,
             );
 
           return (
@@ -481,7 +1288,7 @@ function PatientDashboard() {
             appointmentDate <
               endOfWeek
           );
-        }
+        },
       );
     }, [
       upcomingAppointments,
@@ -498,7 +1305,14 @@ function PatientDashboard() {
     appointments.filter(
       (appointment) =>
         appointment.status ===
-        "COMPLETED"
+        "COMPLETED",
+    ).length;
+
+  const cancelledCount =
+    appointments.filter(
+      (appointment) =>
+        appointment.status ===
+        "CANCELLED",
     ).length;
 
   const doctorsConsulted =
@@ -507,12 +1321,12 @@ function PatientDashboard() {
         .filter(
           (appointment) =>
             appointment.status ===
-            "COMPLETED"
+            "COMPLETED",
         )
         .map(
           (appointment) =>
-            appointment.doctor_id
-        )
+            appointment.doctor_id,
+        ),
     ).size;
 
   // ==================================================
@@ -527,8 +1341,8 @@ function PatientDashboard() {
             previous.getFullYear(),
             previous.getMonth() -
               1,
-            1
-          )
+            1,
+          ),
       );
     };
 
@@ -540,8 +1354,8 @@ function PatientDashboard() {
             previous.getFullYear(),
             previous.getMonth() +
               1,
-            1
-          )
+            1,
+          ),
       );
     };
 
@@ -553,105 +1367,82 @@ function PatientDashboard() {
       new Date(
         today.getFullYear(),
         today.getMonth(),
-        1
-      )
+        1,
+      ),
     );
 
     setSelectedDate(
-      getDateKey(today)
+      getDateKey(today),
+    );
+
+    setCalendarView(
+      "month",
+    );
+
+    setShowDayView(
+      false,
     );
   };
 
   // ==================================================
-  // OPEN DAY POPUP
+  // DAY VIEW — CONTROLLED DATE
   // ==================================================
 
-  const openDayView = (
-    date: Date
-  ) => {
-    const dateKey =
-      getDateKey(date);
+  const openDayView = (dateKey: string) => {
+    const parsedDate = new Date(`${dateKey}T00:00:00`);
 
-    setSelectedDate(
-      dateKey
-    );
+    if (Number.isNaN(parsedDate.getTime())) {
+      return;
+    }
+
+    // The selected date is the single source of truth.
+    setSelectedDate(dateKey);
 
     setCurrentMonth(
       new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        1
-      )
+        parsedDate.getFullYear(),
+        parsedDate.getMonth(),
+        1,
+      ),
     );
 
     setCalendarView("day");
-
     setShowDayView(true);
   };
-
-  // ==================================================
-  // OPEN TODAY DAY POPUP
-  // ==================================================
 
   const openTodayDayView =
     () => {
       const today =
         new Date();
 
-      setSelectedDate(
-        getDateKey(today)
-      );
-
-      setCurrentMonth(
-        new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          1
-        )
-      );
-
-      setCalendarView("day");
-
-      setShowDayView(true);
+      openDayView(getDateKey(today));
     };
 
-  // ==================================================
-  // CLOSE DAY POPUP
-  // ==================================================
-
   const closeDayView = () => {
-    setShowDayView(false);
+    setShowDayView(
+      false,
+    );
 
-    setCalendarView("month");
-
-    setSelectedDate(
-      todayDate
+    setCalendarView(
+      "month",
     );
   };
 
-  // ==================================================
-  // DAY DATE CHANGE
-  // ==================================================
+  const handleDayDateChange = (date: string) => {
+    const parsedDate = new Date(`${date}T00:00:00`);
 
-  const handleDayDateChange = (
-    date: string
-  ) => {
-    /*
-     * Day View is locked to today's date.
-     *
-     * Month and Week are responsible
-     * for date selection.
-     */
-    if (date !== todayDate) {
-      setSelectedDate(
-        todayDate
-      );
-
+    if (Number.isNaN(parsedDate.getTime())) {
       return;
     }
 
-    setSelectedDate(
-      todayDate
+    // Day View navigation updates the same parent-controlled date.
+    setSelectedDate(date);
+    setCurrentMonth(
+      new Date(
+        parsedDate.getFullYear(),
+        parsedDate.getMonth(),
+        1,
+      ),
     );
   };
 
@@ -662,45 +1453,45 @@ function PatientDashboard() {
   const openBooking = (
     date?: string,
     doctorId?: number,
-    startTime?: string
+    startTime?: string,
   ) => {
-    /*
-     * IMPORTANT:
-     * Close Day View first.
-     *
-     * This prevents the Day View popup
-     * from remaining behind the Booking
-     * popup when the user books from a
-     * selected day/slot.
-     */
-    setShowDayView(false);
+    setShowDayView(
+      false,
+    );
 
+    // Preserve the date selected in Month / Week / Day View.
     setBookingDate(
-      date || ""
+      date || selectedDate || todayDate,
     );
 
     setBookingDoctorId(
-      doctorId ?? null
+      doctorId ?? null,
     );
 
     setBookingStartTime(
-      startTime || ""
+      startTime || "",
     );
 
-    setShowBooking(true);
+    setShowBooking(
+      true,
+    );
   };
 
   const closeBooking = () => {
-    setShowBooking(false);
+    setShowBooking(
+      false,
+    );
 
-    setBookingDate("");
+    setBookingDate(
+      "",
+    );
 
     setBookingDoctorId(
-      null
+      null,
     );
 
     setBookingStartTime(
-      ""
+      "",
     );
   };
 
@@ -709,14 +1500,16 @@ function PatientDashboard() {
       closeBooking();
 
       setShowDayView(
-        false
+        false,
       );
 
       setCalendarView(
-        "month"
+        "month",
       );
 
-      await fetchAppointments();
+      await fetchAppointments(
+        false,
+      );
     };
 
   // ==================================================
@@ -725,27 +1518,97 @@ function PatientDashboard() {
 
   const openAppointmentDetails =
     (
-      appointment: DayViewAppointment
+      appointment: DayViewAppointment,
     ) => {
       const existing =
         appointments.find(
           (item) =>
             item.id ===
-            appointment.id
+            appointment.id,
         );
 
       setSelectedAppointment(
         existing || {
           ...appointment,
-        }
+        },
       );
     };
 
   const closeAppointmentDetails =
     () => {
       setSelectedAppointment(
-        null
+        null,
       );
+    };
+
+  // ==================================================
+  // PANELS
+  // ==================================================
+
+  const openPanel = (
+    panel: DashboardPanel,
+  ) => {
+    setActivePanel(
+      panel,
+    );
+
+    setShowAllAppointments(
+      false,
+    );
+
+    setSelectedAppointment(
+      null,
+    );
+  };
+
+  const closePanel = () => {
+    setActivePanel(
+      null,
+    );
+
+    setEditingProfile(
+      false,
+    );
+
+    setProfileMessage("");
+    setProfileError("");
+  };
+
+  const handleProfile = () => {
+    openPanel("profile");
+  };
+
+  const handleMedicalRecords =
+    () => {
+      openPanel("records");
+    };
+
+  const handleSettings = () => {
+    openPanel("settings");
+  };
+
+  const handleHelp = () => {
+    openPanel("help");
+  };
+
+  const handleNotifications =
+    () => {
+      openPanel("notifications");
+    };
+
+  const handleHealthRecords =
+    () => {
+      openPanel("records");
+    };
+
+  const handleUploadRecord =
+    () => {
+      openPanel("records");
+    };
+
+  const handleHealthSummary =
+    () => {
+      openPanel("profile");
     };
 
   // ==================================================
@@ -785,10 +1648,7 @@ function PatientDashboard() {
             type="button"
             className="nav-item active"
           >
-            <span>
-              ⌂
-            </span>
-
+            <span>⌂</span>
             Dashboard
           </button>
 
@@ -801,51 +1661,33 @@ function PatientDashboard() {
             className="nav-item"
             onClick={() =>
               navigate(
-                "/patient/doctors"
+                "/patient/doctors",
               )
             }
           >
-            <span>
-              ♙
-            </span>
-
+            <span>♙</span>
             Find Doctor
           </button>
 
           <button
             type="button"
             className="nav-item"
-            onClick={
-              () =>
-                setShowAllAppointments(
-                  true
-                )
+            onClick={() =>
+              setShowAllAppointments(
+                true,
+              )
             }
           >
-            <span>
-              ▣
-            </span>
-
+            <span>▣</span>
             My Appointments
           </button>
 
           <button
             type="button"
             className="nav-item"
-            onClick={() => {
-              setCalendarView(
-                "month"
-              );
-
-              setShowDayView(
-                false
-              );
-            }}
+            onClick={goToToday}
           >
-            <span>
-              □
-            </span>
-
+            <span>□</span>
             Calendar
           </button>
 
@@ -858,44 +1700,38 @@ function PatientDashboard() {
           <button
             type="button"
             className="nav-item"
+            onClick={handleProfile}
           >
-            <span>
-              ♙
-            </span>
-
+            <span>♙</span>
             Profile
           </button>
 
           <button
             type="button"
             className="nav-item"
+            onClick={
+              handleMedicalRecords
+            }
           >
-            <span>
-              ▤
-            </span>
-
+            <span>▤</span>
             Medical Records
           </button>
 
           <button
             type="button"
             className="nav-item"
+            onClick={handleSettings}
           >
-            <span>
-              ⚙
-            </span>
-
+            <span>⚙</span>
             Settings
           </button>
 
           <button
             type="button"
             className="nav-item"
+            onClick={handleHelp}
           >
-            <span>
-              ?
-            </span>
-
+            <span>?</span>
             Help & Support
           </button>
 
@@ -903,19 +1739,36 @@ function PatientDashboard() {
 
         <div className="sidebar-user">
 
-          <div className="user-info">
+          <div
+            className="user-info"
+            onClick={handleProfile}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (
+                event.key ===
+                "Enter"
+              ) {
+                handleProfile();
+              }
+            }}
+          >
 
             <div className="user-avatar">
-              JD
+              {loadingPatient
+                ? "..."
+                : initials}
             </div>
 
             <div>
               <strong>
-                John Doe
+                {loadingPatient
+                  ? "Loading..."
+                  : profileName}
               </strong>
 
               <span>
-                patient@example.com
+                {profileEmail}
               </span>
             </div>
 
@@ -924,9 +1777,7 @@ function PatientDashboard() {
           <button
             type="button"
             className="logout-button"
-            onClick={
-              handleLogout
-            }
+            onClick={handleLogout}
           >
             ↪ Logout
           </button>
@@ -954,10 +1805,18 @@ function PatientDashboard() {
             </p>
 
             <h1>
-              Good morning, John! 👋
+              {greeting},{" "}
+              {firstName}!{" "}
+              <span aria-hidden="true">
+                {greetingIcon}
+              </span>
             </h1>
 
             <p className="dashboard-subtitle">
+              {formatLongDate(
+                currentTime,
+              )}
+              {" · "}
               Here's your healthcare
               overview for today.
             </p>
@@ -969,22 +1828,99 @@ function PatientDashboard() {
             <button
               type="button"
               className="notification-button"
+              onClick={
+                handleNotifications
+              }
+              aria-label="Notifications"
             >
               ♧
 
-              <span className="notification-count">
-                0
-              </span>
+              {notificationCount >
+                0 && (
+                <span className="notification-count">
+                  {notificationCount >
+                  9
+                    ? "9+"
+                    : notificationCount}
+                </span>
+              )}
 
             </button>
 
-            <div className="header-avatar">
-              JD
-            </div>
+            <button
+              type="button"
+              className="header-avatar"
+              onClick={handleProfile}
+              aria-label="Open profile"
+            >
+              {loadingPatient
+                ? "..."
+                : initials}
+            </button>
 
           </div>
 
         </header>
+
+        {/* ==================================================
+            STATUS / REFRESH
+        ================================================== */}
+
+        <div className="dashboard-status-bar">
+
+          <div className="dashboard-live-status">
+
+            <span
+              className={
+                autoRefresh
+                  ? "live-dot active"
+                  : "live-dot"
+              }
+            />
+
+            <span>
+              {autoRefresh
+                ? "Dashboard updates automatically"
+                : "Automatic refresh is off"}
+            </span>
+
+          </div>
+
+          <button
+            type="button"
+            className="dashboard-refresh-button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing
+              ? "Refreshing..."
+              : "Refresh"}
+          </button>
+
+        </div>
+
+        {/* ==================================================
+            ERROR
+        ================================================== */}
+
+        {appointmentsError && (
+          <div className="dashboard-inline-error">
+
+            <span>
+              {appointmentsError}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                void fetchAppointments()
+              }
+            >
+              Try Again
+            </button>
+
+          </div>
+        )}
 
         {/* ==================================================
             STATS
@@ -995,14 +1931,12 @@ function PatientDashboard() {
           <button
             type="button"
             className="stat-card"
-            onClick={
-              () =>
-                setShowAllAppointments(
-                  true
-                )
+            onClick={() =>
+              setShowAllAppointments(
+                true,
+              )
             }
           >
-
             <div className="stat-icon blue">
               ▣
             </div>
@@ -1018,24 +1952,21 @@ function PatientDashboard() {
               </strong>
 
               <small>
-                Total upcoming
+                Across your schedule
               </small>
 
             </div>
-
           </button>
 
           <button
             type="button"
             className="stat-card"
-            onClick={
-              () =>
-                setShowAllAppointments(
-                  true
-                )
+            onClick={() =>
+              setShowAllAppointments(
+                true,
+              )
             }
           >
-
             <div className="stat-icon green">
               ✓
             </div>
@@ -1051,11 +1982,10 @@ function PatientDashboard() {
               </strong>
 
               <small>
-                Total completed
+                Completed visits
               </small>
 
             </div>
-
           </button>
 
           <button
@@ -1063,11 +1993,10 @@ function PatientDashboard() {
             className="stat-card"
             onClick={() =>
               navigate(
-                "/patient/doctors"
+                "/patient/doctors",
               )
             }
           >
-
             <div className="stat-icon purple">
               ♙
             </div>
@@ -1083,18 +2012,19 @@ function PatientDashboard() {
               </strong>
 
               <small>
-                Total
+                Based on completed visits
               </small>
 
             </div>
-
           </button>
 
           <button
             type="button"
             className="stat-card"
+            onClick={
+              handleHealthRecords
+            }
           >
-
             <div className="stat-icon orange">
               ▤
             </div>
@@ -1105,22 +2035,19 @@ function PatientDashboard() {
                 Health Records
               </span>
 
-              <strong>
-                0
-              </strong>
+              <strong>—</strong>
 
               <small>
-                Documents
+                Open medical records
               </small>
 
             </div>
-
           </button>
 
         </section>
 
         {/* ==================================================
-            CONTENT
+            MAIN CONTENT
         ================================================== */}
 
         <section className="dashboard-content-grid">
@@ -1152,9 +2079,7 @@ function PatientDashboard() {
                 <button
                   type="button"
                   className="today-button"
-                  onClick={
-                    goToToday
-                  }
+                  onClick={goToToday}
                 >
                   Today
                 </button>
@@ -1162,10 +2087,6 @@ function PatientDashboard() {
               </div>
 
             </div>
-
-            {/* ==================================================
-                CALENDAR TOOLBAR
-            ================================================== */}
 
             <div className="calendar-toolbar">
 
@@ -1205,7 +2126,9 @@ function PatientDashboard() {
 
                 {calendarView ===
                 "day"
-                  ? "Today"
+                  ? formatDate(
+                      selectedDate,
+                    )
                   : monthTitle}
 
               </strong>
@@ -1222,11 +2145,11 @@ function PatientDashboard() {
                   }
                   onClick={() => {
                     setCalendarView(
-                      "month"
+                      "month",
                     );
 
                     setShowDayView(
-                      false
+                      false,
                     );
                   }}
                 >
@@ -1243,11 +2166,11 @@ function PatientDashboard() {
                   }
                   onClick={() => {
                     setCalendarView(
-                      "week"
+                      "week",
                     );
 
                     setShowDayView(
-                      false
+                      false,
                     );
                   }}
                 >
@@ -1262,8 +2185,8 @@ function PatientDashboard() {
                       ? "selected"
                       : ""
                   }
-                  onClick={
-                    openTodayDayView
+                  onClick={() =>
+                    openDayView(selectedDate)
                   }
                 >
                   Day
@@ -1274,43 +2197,32 @@ function PatientDashboard() {
             </div>
 
             {/* ==================================================
-                MONTH VIEW
+                MONTH
             ================================================== */}
 
             {calendarView ===
               "month" && (
-
               <>
 
                 <div className="calendar-weekdays">
 
-                  <span>
-                    Sun
-                  </span>
-
-                  <span>
-                    Mon
-                  </span>
-
-                  <span>
-                    Tue
-                  </span>
-
-                  <span>
-                    Wed
-                  </span>
-
-                  <span>
-                    Thu
-                  </span>
-
-                  <span>
-                    Fri
-                  </span>
-
-                  <span>
-                    Sat
-                  </span>
+                  {[
+                    "Sun",
+                    "Mon",
+                    "Tue",
+                    "Wed",
+                    "Thu",
+                    "Fri",
+                    "Sat",
+                  ].map(
+                    (day) => (
+                      <span
+                        key={day}
+                      >
+                        {day}
+                      </span>
+                    ),
+                  )}
 
                 </div>
 
@@ -1318,17 +2230,16 @@ function PatientDashboard() {
 
                   {calendarDays.map(
                     (
-                      calendarDay
+                      calendarDay,
                     ) => {
-
                       const dateKey =
                         getDateKey(
-                          calendarDay.date
+                          calendarDay.date,
                         );
 
                       const dayAppointments =
                         getAppointmentsForDate(
-                          calendarDay.date
+                          calendarDay.date,
                         );
 
                       const isToday =
@@ -1339,6 +2250,11 @@ function PatientDashboard() {
                         <button
                           type="button"
                           key={dateKey}
+                          aria-current={
+                            dateKey === selectedDate
+                              ? "date"
+                              : undefined
+                          }
                           className={`calendar-day ${
                             calendarDay.currentMonth
                               ? ""
@@ -1352,11 +2268,13 @@ function PatientDashboard() {
                             isToday
                               ? "today"
                               : ""
+                          } ${
+                            dateKey === selectedDate
+                              ? "selected-day"
+                              : ""
                           }`}
                           onClick={() =>
-                            openDayView(
-                              calendarDay.date
-                            )
+                            openDayView(dateKey)
                           }
                         >
 
@@ -1368,40 +2286,36 @@ function PatientDashboard() {
 
                           {dayAppointments.length >
                             0 && (
-
                             <div className="calendar-appointments">
 
                               {dayAppointments
                                 .slice(
                                   0,
-                                  2
+                                  2,
                                 )
                                 .map(
                                   (
-                                    appointment
+                                    appointment,
                                   ) => (
-
                                     <span
                                       key={
                                         appointment.id
                                       }
                                       className="calendar-appointment"
                                       onClick={(
-                                        event
+                                        event,
                                       ) => {
-
                                         event.stopPropagation();
 
                                         openAppointmentDetails(
-                                          appointment
+                                          appointment,
                                         );
-
                                       }}
                                     >
 
                                       <strong>
                                         {formatTime(
-                                          appointment.start_time
+                                          appointment.start_time,
                                         )}
                                       </strong>
 
@@ -1412,48 +2326,40 @@ function PatientDashboard() {
                                       </span>
 
                                     </span>
-
-                                  )
+                                  ),
                                 )}
 
                               {dayAppointments.length >
                                 2 && (
-
                                 <small>
-
                                   +
                                   {
                                     dayAppointments.length -
                                     2
                                   }{" "}
                                   more
-
                                 </small>
-
                               )}
 
                             </div>
-
                           )}
 
                         </button>
                       );
-                    }
+                    },
                   )}
 
                 </div>
 
               </>
-
             )}
 
             {/* ==================================================
-                WEEK VIEW
+                WEEK
             ================================================== */}
 
             {calendarView ===
               "week" && (
-
               <div className="week-calendar-view">
 
                 <div className="week-calendar-grid">
@@ -1462,49 +2368,49 @@ function PatientDashboard() {
                     {
                       length: 7,
                     },
-                    (
-                      _,
-                      index
-                    ) => {
+                    (_, index) => {
+                      // Build the visible week from the selected calendar date,
+                      // not from today's system date.
+                      const referenceDate =
+                        new Date(
+                          `${selectedDate}T00:00:00`,
+                        );
 
-                      const today =
-                        new Date();
-
-                      today.setHours(
+                      referenceDate.setHours(
                         0,
                         0,
                         0,
-                        0
+                        0,
                       );
 
                       const sunday =
                         new Date(
-                          today
+                          referenceDate,
                         );
 
                       sunday.setDate(
-                        today.getDate() -
-                          today.getDay()
+                        referenceDate.getDate() -
+                          referenceDate.getDay(),
                       );
 
                       const date =
                         new Date(
-                          sunday
+                          sunday,
                         );
 
                       date.setDate(
                         sunday.getDate() +
-                          index
+                          index,
                       );
 
                       const dateKey =
                         getDateKey(
-                          date
+                          date,
                         );
 
                       const dayAppointments =
                         getAppointmentsForDate(
-                          date
+                          date,
                         );
 
                       const isToday =
@@ -1513,12 +2419,14 @@ function PatientDashboard() {
 
                       return (
                         <div
-                          key={
-                            dateKey
-                          }
+                          key={dateKey}
                           className={`week-day-column ${
                             isToday
                               ? "today"
+                              : ""
+                          } ${
+                            dateKey === selectedDate
+                              ? "selected-day"
                               : ""
                           }`}
                         >
@@ -1526,45 +2434,42 @@ function PatientDashboard() {
                           <button
                             type="button"
                             className="week-day-header"
+                            aria-current={
+                              dateKey === selectedDate
+                                ? "date"
+                                : undefined
+                            }
                             onClick={() =>
-                              openDayView(
-                                date
-                              )
+                              openDayView(dateKey)
                             }
                           >
-
                             <span>
                               {date.toLocaleDateString(
                                 "en-US",
                                 {
                                   weekday:
                                     "short",
-                                }
+                                },
                               )}
                             </span>
 
                             <strong>
                               {date.getDate()}
                             </strong>
-
                           </button>
 
                           <div className="week-day-body">
 
                             {dayAppointments.length ===
                             0 ? (
-
                               <div className="week-no-appointment">
                                 No appointments
                               </div>
-
                             ) : (
-
                               dayAppointments.map(
                                 (
-                                  appointment
+                                  appointment,
                                 ) => (
-
                                   <button
                                     type="button"
                                     key={
@@ -1573,14 +2478,13 @@ function PatientDashboard() {
                                     className="week-calendar-appointment"
                                     onClick={() =>
                                       openAppointmentDetails(
-                                        appointment
+                                        appointment,
                                       )
                                     }
                                   >
-
                                     <strong>
                                       {formatTime(
-                                        appointment.start_time
+                                        appointment.start_time,
                                       )}
                                     </strong>
 
@@ -1595,12 +2499,9 @@ function PatientDashboard() {
                                         appointment.status
                                       }
                                     </small>
-
                                   </button>
-
-                                )
+                                ),
                               )
-
                             )}
 
                             <button
@@ -1608,7 +2509,7 @@ function PatientDashboard() {
                               className="week-book-button"
                               onClick={() =>
                                 openBooking(
-                                  dateKey
+                                  dateKey,
                                 )
                               }
                             >
@@ -1619,13 +2520,12 @@ function PatientDashboard() {
 
                         </div>
                       );
-                    }
+                    },
                   )}
 
                 </div>
 
               </div>
-
             )}
 
           </div>
@@ -1657,11 +2557,10 @@ function PatientDashboard() {
                 <button
                   type="button"
                   className="view-all-button"
-                  onClick={
-                    () =>
-                      setShowAllAppointments(
-                        true
-                      )
+                  onClick={() =>
+                    setShowAllAppointments(
+                      true,
+                    )
                   }
                 >
                   View All
@@ -1672,18 +2571,13 @@ function PatientDashboard() {
             </div>
 
             {loadingAppointments ? (
-
               <div className="upcoming-empty">
-
                 <p>
-                  Loading appointments...
+                  Loading your appointments...
                 </p>
-
               </div>
-
             ) : upcomingAppointments.length ===
               0 ? (
-
               <div className="upcoming-empty">
 
                 <div className="empty-icon">
@@ -1695,8 +2589,8 @@ function PatientDashboard() {
                 </h3>
 
                 <p>
-                  You don't have any
-                  upcoming appointments.
+                  Your upcoming visits
+                  will appear here.
                 </p>
 
                 <button
@@ -1710,21 +2604,15 @@ function PatientDashboard() {
                 </button>
 
               </div>
-
             ) : (
-
               <div className="upcoming-list">
 
                 {upcomingAppointments
-                  .slice(
-                    0,
-                    4
-                  )
+                  .slice(0, 4)
                   .map(
                     (
-                      appointment
+                      appointment,
                     ) => (
-
                       <button
                         type="button"
                         className="upcoming-appointment"
@@ -1733,7 +2621,7 @@ function PatientDashboard() {
                         }
                         onClick={() =>
                           openAppointmentDetails(
-                            appointment
+                            appointment,
                           )
                         }
                       >
@@ -1742,19 +2630,19 @@ function PatientDashboard() {
 
                           <strong>
                             {new Date(
-                              `${appointment.appointment_date}T00:00:00`
+                              `${appointment.appointment_date}T00:00:00`,
                             ).toLocaleDateString(
                               "en-US",
                               {
                                 month:
                                   "short",
-                              }
+                              },
                             )}
                           </strong>
 
                           <span>
                             {new Date(
-                              `${appointment.appointment_date}T00:00:00`
+                              `${appointment.appointment_date}T00:00:00`,
                             ).getDate()}
                           </span>
 
@@ -1770,20 +2658,20 @@ function PatientDashboard() {
 
                           <span>
                             {formatDate(
-                              appointment.appointment_date
+                              appointment.appointment_date,
                             )}
                           </span>
 
                           <span>
 
                             {formatTime(
-                              appointment.start_time
+                              appointment.start_time,
                             )}
 
                             {" - "}
 
                             {formatTime(
-                              appointment.end_time
+                              appointment.end_time,
                             )}
 
                           </span>
@@ -1797,12 +2685,10 @@ function PatientDashboard() {
                         </span>
 
                       </button>
-
-                    )
+                    ),
                   )}
 
               </div>
-
             )}
 
           </div>
@@ -1817,9 +2703,11 @@ function PatientDashboard() {
 
           <div className="section-header">
 
-            <h2>
-              Quick Actions
-            </h2>
+            <div>
+              <h2>
+                Quick Actions
+              </h2>
+            </div>
 
           </div>
 
@@ -1829,11 +2717,10 @@ function PatientDashboard() {
               type="button"
               onClick={() =>
                 navigate(
-                  "/patient/doctors"
+                  "/patient/doctors",
                 )
               }
             >
-
               <span className="quick-icon blue">
                 ♙
               </span>
@@ -1841,7 +2728,6 @@ function PatientDashboard() {
               <span>
                 Find Doctor
               </span>
-
             </button>
 
             <button
@@ -1850,7 +2736,6 @@ function PatientDashboard() {
                 openBooking()
               }
             >
-
               <span className="quick-icon green">
                 ▣
               </span>
@@ -1858,27 +2743,29 @@ function PatientDashboard() {
               <span>
                 Book Appointment
               </span>
-
             </button>
 
             <button
               type="button"
+              onClick={
+                handleUploadRecord
+              }
             >
-
               <span className="quick-icon purple">
                 ↑
               </span>
 
               <span>
-                Upload Record
+                Medical Records
               </span>
-
             </button>
 
             <button
               type="button"
+              onClick={
+                handleHealthSummary
+              }
             >
-
               <span className="quick-icon orange">
                 ▤
               </span>
@@ -1886,7 +2773,6 @@ function PatientDashboard() {
               <span>
                 Health Summary
               </span>
-
             </button>
 
           </div>
@@ -1901,18 +2787,32 @@ function PatientDashboard() {
 
           <div className="section-header">
 
-            <h2>
-              Upcoming This Week
-            </h2>
+            <div>
+
+              <h2>
+                Upcoming This Week
+              </h2>
+
+              <p className="section-meta">
+                {
+                  thisWeekAppointments.length
+                }{" "}
+                scheduled{" "}
+                {thisWeekAppointments.length ===
+                1
+                  ? "visit"
+                  : "visits"}
+              </p>
+
+            </div>
 
             <button
               type="button"
               className="view-all-button"
-              onClick={
-                () =>
-                  setShowAllAppointments(
-                    true
-                  )
+              onClick={() =>
+                setShowAllAppointments(
+                  true,
+                )
               }
             >
               View All
@@ -1922,21 +2822,17 @@ function PatientDashboard() {
 
           {thisWeekAppointments.length ===
           0 ? (
-
             <div className="week-empty">
               No appointments scheduled
               for this week.
             </div>
-
           ) : (
-
             <div className="week-appointments">
 
               {thisWeekAppointments.map(
                 (
-                  appointment
+                  appointment,
                 ) => (
-
                   <button
                     type="button"
                     className="week-appointment"
@@ -1945,11 +2841,10 @@ function PatientDashboard() {
                     }
                     onClick={() =>
                       openAppointmentDetails(
-                        appointment
+                        appointment,
                       )
                     }
                   >
-
                     <strong>
                       {
                         appointment.doctor_name
@@ -1958,31 +2853,24 @@ function PatientDashboard() {
 
                     <span>
                       {formatDate(
-                        appointment.appointment_date
+                        appointment.appointment_date,
                       )}
                     </span>
 
                     <span>
-
                       {formatTime(
-                        appointment.start_time
+                        appointment.start_time,
                       )}
-
                       {" - "}
-
                       {formatTime(
-                        appointment.end_time
+                        appointment.end_time,
                       )}
-
                     </span>
-
                   </button>
-
-                )
+                ),
               )}
 
             </div>
-
           )}
 
         </section>
@@ -1990,12 +2878,12 @@ function PatientDashboard() {
       </main>
 
       {/* ==================================================
-          DAY VIEW POPUP
+          DAY VIEW
       ================================================== */}
 
       {showDayView && (
-
         <DayView
+          key={selectedDate}
           selectedDate={
             selectedDate
           }
@@ -2021,7 +2909,6 @@ function PatientDashboard() {
             closeDayView
           }
         />
-
       )}
 
       {/* ==================================================
@@ -2029,28 +2916,21 @@ function PatientDashboard() {
       ================================================== */}
 
       {showBooking && (
-
         <div
           className="booking-modal-overlay"
-          onMouseDown={(
-            event
-          ) => {
-
+          onMouseDown={(event) => {
             if (
               event.target ===
               event.currentTarget
             ) {
               closeBooking();
             }
-
           }}
         >
 
           <div
             className="booking-modal"
-            onMouseDown={(
-              event
-            ) =>
+            onMouseDown={(event) =>
               event.stopPropagation()
             }
           >
@@ -2084,7 +2964,6 @@ function PatientDashboard() {
           </div>
 
         </div>
-
       )}
 
       {/* ==================================================
@@ -2092,28 +2971,21 @@ function PatientDashboard() {
       ================================================== */}
 
       {selectedAppointment && (
-
         <div
           className="appointment-details-modal-overlay"
-          onMouseDown={(
-            event
-          ) => {
-
+          onMouseDown={(event) => {
             if (
               event.target ===
               event.currentTarget
             ) {
               closeAppointmentDetails();
             }
-
           }}
         >
 
           <div
             className="appointment-details-modal"
-            onMouseDown={(
-              event
-            ) =>
+            onMouseDown={(event) =>
               event.stopPropagation()
             }
           >
@@ -2148,43 +3020,34 @@ function PatientDashboard() {
             <div className="appointment-details-grid">
 
               <div>
-
                 <span>
                   Date
                 </span>
 
                 <strong>
                   {formatDate(
-                    selectedAppointment.appointment_date
+                    selectedAppointment.appointment_date,
                   )}
                 </strong>
-
               </div>
 
               <div>
-
                 <span>
                   Time
                 </span>
 
                 <strong>
-
                   {formatTime(
-                    selectedAppointment.start_time
+                    selectedAppointment.start_time,
                   )}
-
                   {" - "}
-
                   {formatTime(
-                    selectedAppointment.end_time
+                    selectedAppointment.end_time,
                   )}
-
                 </strong>
-
               </div>
 
               <div>
-
                 <span>
                   Appointment Type
                 </span>
@@ -2194,11 +3057,9 @@ function PatientDashboard() {
                     selectedAppointment.appointment_type
                   }
                 </strong>
-
               </div>
 
               <div>
-
                 <span>
                   Reason
                 </span>
@@ -2209,13 +3070,11 @@ function PatientDashboard() {
                     "Not provided"
                   }
                 </strong>
-
               </div>
 
             </div>
 
             {selectedAppointment.notes && (
-
               <div className="appointment-details-notes">
 
                 <span>
@@ -2229,7 +3088,6 @@ function PatientDashboard() {
                 </p>
 
               </div>
-
             )}
 
             <div className="appointment-details-actions">
@@ -2248,16 +3106,18 @@ function PatientDashboard() {
                 type="button"
                 className="confirmation-submit"
                 onClick={() => {
-
                   const date =
                     selectedAppointment.appointment_date;
+
+                  const doctorId =
+                    selectedAppointment.doctor_id;
 
                   closeAppointmentDetails();
 
                   openBooking(
-                    date
+                    date,
+                    doctorId,
                   );
-
                 }}
               >
                 Book Another
@@ -2268,7 +3128,6 @@ function PatientDashboard() {
           </div>
 
         </div>
-
       )}
 
       {/* ==================================================
@@ -2276,30 +3135,23 @@ function PatientDashboard() {
       ================================================== */}
 
       {showAllAppointments && (
-
         <div
           className="appointments-modal-overlay"
-          onMouseDown={(
-            event
-          ) => {
-
+          onMouseDown={(event) => {
             if (
               event.target ===
               event.currentTarget
             ) {
               setShowAllAppointments(
-                false
+                false,
               );
             }
-
           }}
         >
 
           <div
             className="appointments-modal"
-            onMouseDown={(
-              event
-            ) =>
+            onMouseDown={(event) =>
               event.stopPropagation()
             }
           >
@@ -2317,16 +3169,11 @@ function PatientDashboard() {
                 </h2>
 
                 <span>
-
                   {appointments.length}{" "}
-
-                  appointment
-
-                  {appointments.length !==
+                  {appointments.length ===
                   1
-                    ? "s"
-                    : ""}
-
+                    ? "appointment"
+                    : "appointments"}
                 </span>
 
               </div>
@@ -2336,7 +3183,7 @@ function PatientDashboard() {
                 className="appointments-modal-close"
                 onClick={() =>
                   setShowAllAppointments(
-                    false
+                    false,
                   )
                 }
                 aria-label="Close appointments"
@@ -2347,14 +3194,11 @@ function PatientDashboard() {
             </div>
 
             {loadingAppointments ? (
-
               <div className="all-appointments-empty">
                 Loading appointments...
               </div>
-
             ) : appointments.length ===
               0 ? (
-
               <div className="all-appointments-empty">
 
                 <div className="all-empty-icon">
@@ -2374,22 +3218,18 @@ function PatientDashboard() {
                   type="button"
                   className="book-button"
                   onClick={() => {
-
                     setShowAllAppointments(
-                      false
+                      false,
                     );
 
                     openBooking();
-
                   }}
                 >
                   + Book New Appointment
                 </button>
 
               </div>
-
             ) : (
-
               <div className="all-appointments-list">
 
                 {appointments
@@ -2397,17 +3237,16 @@ function PatientDashboard() {
                   .sort(
                     (
                       first,
-                      second
+                      second,
                     ) =>
                       `${first.appointment_date}T${first.start_time}`.localeCompare(
-                        `${second.appointment_date}T${second.start_time}`
-                      )
+                        `${second.appointment_date}T${second.start_time}`,
+                      ),
                   )
                   .map(
                     (
-                      appointment
+                      appointment,
                     ) => (
-
                       <button
                         type="button"
                         className="all-appointment-item"
@@ -2416,7 +3255,7 @@ function PatientDashboard() {
                         }
                         onClick={() =>
                           openAppointmentDetails(
-                            appointment
+                            appointment,
                           )
                         }
                       >
@@ -2425,19 +3264,19 @@ function PatientDashboard() {
 
                           <strong>
                             {new Date(
-                              `${appointment.appointment_date}T00:00:00`
+                              `${appointment.appointment_date}T00:00:00`,
                             ).toLocaleDateString(
                               "en-US",
                               {
                                 month:
                                   "short",
-                              }
+                              },
                             )}
                           </strong>
 
                           <span>
                             {new Date(
-                              `${appointment.appointment_date}T00:00:00`
+                              `${appointment.appointment_date}T00:00:00`,
                             ).getDate()}
                           </span>
 
@@ -2453,22 +3292,18 @@ function PatientDashboard() {
 
                           <span>
                             {formatDate(
-                              appointment.appointment_date
+                              appointment.appointment_date,
                             )}
                           </span>
 
                           <span>
-
                             {formatTime(
-                              appointment.start_time
+                              appointment.start_time,
                             )}
-
                             {" - "}
-
                             {formatTime(
-                              appointment.end_time
+                              appointment.end_time,
                             )}
-
                           </span>
 
                         </div>
@@ -2480,12 +3315,10 @@ function PatientDashboard() {
                         </span>
 
                       </button>
-
-                    )
+                    ),
                   )}
 
               </div>
-
             )}
 
             <div className="appointments-modal-footer">
@@ -2495,7 +3328,7 @@ function PatientDashboard() {
                 className="confirmation-cancel"
                 onClick={() =>
                   setShowAllAppointments(
-                    false
+                    false,
                   )
                 }
               >
@@ -2506,13 +3339,11 @@ function PatientDashboard() {
                 type="button"
                 className="confirmation-submit"
                 onClick={() => {
-
                   setShowAllAppointments(
-                    false
+                    false,
                   );
 
                   openBooking();
-
                 }}
               >
                 + Book New Appointment
@@ -2523,7 +3354,991 @@ function PatientDashboard() {
           </div>
 
         </div>
+      )}
 
+      {/* ==================================================
+          DYNAMIC DASHBOARD PANELS
+      ================================================== */}
+
+      {activePanel && (
+        <div
+          className="patient-panel-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closePanel();
+            }
+          }}
+        >
+
+          <div
+            className="patient-panel"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            <button
+              type="button"
+              className="patient-panel-close"
+              onClick={closePanel}
+              aria-label="Close panel"
+            >
+              ×
+            </button>
+
+            {/* ==================================================
+                PROFILE
+            ================================================== */}
+
+            {activePanel ===
+              "profile" && (
+              <>
+
+                <p className="patient-panel-kicker">
+                  MY ACCOUNT
+                </p>
+
+                <h2>
+                  Patient Profile
+                </h2>
+
+                <p className="patient-panel-description">
+                  Your account and insurance
+                  information from your
+                  authenticated healthcare
+                  account.
+                </p>
+
+                {profileMessage && (
+                  <div className="dashboard-inline-error">
+                    <span>
+                      {profileMessage}
+                    </span>
+                  </div>
+                )}
+
+                {profileError && (
+                  <div className="dashboard-inline-error">
+                    <span>
+                      {profileError}
+                    </span>
+                  </div>
+                )}
+
+                {!editingProfile ? (
+                  <>
+
+                    <div className="profile-hero">
+
+                      <div className="profile-large-avatar">
+                        {initials}
+                      </div>
+
+                      <div>
+                        <strong>
+                          {profileName}
+                        </strong>
+
+                        <span>
+                          {profileEmail}
+                        </span>
+
+                        <small>
+                          Patient Account
+                        </small>
+                      </div>
+
+                    </div>
+
+                    <div className="patient-panel-grid">
+
+                      <div>
+                        <span>
+                          Full Name
+                        </span>
+
+                        <strong>
+                          {profileName}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Email
+                        </span>
+
+                        <strong>
+                          {profileEmail}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Date of Birth
+                        </span>
+
+                        <strong>
+                          {patient?.date_of_birth
+                            ? formatDate(
+                                patient.date_of_birth,
+                              )
+                            : "Not provided"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Gender
+                        </span>
+
+                        <strong>
+                          {patient?.gender ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Phone
+                        </span>
+
+                        <strong>
+                          {patient?.phone ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Location
+                        </span>
+
+                        <strong>
+                          {[
+                            patient?.city,
+                            patient?.state,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Insurance Provider
+                        </span>
+
+                        <strong>
+                          {patient?.insurance_provider ||
+                            "No insurance on file"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Insurance Member ID
+                        </span>
+
+                        <strong>
+                          {patient?.insurance_member_id ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Account Role
+                        </span>
+
+                        <strong>
+                          {patient?.role ||
+                            "PATIENT"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Account Status
+                        </span>
+
+                        <strong>
+                          {patient?.is_active ===
+                          false
+                            ? "Inactive"
+                            : "Active"}
+                        </strong>
+                      </div>
+
+                    </div>
+
+                    <div className="patient-panel-summary">
+
+                      <div>
+                        <strong>
+                          {upcomingCount}
+                        </strong>
+
+                        <span>
+                          Upcoming
+                        </span>
+                      </div>
+
+                      <div>
+                        <strong>
+                          {completedCount}
+                        </strong>
+
+                        <span>
+                          Completed
+                        </span>
+                      </div>
+
+                      <div>
+                        <strong>
+                          {doctorsConsulted}
+                        </strong>
+
+                        <span>
+                          Doctors
+                        </span>
+                      </div>
+
+                      <div>
+                        <strong>
+                          {cancelledCount}
+                        </strong>
+
+                        <span>
+                          Cancelled
+                        </span>
+                      </div>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="panel-primary-button"
+                      onClick={
+                        startProfileEdit
+                      }
+                    >
+                      Edit Profile
+                    </button>
+
+                  </>
+                ) : (
+                  <form
+                    className="patient-profile-edit-form"
+                    onSubmit={
+                      saveProfile
+                    }
+                  >
+
+                    <div className="profile-hero">
+
+                      <div className="profile-large-avatar">
+                        {getInitials(
+                          profileForm.name ||
+                            profileName,
+                        )}
+                      </div>
+
+                      <div>
+                        <strong>
+                          Edit your profile
+                        </strong>
+
+                        <span>
+                          Update your personal
+                          and insurance details.
+                        </span>
+                      </div>
+
+                    </div>
+
+                    <div className="patient-panel-grid">
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-name">
+                          Full Name
+                        </label>
+
+                        <input
+                          id="profile-name"
+                          type="text"
+                          value={
+                            profileForm.name
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "name",
+                              event.target.value,
+                            )
+                          }
+                          required
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-email">
+                          Email
+                        </label>
+
+                        <input
+                          id="profile-email"
+                          type="email"
+                          value={
+                            profileForm.email
+                          }
+                          disabled
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-dob">
+                          Date of Birth
+                        </label>
+
+                        <input
+                          id="profile-dob"
+                          type="date"
+                          value={
+                            profileForm.date_of_birth
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "date_of_birth",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-gender">
+                          Gender
+                        </label>
+
+                        <select
+                          id="profile-gender"
+                          value={
+                            profileForm.gender
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "gender",
+                              event.target.value,
+                            )
+                          }
+                        >
+                          <option value="">
+                            Select gender
+                          </option>
+
+                          <option value="MALE">
+                            Male
+                          </option>
+
+                          <option value="FEMALE">
+                            Female
+                          </option>
+
+                          <option value="OTHER">
+                            Other
+                          </option>
+
+                          <option value="PREFER_NOT_TO_SAY">
+                            Prefer not to say
+                          </option>
+                        </select>
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-phone">
+                          Phone
+                        </label>
+
+                        <input
+                          id="profile-phone"
+                          type="tel"
+                          value={
+                            profileForm.phone
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "phone",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-address">
+                          Address
+                        </label>
+
+                        <input
+                          id="profile-address"
+                          type="text"
+                          value={
+                            profileForm.address
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "address",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-city">
+                          City
+                        </label>
+
+                        <input
+                          id="profile-city"
+                          type="text"
+                          value={
+                            profileForm.city
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "city",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-state">
+                          State
+                        </label>
+
+                        <input
+                          id="profile-state"
+                          type="text"
+                          value={
+                            profileForm.state
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "state",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-zip">
+                          ZIP Code
+                        </label>
+
+                        <input
+                          id="profile-zip"
+                          type="text"
+                          value={
+                            profileForm.zip_code
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "zip_code",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-insurance-provider">
+                          Insurance Provider
+                        </label>
+
+                        <input
+                          id="profile-insurance-provider"
+                          type="text"
+                          placeholder="Enter insurance provider"
+                          value={
+                            profileForm.insurance_provider
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "insurance_provider",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                      <div className="profile-edit-field">
+
+                        <label htmlFor="profile-insurance-member-id">
+                          Insurance Member ID
+                        </label>
+
+                        <input
+                          id="profile-insurance-member-id"
+                          type="text"
+                          placeholder="Enter insurance member ID"
+                          value={
+                            profileForm.insurance_member_id
+                          }
+                          onChange={(event) =>
+                            updateProfileField(
+                              "insurance_member_id",
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                      </div>
+
+                    </div>
+
+                    <div className="appointment-details-actions">
+
+                      <button
+                        type="button"
+                        className="confirmation-cancel"
+                        onClick={
+                          cancelProfileEdit
+                        }
+                        disabled={
+                          savingProfile
+                        }
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="confirmation-submit"
+                        disabled={
+                          savingProfile
+                        }
+                      >
+                        {savingProfile
+                          ? "Saving..."
+                          : "Save Profile"}
+                      </button>
+
+                    </div>
+
+                  </form>
+                )}
+
+              </>
+            )}
+
+            {/* ==================================================
+                RECORDS
+            ================================================== */}
+
+            {activePanel ===
+              "records" && (
+              <>
+
+                <p className="patient-panel-kicker">
+                  HEALTHCARE
+                </p>
+
+                <h2>
+                  Medical Records
+                </h2>
+
+                <p className="patient-panel-description">
+                  Your medical records area
+                  is ready for document
+                  integration.
+                </p>
+
+                <div className="records-status-card">
+
+                  <div className="records-status-icon">
+                    ▤
+                  </div>
+
+                  <div>
+
+                    <strong>
+                      No records connected
+                    </strong>
+
+                    <span>
+                      There is currently no
+                      medical-record document
+                      endpoint connected to
+                      this dashboard.
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <div className="records-info-grid">
+
+                  <div>
+                    <strong>
+                      {appointments.length}
+                    </strong>
+
+                    <span>
+                      Appointment history
+                    </span>
+                  </div>
+
+                  <div>
+                    <strong>
+                      {doctorsConsulted}
+                    </strong>
+
+                    <span>
+                      Doctors consulted
+                    </span>
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="panel-primary-button"
+                  onClick={() => {
+                    closePanel();
+
+                    navigate(
+                      "/patient/doctors",
+                    );
+                  }}
+                >
+                  Find a Doctor
+                </button>
+
+              </>
+            )}
+
+            {/* ==================================================
+                SETTINGS
+            ================================================== */}
+
+            {activePanel ===
+              "settings" && (
+              <>
+
+                <p className="patient-panel-kicker">
+                  PREFERENCES
+                </p>
+
+                <h2>
+                  Dashboard Settings
+                </h2>
+
+                <p className="patient-panel-description">
+                  Control how your patient
+                  dashboard behaves.
+                </p>
+
+                <div className="setting-row">
+
+                  <div>
+
+                    <strong>
+                      Automatic refresh
+                    </strong>
+
+                    <span>
+                      Refresh appointments
+                      every 30 seconds while
+                      this dashboard is open.
+                    </span>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      autoRefresh
+                        ? "enabled"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setAutoRefresh(
+                        (value) =>
+                          !value,
+                      )
+                    }
+                    aria-pressed={
+                      autoRefresh
+                    }
+                  >
+                    <span />
+                  </button>
+
+                </div>
+
+                <div className="settings-info-card">
+
+                  <strong>
+                    Live dashboard
+                  </strong>
+
+                  <span>
+                    Appointment data is loaded
+                    from your authenticated
+                    patient account.
+                  </span>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="panel-primary-button"
+                  onClick={() =>
+                    void handleRefresh()
+                  }
+                >
+                  Refresh My Dashboard
+                </button>
+
+              </>
+            )}
+
+            {/* ==================================================
+                HELP
+            ================================================== */}
+
+            {activePanel ===
+              "help" && (
+              <>
+
+                <p className="patient-panel-kicker">
+                  SUPPORT
+                </p>
+
+                <h2>
+                  Help & Support
+                </h2>
+
+                <p className="patient-panel-description">
+                  Everything currently
+                  available from your patient
+                  dashboard.
+                </p>
+
+                <div className="help-list">
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePanel();
+
+                      navigate(
+                        "/patient/doctors",
+                      );
+                    }}
+                  >
+                    <strong>
+                      Find a Doctor
+                    </strong>
+
+                    <span>
+                      Browse available doctors
+                      and start appointment
+                      booking.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePanel();
+
+                      openBooking();
+                    }}
+                  >
+                    <strong>
+                      Book Appointment
+                    </strong>
+
+                    <span>
+                      Select a doctor, date
+                      and available time slot.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePanel();
+
+                      setShowAllAppointments(
+                        true,
+                      );
+                    }}
+                  >
+                    <strong>
+                      View Appointments
+                    </strong>
+
+                    <span>
+                      Review your complete
+                      appointment history.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePanel();
+
+                      openTodayDayView();
+                    }}
+                  >
+                    <strong>
+                      Open Day View
+                    </strong>
+
+                    <span>
+                      See today's appointment
+                      schedule.
+                    </span>
+                  </button>
+
+                </div>
+
+              </>
+            )}
+
+            {/* ==================================================
+                NOTIFICATIONS
+            ================================================== */}
+
+            {activePanel ===
+              "notifications" && (
+              <>
+
+                <p className="patient-panel-kicker">
+                  UPDATES
+                </p>
+
+                <h2>
+                  Notifications
+                </h2>
+
+                <p className="patient-panel-description">
+                  Appointment updates generated
+                  from your current schedule.
+                </p>
+
+                {notificationAppointments.length ===
+                0 ? (
+                  <div className="notification-empty">
+
+                    <div>
+                      ✓
+                    </div>
+
+                    <strong>
+                      You're all caught up
+                    </strong>
+
+                    <span>
+                      There are no active
+                      appointment notifications.
+                    </span>
+
+                  </div>
+                ) : (
+                  <div className="notification-list">
+
+                    {notificationAppointments.map(
+                      (
+                        appointment,
+                      ) => (
+                        <button
+                          type="button"
+                          key={
+                            appointment.id
+                          }
+                          onClick={() => {
+                            closePanel();
+
+                            openAppointmentDetails(
+                              appointment,
+                            );
+                          }}
+                        >
+
+                          <div className="notification-item-icon">
+                            ▣
+                          </div>
+
+                          <div>
+
+                            <strong>
+                              {
+                                appointment.doctor_name
+                              }
+                            </strong>
+
+                            <span>
+                              {formatDate(
+                                appointment.appointment_date,
+                              )}
+                              {" · "}
+                              {formatTime(
+                                appointment.start_time,
+                              )}
+                            </span>
+
+                            <small>
+                              {
+                                appointment.status
+                              }
+                            </small>
+
+                          </div>
+
+                        </button>
+                      ),
+                    )}
+
+                  </div>
+                )}
+
+              </>
+            )}
+
+          </div>
+
+        </div>
       )}
 
     </div>

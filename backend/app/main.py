@@ -9,6 +9,7 @@ from app.api.protected import router as protected_router
 from app.api.appointments import router as appointments_router
 from app.api.referrals import router as referrals_router
 from app.api.public_calendar import router as public_calendar_router
+from app.api.public_home import router as public_home_router
 
 from app.database.connection import test_database_connection
 
@@ -42,6 +43,9 @@ app.include_router(referrals_router)
 
 # Public calendar
 app.include_router(public_calendar_router)
+
+# Public home page
+app.include_router(public_home_router)
 
 
 @app.get("/")

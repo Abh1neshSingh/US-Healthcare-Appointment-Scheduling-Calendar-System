@@ -18,6 +18,14 @@
 .public-calendar *::after {
   box-sizing: border-box;
 }
+.public-calendar button {
+  font-family: inherit;
+}
+
+.public-calendar .mini-calendar-day {
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 
 /* ============================================================
@@ -27,29 +35,47 @@
 .public-calendar-layout {
   width: 100%;
   display: grid;
-  grid-template-columns: 245px minmax(0, 1fr);
+  grid-template-columns: 286px minmax(0, 1fr);
   align-items: stretch;
 }
 
 
 /* ============================================================
-   LEFT SIDEBAR
+   LEFT SIDEBAR — REFINED DATE NAVIGATOR
    ============================================================ */
 
 .public-calendar-sidebar {
-  width: 245px;
-  min-width: 245px;
-  padding: 20px 16px;
-  border-right: 1px solid #dfe7f0;
-  background: #f8fbff;
+  width: 286px;
+  min-width: 286px;
+  padding: 22px 18px;
+  border-right: 1px solid #dce7f3;
+  background:
+    linear-gradient(180deg, #f7fbff 0%, #f3f8fd 100%);
+  color: #17365f;
 }
 
-.mini-calendar-section h3,
-.public-sidebar-overview h3 {
+.mini-calendar-section {
+  padding: 0 2px;
+}
+
+.mini-calendar-section h3 {
   margin: 0;
-  color: #16345f;
-  font-size: 14px;
-  font-weight: 700;
+  color: #102f59;
+  font-size: 15px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.mini-calendar-section h3::after {
+  content: "Choose the day you want to visit";
+  display: block;
+  margin-top: 4px;
+  color: #8293a8;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 
@@ -59,40 +85,55 @@
 
 .mini-calendar-header {
   display: grid;
-  grid-template-columns: 32px 1fr 32px;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
   align-items: center;
-  gap: 5px;
-  margin-top: 14px;
+  gap: 7px;
+  margin-top: 18px;
 }
 
 .mini-calendar-header strong {
-  color: #173760;
+  min-width: 0;
+  color: #17385f;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
+  white-space: nowrap;
 }
 
 .mini-calendar-header button {
-  width: 32px;
-  height: 30px;
+  appearance: none;
+  width: 34px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid #d3dfec;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #315477;
+  border: 1px solid #d4e1ee !important;
+  border-radius: 9px;
+  background: #ffffff !important;
+  color: #42607f;
+  font-family: inherit;
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  transition: 0.2s ease;
+  box-shadow: 0 2px 7px rgba(30, 72, 112, 0.05);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .mini-calendar-header button:hover {
-  background: #edf4fc;
-  border-color: #a9c0dc;
+  background: #eef5fd !important;
+  border-color: #aac4df !important;
   color: #1769e0;
+  transform: translateY(-1px);
+}
+
+.mini-calendar-header button:focus-visible {
+  outline: 3px solid rgba(23, 105, 224, 0.16);
+  outline-offset: 2px;
 }
 
 
@@ -102,15 +143,19 @@
 
 .mini-calendar-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  margin-top: 13px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 16px;
+  padding: 0 1px;
 }
 
 .mini-calendar-weekdays span {
   text-align: center;
-  color: #8191a7;
+  color: #8798ac;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 
@@ -120,80 +165,145 @@
 
 .mini-calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  margin-top: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px 4px;
+  margin-top: 8px;
+  padding: 2px 1px;
 }
 
 .mini-calendar-day {
+  position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 1;
   min-width: 0;
+  min-height: 31px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: #405a78;
+  border: 1px solid transparent !important;
+  border-radius: 10px;
+  background: transparent !important;
+  color: #355675;
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
   cursor: pointer;
-  transition: 0.15s ease;
+  box-shadow: none !important;
+  appearance: none;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .mini-calendar-day:hover {
-  background: #e8f1fc;
+  background: #e9f3fd !important;
+  border-color: #d2e4f5 !important;
   color: #1769e0;
+  transform: translateY(-1px);
+}
+
+.mini-calendar-day:focus-visible {
+  outline: 3px solid rgba(23, 105, 224, 0.16);
+  outline-offset: 1px;
+}
+
+.mini-calendar-number {
+  position: relative;
+  z-index: 2;
 }
 
 .mini-calendar-day.outside-month {
-  color: #aeb9c8;
+  color: #b4c0ce;
+}
+
+.mini-calendar-day.past {
+  color: #9eacbc;
+}
+
+.mini-calendar-day.weekend:not(.selected):not(.today) {
+  color: #6e829a;
 }
 
 .mini-calendar-day.today {
-  box-shadow: inset 0 0 0 1px #1769e0;
+  border-color: #1769e0 !important;
+  background: #ffffff !important;
   color: #1769e0;
+  font-weight: 800;
 }
 
 .mini-calendar-day.selected {
-  background: #1769e0;
+  border-color: #1769e0 !important;
+  background: #1769e0 !important;
   color: #ffffff;
-  box-shadow: none;
+  font-weight: 800;
+  box-shadow:
+    0 6px 14px rgba(23, 105, 224, 0.22) !important;
 }
 
 .mini-calendar-day.selected.today {
-  background: #1769e0;
+  background: #1769e0 !important;
   color: #ffffff;
 }
 
+.mini-calendar-day.selected .mini-calendar-availability {
+  background: #ffffff;
+}
+
+.mini-calendar-availability {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #14a66a;
+}
+
+.mini-calendar-day.outside-month .mini-calendar-availability {
+  opacity: 0.45;
+}
+
+
+/* ============================================================
+   SIDEBAR DIVIDER
+   ============================================================ */
+
+.mini-calendar-section {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e1eaf3;
+}
 
 /* ============================================================
    SELECTED DATE CARD
    ============================================================ */
 
 .public-selected-date-card {
-  margin-top: 20px;
-  padding: 12px;
+  margin-top: 17px;
+  padding: 13px;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  border: 1px solid #d9e5f2;
-  border-radius: 10px;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid #d9e6f3;
+  border-radius: 12px;
   background: #ffffff;
+  box-shadow: 0 5px 16px rgba(31, 72, 112, 0.055);
 }
 
 .selected-date-icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 37px;
+  height: 37px;
+  flex: 0 0 37px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #e8f1fd;
+  border: 1px solid #d4e5f6;
+  border-radius: 10px;
+  background: #edf5fe;
   color: #1769e0;
   font-size: 15px;
 }
@@ -204,11 +314,11 @@
 
 .public-selected-date-card span {
   display: block;
-  color: #8190a4;
-  font-size: 9px;
-  font-weight: 700;
+  color: #8a9aac;
+  font-size: 8px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
 }
 
 .public-selected-date-card strong {
@@ -217,14 +327,15 @@
   color: #17355e;
   font-size: 11px;
   line-height: 1.35;
+  font-weight: 800;
 }
 
 .public-selected-date-card small {
   display: block;
-  margin-top: 3px;
-  color: #7b8ca2;
+  margin-top: 4px;
+  color: #7a8da5;
   font-size: 9px;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 
@@ -233,56 +344,69 @@
    ============================================================ */
 
 .public-sidebar-overview {
-  margin-top: 20px;
+  margin-top: 19px;
+}
+
+.public-sidebar-overview h3 {
+  margin: 0;
+  color: #17355e;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .sidebar-summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 7px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 10px;
 }
 
 .sidebar-summary {
-  min-height: 62px;
-  padding: 9px 7px;
+  min-height: 66px;
+  padding: 9px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   text-align: center;
 }
 
 .sidebar-summary strong {
   font-size: 19px;
   line-height: 1;
+  font-weight: 800;
 }
 
 .sidebar-summary span {
-  margin-top: 4px;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1.2;
+  margin-top: 5px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .sidebar-summary.available {
-  background: #e5f7ed;
+  border-color: #c9ead9;
+  background: #edf9f3;
   color: #08734b;
 }
 
 .sidebar-summary.booked {
-  background: #fde8e9;
+  border-color: #f2d0d2;
+  background: #fdf1f1;
   color: #b4232a;
 }
 
 .sidebar-summary.break {
-  background: #fff2d2;
+  border-color: #f0dcae;
+  background: #fff8e7;
   color: #875800;
 }
 
 .sidebar-summary.unavailable {
-  background: #e9eef4;
+  border-color: #dbe3ec;
+  background: #f4f7fa;
   color: #566b86;
 }
 
@@ -292,23 +416,46 @@
    ============================================================ */
 
 .public-sidebar-info {
-  margin-top: 18px;
-  padding: 14px;
-  border-radius: 10px;
-  background: #173b6d;
+  position: relative;
+  overflow: hidden;
+  margin-top: 17px;
+  padding: 15px;
+  border: 1px solid #d8e6f4;
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, #173b6d 0%, #20528c 100%);
   color: #ffffff;
+  box-shadow: 0 9px 24px rgba(26, 69, 111, 0.11);
+}
+
+.public-sidebar-info::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  bottom: -38px;
+  width: 100px;
+  height: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+}
+
+.public-sidebar-info strong,
+.public-sidebar-info span {
+  position: relative;
+  z-index: 1;
 }
 
 .public-sidebar-info strong {
   display: block;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 800;
 }
 
 .public-sidebar-info span {
   display: block;
   margin-top: 7px;
-  color: #c9d8eb;
+  color: #d1e0f1;
   font-size: 9px;
   line-height: 1.5;
 }
@@ -317,6 +464,8 @@
 /* ============================================================
    RIGHT MAIN CALENDAR
    ============================================================ */
+
+
 
 .public-calendar-main {
   min-width: 0;
@@ -1331,13 +1480,13 @@
 @media (max-width: 1200px) {
 
   .public-calendar-layout {
-    grid-template-columns: 215px minmax(0, 1fr);
+    grid-template-columns: 260px minmax(0, 1fr);
   }
 
   .public-calendar-sidebar {
-    width: 215px;
-    min-width: 215px;
-    padding: 18px 13px;
+    width: 260px;
+    min-width: 260px;
+    padding: 19px 15px;
   }
 
   .public-calendar-top {
@@ -1608,4 +1757,59 @@
     padding: 25px 18px;
   }
 
+}
+
+
+/* ============================================================
+   PAST MONTH DATES
+   Historical dates remain visible/selectable, but their
+   historical availability statistics are intentionally hidden
+   by PublicCalendar.tsx.
+   ============================================================ */
+
+.public-month-day.past-day {
+  background: #fbfcfe;
+  color: #a8b5c6;
+}
+
+.public-month-day.past-day:hover {
+  background: #f7f9fc;
+}
+
+.public-month-day.past-day .month-day-number {
+  color: #a6b3c2;
+}
+
+.public-month-day.past-day.selected-day {
+  background: #f0f6ff;
+  box-shadow: inset 0 0 0 2px #1769e0;
+}
+
+.public-month-day.past-day.selected-day .month-day-number {
+  background: #1769e0;
+  color: #ffffff;
+}
+
+/* Never allow stale/historical stat pills to visually survive
+   if another stylesheet or browser state supplies them. */
+.public-month-day.past-day .month-day-stats {
+  display: none;
+}
+
+
+/* ============================================================
+   ACCESSIBLE KEYBOARD FOCUS
+   ============================================================ */
+
+.public-calendar button:focus-visible {
+  outline: 3px solid rgba(23, 105, 224, 0.20);
+  outline-offset: 2px;
+}
+
+.public-calendar .public-month-day:focus-visible,
+.public-calendar .mini-calendar-day:focus-visible,
+.public-calendar .public-week-day-header:focus-visible,
+.public-calendar .slot-status.available:focus-visible {
+  position: relative;
+  z-index: 3;
 }

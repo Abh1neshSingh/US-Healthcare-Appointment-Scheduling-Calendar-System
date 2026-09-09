@@ -1,204 +1,649 @@
 /* =========================================================
    APPOINTMENT BOOKING
+   Premium Healthcare SaaS / Patient Scheduling Experience
 ========================================================= */
 
-.appointment-booking {
-  position: relative;
-  width: 100%;
-  padding: 30px;
+.appointment-booking,
+.appointment-booking *,
+.appointment-booking *::before,
+.appointment-booking *::after {
   box-sizing: border-box;
-  background: #ffffff;
-  border-radius: 18px;
 }
 
+.appointment-booking {
+  --ab-blue: #216fe8;
+  --ab-blue-dark: #175dcc;
+  --ab-blue-soft: #edf5ff;
+  --ab-ink: #173b63;
+  --ab-text: #243b56;
+  --ab-muted: #71859a;
+  --ab-border: #dfe8f1;
+  --ab-border-strong: #ccdbe9;
+  --ab-surface: #ffffff;
+  --ab-page: #f7faff;
+  --ab-green: #15956c;
+  --ab-green-soft: #ecfaf4;
+  --ab-amber: #b87816;
+  --ab-amber-soft: #fff8e9;
+  --ab-red: #c44755;
+  --ab-red-soft: #fff2f3;
+  --ab-shadow: 0 18px 50px rgba(20, 52, 83, .08);
+  --ab-radius: 18px;
+
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 34px 36px 46px;
+  color: var(--ab-text);
+  background:
+    radial-gradient(circle at 92% 0%, rgba(33,111,232,.065), transparent 26%),
+    linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.appointment-booking button,
+.appointment-booking input,
+.appointment-booking select {
+  font: inherit;
+}
+
+.appointment-booking button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.appointment-booking button:focus-visible,
+.appointment-booking input:focus-visible,
+.appointment-booking select:focus-visible {
+  outline: 2px solid rgba(33,111,232,.4);
+  outline-offset: 2px;
+}
 
 /* =========================================================
    HEADER
 ========================================================= */
 
 .booking-header {
-  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
 }
 
+.booking-eyebrow,
 .booking-label {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #2563eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+  color: var(--ab-blue);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .14em;
+}
+
+.booking-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ab-blue);
+  box-shadow: 0 0 0 5px rgba(33,111,232,.09);
 }
 
 .booking-header h2 {
+  max-width: 760px;
   margin: 0;
-  color: #172033;
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.25;
+  color: var(--ab-ink);
+  font-size: clamp(25px, 2.4vw, 32px);
+  line-height: 1.13;
+  font-weight: 790;
+  letter-spacing: -.045em;
 }
 
-.booking-header p:not(.booking-label) {
-  margin: 8px 0 0;
-  color: #6b7280;
-  font-size: 15px;
+.booking-header p {
+  max-width: 720px;
+  margin: 9px 0 0;
+  color: var(--ab-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.booking-secure-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #dbe8f5;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #57718d;
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.booking-secure-badge span {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ab-green-soft);
+  color: var(--ab-green);
+  font-size: 9px;
+}
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.booking-progress {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 780px;
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border: 1px solid #e2ebf3;
+  border-radius: 15px;
+  background: rgba(248,251,255,.9);
+}
+
+.booking-progress-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.booking-progress-item:last-child {
+  flex: 0 0 auto;
+}
+
+.booking-progress-node {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d8e4ef;
+  border-radius: 50%;
+  background: #fff;
+  color: #8a9bae;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.booking-progress-node.active {
+  border-color: var(--ab-blue);
+  background: var(--ab-blue);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(33,111,232,.18);
+}
+
+.booking-progress-node.complete {
+  border-color: #bce5d5;
+  background: var(--ab-green-soft);
+  color: var(--ab-green);
+}
+
+.booking-progress-item > span {
+  color: #8a9bad;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.booking-progress-item > span.active {
+  color: var(--ab-blue);
+}
+
+.booking-progress-item i {
+  height: 1px;
+  flex: 1;
+  margin: 0 11px;
+  background: #dce6ef;
+}
+
+/* =========================================================
+   SECTION PANELS
+========================================================= */
+
+.booking-selection-panel,
+.coverage-panel,
+.review-panel {
+  border: 1px solid var(--ab-border);
+  border-radius: var(--ab-radius);
+  background: rgba(255,255,255,.96);
+  box-shadow: var(--ab-shadow);
+}
+
+.booking-selection-panel {
+  padding: 23px;
+}
+
+.booking-section-heading,
+.coverage-header,
+.review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.booking-section-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ab-blue);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .14em;
+}
+
+.booking-section-heading h3,
+.coverage-header h3,
+.review-header h3 {
+  margin: 0;
+  color: var(--ab-ink);
+  font-size: 17px;
+  font-weight: 780;
+  letter-spacing: -.025em;
+}
+
+.booking-section-heading p,
+.coverage-header p,
+.review-header p {
+  margin: 5px 0 0;
+  color: var(--ab-muted);
+  font-size: 9px;
   line-height: 1.5;
 }
 
+.booking-refresh {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #d8e4ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #55708b;
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.booking-refresh:hover:not(:disabled) {
+  border-color: #bcd3ec;
+  background: #f7faff;
+  color: var(--ab-blue);
+}
+
+.booking-refresh:disabled {
+  opacity: .55;
+  cursor: wait;
+}
 
 /* =========================================================
-   DOCTOR + DATE
+   SELECTION
 ========================================================= */
 
 .booking-selection {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding-bottom: 25px;
-  border-bottom: 1px solid #e5e7eb;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .booking-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  min-width: 0;
 }
 
 .booking-field label {
-  color: #263246;
-  font-size: 14px;
-  font-weight: 600;
+  display: block;
+  margin-bottom: 7px;
+  color: #536a82;
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.booking-input-shell {
+  position: relative;
+}
+
+.booking-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  z-index: 2;
+  transform: translateY(-50%);
+  color: #7890a7;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .03em;
+  pointer-events: none;
 }
 
 .booking-field select,
 .booking-field input {
   width: 100%;
-  height: 50px;
-  padding: 0 15px;
-  border: 1px solid #d7dce5;
-  border-radius: 10px;
+  min-height: 45px;
+  padding: 0 13px 0 47px;
+  border: 1px solid #d6e2ec;
+  border-radius: 11px;
   outline: none;
-  background: #ffffff;
-  color: #263246;
-  font-family: inherit;
-  font-size: 15px;
-  box-sizing: border-box;
-
+  background: #fff;
+  color: #2b435d;
+  font-size: 10px;
+  font-weight: 600;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+.booking-field select {
+  appearance: none;
+  padding-right: 37px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #7d91a5 50%),
+    linear-gradient(135deg, #7d91a5 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 19px,
+    calc(100% - 12px) 19px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.booking-field select:hover,
+.booking-field input:hover {
+  border-color: #bed2e6;
 }
 
 .booking-field select:focus,
 .booking-field input:focus {
-  border-color: #2563eb;
-
-  box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #74a7eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(33,111,232,.08);
 }
 
+.booking-context-strip {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr .8fr;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.booking-context-strip > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #e5edf4;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.booking-context-strip span,
+.booking-context-strip strong {
+  display: block;
+}
+
+.booking-context-strip span {
+  margin-bottom: 4px;
+  color: #8798aa;
+  font-size: 7px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.booking-context-strip strong {
+  overflow: hidden;
+  color: #344e69;
+  font-size: 9px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* =========================================================
-   MESSAGES
+   ALERTS
 ========================================================= */
 
-.booking-message {
-  margin-top: 18px;
-  padding: 13px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
+.booking-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 11px;
+}
+
+.booking-alert.error {
+  border: 1px solid #f0d4d8;
+  background: #fff8f8;
+  color: var(--ab-red);
+}
+
+.booking-alert.success {
+  border: 1px solid #cbe9dc;
+  background: #f4fcf8;
+  color: var(--ab-green);
+}
+
+.booking-alert-icon {
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.booking-alert strong,
+.booking-alert p {
+  display: block;
+}
+
+.booking-alert strong {
+  color: #36506a;
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.booking-alert p {
+  margin: 3px 0 0;
+  color: #71859a;
+  font-size: 9px;
   line-height: 1.45;
 }
-
-.booking-message.error {
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  color: #be123c;
-}
-
-.booking-message.success {
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
-}
-
 
 /* =========================================================
    AVAILABILITY
 ========================================================= */
 
 .availability-section {
-  margin-top: 28px;
+  margin-top: 18px;
+  padding: 23px;
+  border: 1px solid var(--ab-border);
+  border-radius: var(--ab-radius);
+  background: #fff;
+  box-shadow: var(--ab-shadow);
 }
 
 .availability-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 20px;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
 }
 
 .availability-header h3 {
   margin: 0;
-  color: #172033;
-  font-size: 21px;
-  font-weight: 700;
+  color: var(--ab-ink);
+  font-size: 17px;
+  font-weight: 780;
+  letter-spacing: -.025em;
 }
 
 .availability-header p {
-  margin: 7px 0 0;
-  color: #6b7280;
-  font-size: 14px;
+  margin: 5px 0 0;
+  color: #8395a7;
+  font-size: 9px;
 }
 
-.availability-status {
-  display: flex;
+.availability-live {
+  display: inline-flex;
   align-items: center;
-  gap: 18px;
-  color: #667085;
-  font-size: 13px;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #d7eade;
+  border-radius: 999px;
+  background: #f5fcf8;
+  color: #478269;
+  font-size: 8px;
+  font-weight: 750;
   white-space: nowrap;
 }
 
-.availability-status span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.live-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #20ae7e;
+  box-shadow: 0 0 0 4px rgba(32,174,126,.09);
+  animation: availability-pulse 2s infinite;
 }
 
+@keyframes availability-pulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(32,174,126,.08); }
+  50% { box-shadow: 0 0 0 6px rgba(32,174,126,.02); }
+}
 
 /* =========================================================
-   SUMMARY CARDS
+   SUMMARY
 ========================================================= */
 
 .availability-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 9px;
+  margin-bottom: 17px;
 }
 
 .availability-summary > div {
-  padding: 18px;
-  border: 1px solid #e2e8f0;
+  position: relative;
+  min-width: 0;
+  padding: 14px 12px;
+  border: 1px solid #e1eaf2;
   border-radius: 12px;
-  background: #f8fafc;
+  background: linear-gradient(145deg,#fbfdff,#f6faff);
   text-align: center;
 }
 
+.availability-summary > div:first-child::before,
+.availability-summary > div:nth-child(2)::before,
+.availability-summary > div.available-stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  border-radius: 0 0 4px 4px;
+  background: #cbd9e7;
+}
+
+.availability-summary > div.available-stat::before {
+  background: #35ad83;
+}
+
+.availability-summary span,
 .availability-summary strong {
   display: block;
-  margin-bottom: 5px;
-  color: #172033;
-  font-size: 24px;
-  font-weight: 700;
 }
 
 .availability-summary span {
-  color: #6b7280;
-  font-size: 13px;
+  color: #8394a7;
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
 }
 
+.availability-summary strong {
+  margin-top: 4px;
+  color: var(--ab-ink);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+/* =========================================================
+   SLOT HEADING + LEGEND
+========================================================= */
+
+.slot-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.slot-heading strong,
+.slot-heading span {
+  display: block;
+}
+
+.slot-heading strong {
+  color: #304b66;
+  font-size: 10px;
+  font-weight: 780;
+}
+
+.slot-heading > div:first-child span {
+  margin-top: 3px;
+  color: #91a0af;
+  font-size: 7px;
+}
+
+.slot-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8092a4;
+  font-size: 7px;
+  font-weight: 650;
+}
+
+.slot-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.dot.available { background: #27a87a; }
+.dot.booked { background: #d96a75; }
+.dot.blocked { background: #a9b6c2; }
 
 /* =========================================================
    TIME SLOTS
@@ -206,122 +651,209 @@
 
 .time-slots {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 13px;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 8px;
 }
 
 .time-slot {
-  min-height: 74px;
-  padding: 12px;
+  position: relative;
+  min-width: 0;
+  min-height: 67px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 6px;
+  border: 1px solid #dce6ef;
   border-radius: 11px;
-  font-family: inherit;
+  background: #fff;
+  color: #48647e;
   cursor: pointer;
-
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
+    transform .16s ease,
+    border-color .16s ease,
+    background .16s ease,
+    box-shadow .16s ease;
+}
+
+.time-slot span,
+.time-slot small {
+  display: block;
 }
 
 .time-slot span {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .time-slot small {
-  display: block;
-  font-size: 12px;
+  margin-top: 4px;
+  color: #8294a7;
+  font-size: 7px;
+  font-weight: 650;
 }
 
-
-/* Available */
-
 .time-slot.available {
-  border: 1px solid #a7f3d0;
-  background: #f0fdf4;
-  color: #047857;
+  border-color: #d4e9df;
+  background: #fbfffd;
 }
 
 .time-slot.available:hover {
-  border-color: #34d399;
+  border-color: #8ccdb3;
+  background: #f3fcf8;
+  color: #147d5d;
+  box-shadow: 0 8px 18px rgba(21,149,108,.09);
   transform: translateY(-1px);
-
-  box-shadow:
-    0 4px 12px rgba(16, 185, 129, 0.12);
 }
 
-
-/* Few */
-
 .time-slot.few {
-  border: 1px solid #fde68a;
-  background: #fffbeb;
-  color: #a16207;
+  border-color: #f0dfb5;
+  background: #fffdf7;
 }
 
 .time-slot.few:hover {
-  border-color: #f59e0b;
+  border-color: #e5bd66;
+  background: #fffaf0;
+  color: #9d6b18;
+  box-shadow: 0 8px 18px rgba(184,120,22,.08);
   transform: translateY(-1px);
-
-  box-shadow:
-    0 4px 12px rgba(245, 158, 11, 0.12);
 }
-
-
-/* Booked */
 
 .time-slot.booked {
-  border: 1px solid #fecdd3;
-  background: #fff1f2;
-  color: #be123c;
+  border-color: #efd7da;
+  background: #fff8f8;
+  color: #a7656c;
   cursor: not-allowed;
-  opacity: 0.8;
 }
 
-
-/* Selected */
+.time-slot.break,
+.time-slot.unavailable {
+  border-color: #e5eaf0;
+  background: #f7f9fb;
+  color: #9aa8b5;
+  cursor: not-allowed;
+}
 
 .time-slot.selected {
-  border: 2px solid #2563eb;
-  background: #eff6ff;
-  color: #1d4ed8;
-
+  border-color: var(--ab-blue);
+  background: linear-gradient(145deg,#edf5ff,#f8fbff);
+  color: var(--ab-blue-dark);
   box-shadow:
-    0 0 0 2px rgba(37, 99, 235, 0.08);
+    0 0 0 2px rgba(33,111,232,.08),
+    0 10px 22px rgba(33,111,232,.11);
+  transform: translateY(-1px);
 }
 
+.time-slot.selected small {
+  color: #5c87bc;
+}
+
+.time-slot b {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ab-blue);
+  color: #fff;
+  font-size: 7px;
+}
+
+.time-slot:disabled {
+  opacity: .76;
+  box-shadow: none;
+}
 
 /* =========================================================
-   LOADING
+   AVAILABILITY LOADING
 ========================================================= */
 
-.availability-loading {
-  padding: 45px 20px;
-  text-align: center;
-  color: #64748b;
-  font-size: 15px;
+.availability-loading-card {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 25px;
+  border: 1px dashed #d7e3ed;
+  border-radius: 13px;
+  background: #fbfdff;
 }
 
+.loading-spinner,
+.button-spinner {
+  border: 2px solid #dbe7f3;
+  border-top-color: var(--ab-blue);
+  border-radius: 50%;
+  animation: booking-spin .75s linear infinite;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border-color: rgba(255,255,255,.4);
+  border-top-color: #fff;
+}
+
+@keyframes booking-spin {
+  to { transform: rotate(360deg); }
+}
+
+.availability-loading-card strong,
+.availability-loading-card span {
+  display: block;
+}
+
+.availability-loading-card strong {
+  color: #3b5670;
+  font-size: 10px;
+}
+
+.availability-loading-card span {
+  margin-top: 3px;
+  color: #8b9bab;
+  font-size: 8px;
+}
 
 /* =========================================================
    NO AVAILABILITY
 ========================================================= */
 
 .no-availability {
-  margin-top: 20px;
-  padding: 20px;
-  border: 1px solid #fecdd3;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #f0d6d9;
   border-radius: 11px;
-  background: #fff1f2;
-  color: #be123c;
+  background: #fff8f8;
   text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.45;
 }
 
+.no-availability strong,
+.no-availability span {
+  display: block;
+}
+
+.no-availability strong {
+  color: #9e5059;
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.no-availability span {
+  margin-top: 4px;
+  color: #9a7a7f;
+  font-size: 8px;
+  line-height: 1.5;
+}
 
 /* =========================================================
    SELECTED APPOINTMENT
@@ -329,914 +861,1237 @@
 
 .selected-appointment {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
-
-  margin-top: 28px;
-  margin-bottom: 20px;
-
-  padding: 20px;
-
-  border: 1px solid #bfdbfe;
-  border-radius: 13px;
-
-  background: #eff6ff;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 15px;
+  padding: 16px;
+  border: 1px solid #cfe0f3;
+  border-radius: 15px;
+  background:
+    linear-gradient(135deg,#f1f7ff,#fbfdff);
+  box-shadow: 0 12px 28px rgba(33,111,232,.07);
 }
 
-.selected-appointment > div {
+.selected-appointment-main {
+  min-width: 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+}
+
+.selected-check {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--ab-blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  box-shadow: 0 6px 15px rgba(33,111,232,.17);
+}
+
+.selected-appointment-main > div:last-child {
   min-width: 0;
 }
 
+.selected-appointment span,
+.selected-appointment strong,
+.selected-appointment p {
+  display: block;
+}
+
 .selected-appointment span {
-  margin-bottom: 5px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--ab-blue);
+  font-size: 7px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
 }
 
 .selected-appointment strong {
-  color: #172033;
-  font-size: 18px;
-  line-height: 1.3;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--ab-ink);
+  font-size: 11px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .selected-appointment p {
-  margin: 5px 0 0;
-  color: #64748b;
-  font-size: 13px;
+  margin: 3px 0 0;
+  color: #70859b;
+  font-size: 8px;
+}
+
+/* =========================================================
+   PRIMARY / SECONDARY ACTIONS
+========================================================= */
+
+.primary-booking-button,
+.secondary-booking-button,
+.confirm-booking-button,
+.confirmation-cancel,
+.confirmation-submit {
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 780;
+  cursor: pointer;
+  transition:
+    transform .17s ease,
+    box-shadow .17s ease,
+    border-color .17s ease,
+    background .17s ease;
+}
+
+.primary-booking-button,
+.confirm-booking-button,
+.confirmation-submit {
+  border: 0;
+  background: linear-gradient(135deg,#2478eb,#195fcf);
+  color: #fff;
+  box-shadow: 0 7px 18px rgba(33,111,232,.18);
+}
+
+.primary-booking-button:hover:not(:disabled),
+.confirm-booking-button:hover:not(:disabled),
+.confirmation-submit:hover:not(:disabled) {
+  box-shadow: 0 10px 24px rgba(33,111,232,.24);
+  transform: translateY(-1px);
+}
+
+.primary-booking-button span,
+.confirm-booking-button span,
+.confirmation-submit span {
+  margin-left: 8px;
+}
+
+.primary-booking-button:disabled,
+.confirm-booking-button:disabled,
+.confirmation-submit:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .confirm-booking-button {
   min-width: 190px;
-  height: 46px;
-  padding: 0 20px;
+  padding: 0 17px;
+}
 
-  border: none;
+/* =========================================================
+   COVERAGE
+========================================================= */
+
+.coverage-panel {
+  margin-top: 15px;
+  padding: 23px;
+}
+
+.coverage-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8eef4;
+}
+
+.eligibility-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #dce6ef;
+  border-radius: 999px;
+  background: #fafcff;
+  color: #71859a;
+  font-size: 8px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.eligibility-pill > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a6b4c1;
+}
+
+.eligibility-pill.ready {
+  border-color: #cce9dc;
+  background: #f3fcf8;
+  color: #367c65;
+}
+
+.eligibility-pill.ready > span {
+  background: #20a97c;
+}
+
+.eligibility-pill.warning {
+  border-color: #efdfb9;
+  background: #fffaf0;
+  color: #946b25;
+}
+
+.eligibility-pill.warning > span {
+  background: #d79d32;
+}
+
+.eligibility-pill.danger {
+  border-color: #efd4d8;
+  background: #fff7f8;
+  color: #a65b64;
+}
+
+.eligibility-pill.danger > span {
+  background: #d15c68;
+}
+
+.eligibility-pill.loading {
+  color: #68809a;
+}
+
+.eligibility-pill.loading > span {
+  background: var(--ab-blue);
+  animation: availability-pulse 1.2s infinite;
+}
+
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 11px;
+  margin-top: 15px;
+}
+
+.coverage-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e1eaf2;
+  border-radius: 13px;
+  background: #fbfdff;
+}
+
+.coverage-card-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #8496a8;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+
+.coverage-card > strong {
+  display: block;
+  color: #2f4963;
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.coverage-card > small {
+  display: block;
+  margin-top: 7px;
+  color: #8a9bab;
+  font-size: 7px;
+  line-height: 1.5;
+}
+
+.coverage-loading {
+  color: #8092a4;
+  font-size: 9px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid #e8eef4;
+}
+
+.member-row span {
+  color: #8293a5;
+  font-size: 8px;
+}
+
+.member-row b {
+  color: #405b74;
+  font-size: 9px;
+  letter-spacing: .04em;
+}
+
+.coverage-card > p {
+  margin: 6px 0 11px;
+  color: #8293a5;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.coverage-choice-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.coverage-choice-group button {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dce6ef;
   border-radius: 9px;
-
-  background: #2563eb;
-  color: #ffffff;
-
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-
+  background: #fff;
+  color: #637b91;
+  font-size: 8px;
+  font-weight: 750;
   cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  transition: .16s ease;
 }
 
-.confirm-booking-button:hover {
-  background: #1d4ed8;
+.coverage-choice-group button span {
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f1f5f8;
+  color: #7890a5;
+  font-size: 8px;
 }
 
-.confirm-booking-button:active {
-  transform: scale(0.98);
+.coverage-choice-group button:hover {
+  border-color: #bfd4ea;
+  background: #f8fbff;
+  color: var(--ab-blue);
 }
 
-.confirm-booking-button:disabled {
+.coverage-choice-group button.selected {
+  border-color: #91b8e8;
+  background: #edf5ff;
+  color: var(--ab-blue-dark);
+  box-shadow: inset 0 0 0 1px rgba(33,111,232,.08);
+}
+
+.coverage-choice-group button.selected span {
+  background: var(--ab-blue);
+  color: #fff;
+}
+
+.eligibility-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid #e1eaf2;
+  border-radius: 11px;
+  background: #fbfdff;
+}
+
+.eligibility-detail-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #edf3f8;
+  color: #71869a;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.eligibility-detail.ready {
+  border-color: #d5eade;
+  background: #f7fcfa;
+}
+
+.eligibility-detail.ready .eligibility-detail-icon {
+  background: #e6f7ef;
+  color: var(--ab-green);
+}
+
+.eligibility-detail.warning {
+  border-color: #efdfbb;
+  background: #fffaf1;
+}
+
+.eligibility-detail.warning .eligibility-detail-icon {
+  background: #fff0cd;
+  color: var(--ab-amber);
+}
+
+.eligibility-detail.danger {
+  border-color: #efd7da;
+  background: #fff8f8;
+}
+
+.eligibility-detail.danger .eligibility-detail-icon {
+  background: #ffe7e9;
+  color: var(--ab-red);
+}
+
+.eligibility-detail.loading .eligibility-detail-icon {
+  color: var(--ab-blue);
+}
+
+.eligibility-detail strong,
+.eligibility-detail p {
+  display: block;
+}
+
+.eligibility-detail strong {
+  color: #405a73;
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.eligibility-detail p {
+  margin: 3px 0 0;
+  color: #7b8ea1;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.coverage-actions,
+.review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.primary-booking-button,
+.secondary-booking-button {
+  min-width: 155px;
+  padding: 0 15px;
+}
+
+.secondary-booking-button {
+  border: 1px solid #d6e2ec;
+  background: #fff;
+  color: #536c84;
+}
+
+.secondary-booking-button:hover:not(:disabled) {
+  border-color: #bcd2e8;
+  background: #f7faff;
+  color: var(--ab-blue);
+  transform: translateY(-1px);
+}
+
+.secondary-booking-button:disabled {
+  opacity: .55;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
+/* =========================================================
+   REVIEW
+========================================================= */
+
+.review-panel {
+  margin-top: 15px;
+  padding: 23px;
+}
+
+.review-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8eef4;
+}
+
+.review-ready {
+  padding: 7px 10px;
+  border: 1px solid #cde8db;
+  border-radius: 999px;
+  background: #f2fbf7;
+  color: #328267;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1.4fr) minmax(250px,.7fr);
+  gap: 11px;
+  margin-top: 15px;
+}
+
+.review-main-card,
+.review-side-card {
+  min-width: 0;
+  border: 1px solid #e1eaf2;
+  border-radius: 13px;
+  background: #fbfdff;
+}
+
+.review-main-card {
+  padding: 16px;
+}
+
+.review-doctor {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e8eef4;
+}
+
+.doctor-avatar {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d2e3f6;
+  border-radius: 13px;
+  background: linear-gradient(145deg,#e9f3ff,#f5f9ff);
+  color: var(--ab-blue);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.review-doctor span,
+.review-doctor strong,
+.review-doctor small {
+  display: block;
+}
+
+.review-doctor span {
+  color: #8798a9;
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+
+.review-doctor strong {
+  margin-top: 3px;
+  color: #2c4761;
+  font-size: 11px;
+  font-weight: 790;
+}
+
+.review-doctor small {
+  margin-top: 3px;
+  color: #8193a5;
+  font-size: 8px;
+}
+
+.review-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.review-details-grid > div {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #e6edf3;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.review-details-grid span,
+.review-details-grid strong {
+  display: block;
+}
+
+.review-details-grid span {
+  margin-bottom: 4px;
+  color: #8797a8;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.review-details-grid strong {
+  overflow-wrap: anywhere;
+  color: #344e68;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.review-side-card {
+  padding: 16px;
+}
+
+.review-side-card h4 {
+  margin: 0;
+  color: #304a64;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.review-side-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-side-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #687f96;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.review-side-card li span {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eaf8f2;
+  color: var(--ab-green);
+  font-size: 7px;
+  font-weight: 850;
+}
+
+.review-side-card p {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e8eef4;
+  color: #8999a9;
+  font-size: 7px;
+  line-height: 1.55;
+}
 
 /* =========================================================
    CONFIRMATION OVERLAY
+   Distinct final-check experience
 ========================================================= */
 
 .confirmation-overlay {
   position: fixed;
   inset: 0;
-
-  z-index: 9999;
-
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  padding: 20px;
-
-  background: rgba(15, 23, 42, 0.55);
-
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-
-  box-sizing: border-box;
-
+  padding: 22px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(33,111,232,.1), transparent 36%),
+    rgba(8,23,40,.68);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   overflow-y: auto;
 }
 
-
-/* =========================================================
-   CONFIRMATION CARD
-========================================================= */
-
 .confirmation-card {
   position: relative;
-
-  width: min(520px, 100%);
-
-  max-height: calc(100vh - 40px);
-
-  padding: 34px;
-
-  border-radius: 18px;
-
-  background: #ffffff;
-
-  box-shadow:
-    0 20px 60px rgba(15, 23, 42, 0.2);
-
-  box-sizing: border-box;
-
+  width: min(620px,100%);
+  max-height: calc(100vh - 44px);
   overflow-y: auto;
+  padding: 27px;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(33,111,232,.06), transparent 32%),
+    #fff;
+  box-shadow:
+    0 35px 100px rgba(5,18,32,.3),
+    0 8px 30px rgba(5,18,32,.12);
+  animation: confirmation-enter .22s cubic-bezier(.22,.8,.24,1) both;
+}
+
+@keyframes confirmation-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .confirmation-close {
   position: absolute;
-
-  top: 16px;
-  right: 16px;
-
-  width: 38px;
-  height: 38px;
-
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-
-  background: #ffffff;
-  color: #64748b;
-
-  font-size: 24px;
-  line-height: 1;
-
-  cursor: pointer;
-}
-
-.confirmation-close:hover {
-  background: #f8fafc;
-  color: #172033;
-}
-
-.confirmation-icon {
+  top: 14px;
+  right: 14px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  width: 52px;
-  height: 52px;
-
-  margin-bottom: 18px;
-
-  border-radius: 50%;
-
-  background: #ecfdf5;
-  color: #16a34a;
-
-  font-size: 25px;
-  font-weight: 700;
+  border: 1px solid #dbe5ee;
+  border-radius: 11px;
+  background: #fff;
+  color: #63778b;
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+  transition: .16s ease;
 }
 
-.confirmation-label {
-  margin: 0 0 7px;
+.confirmation-close:hover:not(:disabled) {
+  border-color: #bed3ea;
+  background: #f7faff;
+  color: var(--ab-blue);
+}
 
-  color: #2563eb;
+.confirmation-top {
+  padding-right: 42px;
+}
 
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.confirmation-icon {
+  width: 47px;
+  height: 47px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 13px;
+  border: 1px solid #c9e9db;
+  border-radius: 14px;
+  background: #eefaf5;
+  color: var(--ab-green);
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.confirmation-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ab-blue);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .14em;
 }
 
 .confirmation-card h3 {
   margin: 0;
-
-  color: #172033;
-
-  font-size: 25px;
-  line-height: 1.3;
+  color: var(--ab-ink);
+  font-size: 23px;
+  font-weight: 790;
+  letter-spacing: -.035em;
 }
 
-.confirmation-subtitle {
-  margin: 8px 0 24px;
+.confirmation-top > p {
+  max-width: 520px;
+  margin: 6px 0 17px;
+  color: #75899d;
+  font-size: 9px;
+  line-height: 1.55;
+}
 
-  color: #64748b;
+/* =========================================================
+   CONFIRMATION SUMMARY
+========================================================= */
 
+.confirmation-summary {
+  overflow: hidden;
+  border: 1px solid #dce7f1;
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.confirmation-summary-primary {
+  padding: 16px;
+  border-bottom: 1px solid #e3ebf2;
+  background: linear-gradient(135deg,#f1f7ff,#fbfdff);
+}
+
+.confirmation-summary-primary span,
+.confirmation-summary-primary strong,
+.confirmation-summary-primary p,
+.confirmation-summary-primary b {
+  display: block;
+}
+
+.confirmation-summary-primary span {
+  color: #8496a8;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+
+.confirmation-summary-primary strong {
+  margin-top: 5px;
+  color: #294660;
   font-size: 14px;
+  font-weight: 800;
+}
+
+.confirmation-summary-primary p {
+  margin: 4px 0 0;
+  color: #72869a;
+  font-size: 9px;
+}
+
+.confirmation-summary-primary b {
+  margin-top: 4px;
+  color: var(--ab-blue);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.confirmation-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+
+.confirmation-summary-grid > div {
+  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid #e6edf3;
+  border-bottom: 1px solid #e6edf3;
+}
+
+.confirmation-summary-grid > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.confirmation-summary-grid > div:nth-last-child(-n+2) {
+  border-bottom: 0;
+}
+
+.confirmation-summary-grid span,
+.confirmation-summary-grid strong {
+  display: block;
+}
+
+.confirmation-summary-grid span {
+  margin-bottom: 4px;
+  color: #8a9aaa;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.confirmation-summary-grid strong {
+  overflow-wrap: anywhere;
+  color: #3b556e;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.confirmation-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid #e0e9f1;
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+
+.confirmation-note > span {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e9f2fb;
+  color: var(--ab-blue);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.confirmation-note p {
+  margin: 0;
+  color: #7d90a3;
+  font-size: 7px;
   line-height: 1.5;
 }
 
-
-/* =========================================================
-   CONFIRMATION DETAILS
-========================================================= */
-
-.confirmation-details {
-  display: flex;
-  flex-direction: column;
-
-  margin-bottom: 25px;
-
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-
-  overflow: hidden;
-}
-
-.confirmation-details > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  gap: 20px;
-
-  padding: 14px 16px;
-
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.confirmation-details > div:last-child {
-  border-bottom: none;
-}
-
-.confirmation-details span {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.confirmation-details strong {
-  color: #172033;
-  font-size: 14px;
-  text-align: right;
-}
-
-
-/* =========================================================
-   CONFIRMATION ACTIONS
-========================================================= */
-
 .confirmation-actions {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 12px;
+  grid-template-columns: minmax(130px,.65fr) minmax(190px,1.35fr);
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .confirmation-cancel,
 .confirmation-submit {
-  height: 48px;
-
-  border-radius: 9px;
-
-  font-family: inherit;
-
-  font-size: 14px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition: 0.2s ease;
+  min-height: 44px;
+  padding: 0 15px;
 }
 
 .confirmation-cancel {
-  border: 1px solid #d7dce5;
-  background: #ffffff;
-  color: #475569;
+  border: 1px solid #d6e1eb;
+  background: #fff;
+  color: #526b83;
 }
 
-.confirmation-cancel:hover {
-  background: #f8fafc;
+.confirmation-cancel:hover:not(:disabled) {
+  border-color: #bdd2e8;
+  background: #f7faff;
+  color: var(--ab-blue);
+  transform: translateY(-1px);
 }
 
 .confirmation-submit {
-  border: none;
-  background: #2563eb;
-  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
-
-.confirmation-submit:hover {
-  background: #1d4ed8;
-}
-
-.confirmation-cancel:disabled,
-.confirmation-submit:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 
 /* =========================================================
    TABLET
 ========================================================= */
 
-@media (max-width: 900px) {
-
+@media (max-width: 1100px) {
   .appointment-booking {
-    padding: 24px;
+    padding: 27px 28px 40px;
+  }
+
+  .time-slots {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+
+  .review-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .booking-header {
+    gap: 15px;
   }
 
   .booking-header h2 {
     font-size: 25px;
   }
 
-  .time-slots {
-    grid-template-columns: repeat(3, 1fr);
+  .booking-selection {
+    grid-template-columns: 1fr;
   }
 
-  .availability-status {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    white-space: normal;
-    gap: 8px 14px;
+  .booking-context-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-header {
+    flex-direction: column;
+  }
+
+  .availability-live {
+    align-self: flex-start;
+  }
+
+  .coverage-grid {
+    grid-template-columns: 1fr;
   }
 }
-
 
 /* =========================================================
    MOBILE
 ========================================================= */
 
 @media (max-width: 700px) {
-
   .appointment-booking {
-    width: 100%;
-
-    padding: 20px 16px;
-
-    border-radius: 14px;
-
-    /*
-      Extra bottom space so the last content
-      is not hidden behind PatientDashboard nav.
-    */
-    padding-bottom: 120px;
+    padding: 21px 16px 130px;
+    background:
+      radial-gradient(circle at 95% 0%, rgba(33,111,232,.055), transparent 30%),
+      #fff;
   }
-
-
-  /* -------------------------------------------------------
-     HEADER
-  ------------------------------------------------------- */
 
   .booking-header {
-    margin-bottom: 22px;
+    display: block;
+    margin-bottom: 17px;
   }
 
-  .booking-label {
-    margin-bottom: 6px;
-    font-size: 11px;
+  .booking-secure-badge {
+    width: fit-content;
+    margin-top: 12px;
   }
 
   .booking-header h2 {
-    font-size: 23px;
-    line-height: 1.25;
+    font-size: 22px;
   }
 
-  .booking-header p:not(.booking-label) {
-    margin-top: 7px;
-    font-size: 13px;
-    line-height: 1.5;
+  .booking-header p {
+    font-size: 10px;
   }
 
+  .booking-progress {
+    margin-bottom: 15px;
+    padding: 9px;
+  }
 
-  /* -------------------------------------------------------
-     DOCTOR + DATE
-  ------------------------------------------------------- */
+  .booking-progress-node {
+    width: 25px;
+    height: 25px;
+    flex-basis: 25px;
+    font-size: 8px;
+  }
+
+  .booking-progress-item {
+    gap: 5px;
+  }
+
+  .booking-progress-item > span {
+    font-size: 7px;
+  }
+
+  .booking-progress-item i {
+    margin: 0 5px;
+  }
+
+  .booking-selection-panel,
+  .availability-section,
+  .coverage-panel,
+  .review-panel {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .booking-section-heading,
+  .coverage-header,
+  .review-header {
+    gap: 10px;
+  }
+
+  .booking-section-heading h3,
+  .coverage-header h3,
+  .review-header h3,
+  .availability-header h3 {
+    font-size: 15px;
+  }
+
+  .booking-section-heading p,
+  .coverage-header p,
+  .review-header p {
+    font-size: 8px;
+  }
+
+  .booking-refresh {
+    min-height: 30px;
+    font-size: 8px;
+  }
 
   .booking-selection {
-    grid-template-columns: 1fr;
-
-    gap: 15px;
-
-    padding-bottom: 20px;
-  }
-
-  .booking-field {
-    gap: 7px;
+    gap: 11px;
+    margin-top: 14px;
   }
 
   .booking-field label {
-    font-size: 13px;
+    font-size: 8px;
   }
 
   .booking-field select,
   .booking-field input {
-    height: 48px;
-
-    padding: 0 13px;
-
-    /*
-      Prevent iOS Safari auto zoom.
-    */
+    min-height: 46px;
     font-size: 16px;
-
-    border-radius: 9px;
+    border-radius: 10px;
   }
 
-
-  /* -------------------------------------------------------
-     MESSAGES
-  ------------------------------------------------------- */
-
-  .booking-message {
-    margin-top: 15px;
-
-    padding: 11px 13px;
-
-    font-size: 13px;
+  .booking-context-strip {
+    gap: 6px;
+    margin-top: 9px;
   }
 
+  .booking-context-strip > div {
+    padding: 9px 10px;
+  }
 
-  /* -------------------------------------------------------
-     AVAILABILITY
-  ------------------------------------------------------- */
+  .booking-context-strip span {
+    font-size: 6px;
+  }
+
+  .booking-context-strip strong {
+    font-size: 8px;
+  }
+
+  .booking-alert {
+    padding: 10px;
+  }
+
+  .booking-alert strong {
+    font-size: 8px;
+  }
+
+  .booking-alert p {
+    font-size: 8px;
+  }
 
   .availability-section {
-    margin-top: 22px;
+    margin-top: 11px;
   }
 
   .availability-header {
-    flex-direction: column;
-
-    gap: 13px;
-
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
-  .availability-header h3 {
-    font-size: 19px;
+  .availability-live {
+    font-size: 7px;
   }
-
-  .availability-header p {
-    margin-top: 5px;
-
-    font-size: 12px;
-  }
-
-  .availability-status {
-    width: 100%;
-
-    display: flex;
-    flex-wrap: wrap;
-
-    justify-content: flex-start;
-
-    gap: 7px 13px;
-
-    font-size: 11px;
-
-    white-space: normal;
-  }
-
-
-  /* -------------------------------------------------------
-     SUMMARY
-  ------------------------------------------------------- */
-
-  .availability-summary {
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 8px;
-
-    margin-bottom: 16px;
-  }
-
-  .availability-summary > div {
-    padding: 12px 8px;
-
-    border-radius: 10px;
-
-    text-align: center;
-  }
-
-  .availability-summary strong {
-    margin-bottom: 3px;
-
-    font-size: 20px;
-  }
-
-  .availability-summary span {
-    font-size: 10px;
-  }
-
-
-  /* -------------------------------------------------------
-     TIME SLOTS
-  ------------------------------------------------------- */
-
-  .time-slots {
-    grid-template-columns: repeat(2, 1fr);
-
-    gap: 9px;
-  }
-
-  .time-slot {
-    min-height: 65px;
-
-    padding: 10px 8px;
-
-    border-radius: 9px;
-  }
-
-  .time-slot span {
-    margin-bottom: 4px;
-
-    font-size: 14px;
-  }
-
-  .time-slot small {
-    font-size: 10px;
-  }
-
-
-  /* -------------------------------------------------------
-     LOADING
-  ------------------------------------------------------- */
-
-  .availability-loading {
-    padding: 35px 15px;
-
-    font-size: 13px;
-  }
-
-
-  /* -------------------------------------------------------
-     NO AVAILABILITY
-  ------------------------------------------------------- */
-
-  .no-availability {
-    margin-top: 15px;
-
-    padding: 15px 12px;
-
-    font-size: 12px;
-  }
-
-
-  /* =======================================================
-     SELECTED APPOINTMENT
-     
-     IMPORTANT:
-     This becomes STICKY on mobile.
-     It stays above the PatientDashboard
-     bottom navigation.
-  ======================================================= */
-
-  .selected-appointment {
-    position: sticky;
-
-    /*
-      Patient dashboard bottom navigation
-      is approximately 75-85px high.
-    */
-    bottom: calc(88px + env(safe-area-inset-bottom));
-
-    z-index: 500;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 12px;
-
-    margin-top: 20px;
-
-    margin-bottom: 20px;
-
-    padding: 14px;
-
-    border: 1px solid #bfdbfe;
-
-    border-radius: 14px;
-
-    background: rgba(239, 246, 255, 0.98);
-
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    box-shadow:
-      0 8px 25px rgba(15, 23, 42, 0.14);
-
-    box-sizing: border-box;
-  }
-
-  .selected-appointment > div {
-    min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-  }
-
-  .selected-appointment span {
-    margin-bottom: 3px;
-
-    color: #2563eb;
-
-    font-size: 10px;
-
-    font-weight: 700;
-  }
-
-  .selected-appointment strong {
-    color: #172033;
-
-    font-size: 16px;
-
-    line-height: 1.3;
-
-    overflow-wrap: anywhere;
-  }
-
-  .selected-appointment p {
-    margin: 4px 0 0;
-
-    color: #64748b;
-
-    font-size: 12px;
-
-    line-height: 1.4;
-  }
-
-  .confirm-booking-button {
-    width: 100%;
-
-    min-width: 0;
-
-    height: 48px;
-
-    padding: 0 16px;
-
-    border: none;
-
-    border-radius: 10px;
-
-    background: #2563eb;
-
-    color: #ffffff;
-
-    font-family: inherit;
-
-    font-size: 14px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    box-shadow:
-      0 4px 12px rgba(37, 99, 235, 0.22);
-  }
-
-  .confirm-booking-button:hover {
-    background: #1d4ed8;
-  }
-
-  .confirm-booking-button:active {
-    transform: scale(0.98);
-  }
-
-
-  /* =======================================================
-     CONFIRMATION OVERLAY
-  ======================================================= */
-
-  .confirmation-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 10000;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 15px;
-
-    overflow-y: auto;
-
-    -webkit-overflow-scrolling: touch;
-
-    box-sizing: border-box;
-  }
-
-
-  /* =======================================================
-     CONFIRMATION CARD
-  ======================================================= */
-
-  .confirmation-card {
-    width: 100%;
-
-    max-width: 430px;
-
-    max-height: calc(100svh - 30px);
-
-    padding: 25px 18px 20px;
-
-    border-radius: 16px;
-
-    overflow-y: auto;
-
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .confirmation-close {
-    top: 12px;
-
-    right: 12px;
-
-    width: 34px;
-
-    height: 34px;
-
-    font-size: 21px;
-  }
-
-  .confirmation-icon {
-    width: 46px;
-
-    height: 46px;
-
-    margin-bottom: 14px;
-
-    font-size: 21px;
-  }
-
-  .confirmation-label {
-    margin-bottom: 5px;
-
-    font-size: 10px;
-  }
-
-  .confirmation-card h3 {
-    padding-right: 30px;
-
-    font-size: 21px;
-
-    line-height: 1.3;
-  }
-
-  .confirmation-subtitle {
-    margin: 7px 0 18px;
-
-    font-size: 12px;
-  }
-
-
-  /* -------------------------------------------------------
-     CONFIRMATION DETAILS
-  ------------------------------------------------------- */
-
-  .confirmation-details {
-    margin-bottom: 18px;
-
-    border-radius: 10px;
-  }
-
-  .confirmation-details > div {
-    padding: 12px 13px;
-  }
-
-  .confirmation-details span {
-    font-size: 11px;
-  }
-
-  .confirmation-details strong {
-    max-width: 60%;
-
-    font-size: 12px;
-
-    overflow-wrap: anywhere;
-  }
-
-
-  /* -------------------------------------------------------
-     CONFIRMATION BUTTONS
-  ------------------------------------------------------- */
-
-  .confirmation-actions {
-    grid-template-columns: 1fr 1fr;
-
-    gap: 9px;
-  }
-
-  .confirmation-cancel,
-  .confirmation-submit {
-    min-height: 46px;
-
-    height: 46px;
-
-    font-size: 12px;
-
-    border-radius: 8px;
-  }
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-   iPhone SE / 360px
-========================================================= */
-
-@media (max-width: 380px) {
-
-  .appointment-booking {
-    padding: 18px 13px 115px;
-  }
-
-  .booking-header h2 {
-    font-size: 21px;
-  }
-
-  .booking-header p:not(.booking-label) {
-    font-size: 12px;
-  }
-
-
-  /* Summary */
 
   .availability-summary {
     gap: 6px;
+    margin-bottom: 13px;
   }
 
   .availability-summary > div {
-    padding: 10px 5px;
-  }
-
-  .availability-summary strong {
-    font-size: 18px;
+    padding: 11px 6px;
   }
 
   .availability-summary span {
-    font-size: 9px;
+    font-size: 6px;
   }
 
+  .availability-summary strong {
+    font-size: 19px;
+  }
 
-  /* Slots */
+  .slot-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 8px;
+  }
+
+  .slot-legend {
+    gap: 8px;
+    font-size: 6px;
+  }
 
   .time-slots {
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 7px;
   }
 
   .time-slot {
-    min-height: 62px;
-
-    padding: 9px 6px;
+    min-height: 61px;
+    border-radius: 9px;
   }
 
   .time-slot span {
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .time-slot small {
-    font-size: 9px;
+    font-size: 7px;
   }
 
-
-  /* Sticky selected appointment */
-
   .selected-appointment {
-    bottom: calc(82px + env(safe-area-inset-bottom));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 11px;
+    padding: 13px;
+    border-radius: 13px;
+  }
 
-    margin-top: 16px;
+  .selected-appointment-main {
+    align-items: flex-start;
+  }
 
-    margin-bottom: 16px;
-
-    padding: 12px;
-
-    border-radius: 12px;
+  .selected-check {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
   }
 
   .selected-appointment strong {
-    font-size: 15px;
+    font-size: 10px;
   }
 
   .selected-appointment p {
-    font-size: 11px;
+    font-size: 7px;
   }
 
   .confirm-booking-button {
-    height: 46px;
-
-    font-size: 13px;
+    width: 100%;
+    min-width: 0;
+    min-height: 45px;
   }
 
+  .coverage-grid {
+    gap: 7px;
+    margin-top: 11px;
+  }
 
-  /* Confirmation */
+  .coverage-card {
+    padding: 12px;
+  }
 
-  .confirmation-overlay {
+  .coverage-card > strong {
+    font-size: 10px;
+  }
+
+  .coverage-choice-group {
+    gap: 6px;
+  }
+
+  .coverage-choice-group button {
+    min-height: 39px;
+    font-size: 7px;
+  }
+
+  .eligibility-detail {
     padding: 10px;
   }
 
-  .confirmation-card {
-    max-height: calc(100svh - 20px);
+  .coverage-actions,
+  .review-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 
-    padding: 23px 15px 17px;
+  .primary-booking-button,
+  .secondary-booking-button {
+    width: 100%;
+  }
+
+  .review-layout {
+    gap: 8px;
+  }
+
+  .review-main-card,
+  .review-side-card {
+    padding: 12px;
+  }
+
+  .review-details-grid {
+    gap: 6px;
+  }
+
+  .review-details-grid > div {
+    padding: 9px;
+  }
+
+  .review-ready {
+    font-size: 6px;
+  }
+
+  .confirmation-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .confirmation-card {
+    width: 100%;
+    max-height: 94dvh;
+    padding: 22px 16px 18px;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .confirmation-card h3 {
+    font-size: 21px;
+  }
+
+  .confirmation-top > p {
+    font-size: 8px;
+  }
+
+  .confirmation-summary-grid > div {
+    padding: 10px;
   }
 
   .confirmation-actions {
@@ -1246,102 +2101,423 @@
   .confirmation-cancel,
   .confirmation-submit {
     width: 100%;
+    min-height: 45px;
   }
 }
 
-
 /* =========================================================
-   VERY SMALL PHONE
+   SMALL PHONES
 ========================================================= */
 
-@media (max-width: 330px) {
-
+@media (max-width: 380px) {
   .appointment-booking {
-    padding: 16px 11px 110px;
+    padding: 18px 12px 120px;
   }
 
   .booking-header h2 {
     font-size: 20px;
   }
 
-  .booking-selection {
-    gap: 12px;
+  .booking-progress-item > span {
+    display: none;
   }
 
-  .availability-header h3 {
-    font-size: 18px;
+  .booking-progress-item {
+    justify-content: center;
   }
 
-  .availability-status {
-    font-size: 10px;
-
-    gap: 6px 10px;
+  .booking-progress-item i {
+    margin: 0 7px;
   }
 
   .availability-summary strong {
     font-size: 17px;
   }
 
+  .time-slot {
+    min-height: 59px;
+  }
+
+  .confirmation-card {
+    max-height: 95dvh;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 330px) {
+  .appointment-booking {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
   .time-slots {
     grid-template-columns: 1fr;
   }
 
-  .selected-appointment {
-    bottom: calc(78px + env(safe-area-inset-bottom));
+  .availability-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .coverage-choice-group {
+    grid-template-columns: 1fr;
   }
 }
 
-
 /* =========================================================
-   TOUCH DEVICES
+   TOUCH
 ========================================================= */
 
 @media (hover: none) and (pointer: coarse) {
-
   .time-slot {
-    min-height: 68px;
+    min-height: 67px;
   }
 
   .confirm-booking-button,
+  .primary-booking-button,
+  .secondary-booking-button,
   .confirmation-cancel,
   .confirmation-submit {
     min-height: 46px;
   }
 }
 
-
-/* =========================================================
-   IOS / SAFARI
-========================================================= */
-
-@supports (-webkit-touch-callout: none) {
-
-  .booking-field input,
-  .booking-field select {
-    font-size: 16px;
-  }
-
-  .confirmation-overlay {
-    min-height: -webkit-fill-available;
-  }
-
-  .selected-appointment {
-    bottom: calc(88px + env(safe-area-inset-bottom));
-  }
-}
-
-
 /* =========================================================
    REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
-  .time-slot,
-  .confirm-booking-button,
-  .confirmation-close,
-  .confirmation-cancel,
-  .confirmation-submit {
-    transition: none;
+  .appointment-booking *,
+  .appointment-booking *::before,
+  .appointment-booking *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
+}
+
+/* =========================================================
+   SINGLE-STEP BOOKING EXPERIENCE
+   No internal scrolling: only the active workflow step is shown.
+========================================================= */
+
+.booking-step-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border: 1px solid #dbe7f2;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  box-shadow: 0 5px 18px rgba(15, 38, 63, .05);
+}
+
+.booking-step-context-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.booking-context-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #eaf2ff;
+  color: var(--ab-blue);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.booking-step-context-main > div:last-child {
+  min-width: 0;
+}
+
+.booking-step-context-main span,
+.booking-step-context-main p,
+.booking-step-context-main strong {
+  display: block;
+}
+
+.booking-step-context-main span {
+  margin-bottom: 3px;
+  color: var(--ab-blue);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.booking-step-context-main strong {
+  overflow: hidden;
+  color: var(--ab-ink);
+  font-size: 13px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-step-context-main p {
+  margin: 3px 0 0;
+  color: var(--ab-muted);
+  font-size: 10px;
+}
+
+.booking-edit-selection {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #d7e3ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #526b83;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.booking-edit-selection:hover:not(:disabled) {
+  border-color: #b9d1eb;
+  background: #f7faff;
+  color: var(--ab-blue);
+}
+
+.booking-schedule-card {
+  min-width: 0;
+}
+
+.schedule-meter {
+  width: 100%;
+  height: 6px;
+  margin: 11px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+.schedule-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ab-blue);
+  transition: width .25s ease;
+}
+
+.schedule-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.schedule-meta span,
+.schedule-meta b {
+  color: #71859a;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+.schedule-meta b {
+  color: var(--ab-blue);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.coverage-trust-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 13px;
+  padding: 9px 11px;
+  border: 1px solid #e0eaf3;
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+
+.coverage-trust-note > span {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8f1fb;
+  color: var(--ab-blue);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.coverage-trust-note p {
+  margin: 0;
+  color: #71859a;
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.review-patient-strip {
+  display: grid;
+  grid-template-columns: 1.15fr 1.35fr .9fr;
+  gap: 9px;
+  margin: 0 0 12px;
+}
+
+.review-patient-strip > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e0e9f2;
+  border-radius: 11px;
+  background: #fbfdff;
+}
+
+.review-patient-strip span,
+.review-patient-strip strong {
+  display: block;
+}
+
+.review-patient-strip span {
+  margin-bottom: 4px;
+  color: #8092a5;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.review-patient-strip strong {
+  overflow: hidden;
+  color: var(--ab-ink);
+  font-size: 10px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confirmation-next-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.confirmation-next-steps > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #e0e8f0;
+  border-radius: 9px;
+  background: #fbfdff;
+}
+
+.confirmation-next-steps span {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #eef4fb;
+  color: var(--ab-blue);
+  font-size: 7px;
+  font-weight: 850;
+}
+
+.confirmation-next-steps p {
+  margin: 0;
+  color: #667c92;
+  font-size: 7px;
+  line-height: 1.35;
+}
+
+/* Keep the booking component itself non-scrollable. The workflow changes
+   the visible step instead of stacking every step vertically. */
+.booking-modal-overlay .appointment-booking {
+  overflow: visible;
+  max-height: none;
+}
+
+@media (max-width: 760px) {
+  .booking-step-context {
+    padding: 11px;
+  }
+
+  .review-patient-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .review-patient-strip > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .confirmation-next-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .booking-step-context {
+    align-items: flex-start;
+  }
+
+  .booking-edit-selection {
+    min-height: 32px;
+    padding: 0 9px;
+  }
+
+  .review-patient-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .review-patient-strip > div:last-child {
+    grid-column: auto;
+  }
+}
+
+/* =========================================================
+   SLOT EXPANDER — replaces long internal slot scrolling
+========================================================= */
+
+.slot-expander {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.slot-expander-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #d8e5f1;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ab-blue);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.slot-expander-button:hover {
+  border-color: #b9d1eb;
+  background: #f5f9ff;
+  transform: translateY(-1px);
+}
+
+.slot-expander-button span {
+  font-size: 11px;
+  line-height: 1;
 }

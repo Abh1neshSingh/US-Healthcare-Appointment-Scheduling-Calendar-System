@@ -1,8 +1,4 @@
-import {
-  useEffect,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import API_URL from "../config";
 import "./AppointmentBooking.css";
 
@@ -16,11 +12,7 @@ interface Doctor {
 interface TimeSlot {
   start_time: string;
   end_time: string;
-  status:
-    | "available"
-    | "booked"
-    | "break"
-    | "unavailable";
+  status: "available" | "booked" | "break" | "unavailable";
 }
 
 interface AvailabilityResponse {
@@ -65,8 +57,6 @@ interface Referral {
 
 interface AppointmentBookingProps {
   onBookingSuccess?: () => void;
-
-  // Values received from Day View
   initialDate?: string;
   initialDoctorId?: number | null;
   initialStartTime?: string;
@@ -83,6 +73,54 @@ type ReferralStatus =
   | "authorization_required"
   | "error";
 
+type BookingStep = "selection" | "coverage" | "review";
+
+const getToday = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (value: string) => {
+  if (!value) return "Select a date";
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+};
+
+const formatTime = (value: string) => {
+  if (!value) return "";
+  const [hours, minutes] = value.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return value;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const hour = hours % 12 || 12;
+  return `${hour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+};
+
+const maskMemberId = (value?: string | null) => {
+  if (!value) return "Not provided";
+  if (value.length <= 4) return value;
+  return `${"•".repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+};
+
+const getInitialStep = (
+  initialDate?: string,
+  initialDoctorId?: number | null,
+  initialStartTime?: string
+): BookingStep => {
+  return initialDate && initialDoctorId && initialStartTime
+    ? "coverage"
+    : "selection";
+};
+
 function AppointmentBooking({
   onBookingSuccess,
   initialDate,
@@ -90,708 +128,393 @@ function AppointmentBooking({
   initialStartTime,
 }: AppointmentBookingProps) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-
-  const [selectedDoctor, setSelectedDoctor] =
-    useState(
-      initialDoctorId !== undefined &&
-        initialDoctorId !== null
-        ? String(initialDoctorId)
-        : ""
-    );
-
-  const [selectedDate, setSelectedDate] =
-    useState(initialDate || "");
-
-  const [selectedTime, setSelectedTime] =
-    useState<TimeSlot | null>(null);
-
+  const [selectedDoctor, setSelectedDoctor] = useState(
+    initialDoctorId !== undefined && initialDoctorId !== null
+      ? String(initialDoctorId)
+      : ""
+  );
+  const [selectedDate, setSelectedDate] = useState(initialDate || getToday());
+  const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
   const [availability, setAvailability] =
-    useState<AvailabilityResponse | null>(
-      null
-    );
-
-  // ==================================================
-  // PATIENT / REFERRAL STATE
-  // ==================================================
-
+    useState<AvailabilityResponse | null>(null);
   const [patientProfile, setPatientProfile] =
     useState<PatientProfile | null>(null);
 
   const [referralStatus, setReferralStatus] =
     useState<ReferralStatus>("idle");
+  const [loadingPatientProfile, setLoadingPatientProfile] = useState(false);
+  const [loadingReferral, setLoadingReferral] = useState(false);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [booking, setBooking] = useState(false);
 
-  const [loadingPatientProfile, setLoadingPatientProfile] =
-    useState(false);
-
-  const [loadingReferral, setLoadingReferral] =
-    useState(false);
-
-  // ==================================================
-  // BOOKING STATE
-  // ==================================================
-
-  const [loadingDoctors, setLoadingDoctors] =
-    useState(false);
-
-  const [
-    loadingAvailability,
-    setLoadingAvailability,
-  ] = useState(false);
-
-  const [booking, setBooking] =
-    useState(false);
-
-  const [
-    showConfirmation,
-    setShowConfirmation,
-  ] = useState(false);
-
+  const [step, setStep] = useState<BookingStep>(
+    getInitialStep(initialDate, initialDoctorId, initialStartTime)
+  );
+  const [insuranceActive, setInsuranceActive] = useState<boolean | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [error, setError] = useState("");
-
   const [success, setSuccess] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+  const [showAllSlots, setShowAllSlots] = useState(false);
 
-  // ==================================================
-  // GET PATIENT PROFILE
-  // ==================================================
+  const token = localStorage.getItem("access_token");
+  const today = getToday();
+
+  const selectedDoctorData = useMemo(
+    () =>
+      doctors.find((doctor) => doctor.id === Number(selectedDoctor)) || null,
+    [doctors, selectedDoctor]
+  );
+
+  const hasInsurance = Boolean(
+    patientProfile?.insurance_provider || patientProfile?.insurance_member_id
+  );
+
+  const coverageReady =
+    !hasInsurance || insuranceActive !== null;
+
+  const canBookAppointment = () => {
+    if (!selectedDoctorData) return false;
+    if (!selectedDoctorData.requires_referral) return true;
+    if (!patientProfile) return false;
+    if (!hasInsurance) return true;
+    return referralStatus === "valid";
+  };
+
+  const eligibilityState = useMemo(() => {
+    if (!selectedDoctorData) {
+      return {
+        tone: "neutral",
+        title: "Choose a doctor",
+        detail: "Select a doctor to review booking requirements.",
+      };
+    }
+
+    if (loadingPatientProfile || loadingReferral) {
+      return {
+        tone: "loading",
+        title: "Checking booking requirements",
+        detail: "Reviewing your patient profile and coverage requirements.",
+      };
+    }
+
+    if (!canBookAppointment()) {
+      if (referralStatus === "missing") {
+        return {
+          tone: "warning",
+          title: "Additional documentation required",
+          detail: "This specialist requires an active referral before booking.",
+        };
+      }
+      if (referralStatus === "invalid") {
+        return {
+          tone: "warning",
+          title: "Coverage requirement needs attention",
+          detail: "No active referral was found for the selected specialist and date.",
+        };
+      }
+      if (referralStatus === "authorization_required") {
+        return {
+          tone: "warning",
+          title: "Authorization pending",
+          detail: "Prior authorization must be approved before this appointment can be booked.",
+        };
+      }
+      if (referralStatus === "error") {
+        return {
+          tone: "danger",
+          title: "Unable to complete the check",
+          detail: "Please try again before continuing.",
+        };
+      }
+    }
+
+    return {
+      tone: "ready",
+      title: "Ready to continue",
+      detail: hasInsurance
+        ? "Your coverage details are available for review."
+        : "No insurance is on file. You can continue with the booking.",
+    };
+  }, [
+    selectedDoctorData,
+    loadingPatientProfile,
+    loadingReferral,
+    referralStatus,
+    patientProfile,
+    hasInsurance,
+  ]);
+
+  const fetchPatientProfile = async () => {
+    try {
+      setLoadingPatientProfile(true);
+      const response = await fetch(`${API_URL}/users/me`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Unable to load patient information.");
+      setPatientProfile(data);
+    } catch (err) {
+      console.error("Error loading patient profile:", err);
+      setPatientProfile(null);
+      setError(err instanceof Error ? err.message : "Unable to load patient information.");
+    } finally {
+      setLoadingPatientProfile(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPatientProfile = async () => {
-      try {
-        setLoadingPatientProfile(true);
-
-        const token =
-          localStorage.getItem(
-            "access_token"
-          );
-
-        const response = await fetch(
-          `${API_URL}/users/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.detail ||
-              "Unable to load patient information."
-          );
-        }
-
-        setPatientProfile(data);
-      } catch (error) {
-        console.error(
-          "Error loading patient profile:",
-          error
-        );
-
-        setPatientProfile(null);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load patient information."
-        );
-      } finally {
-        setLoadingPatientProfile(false);
-      }
-    };
-
-    fetchPatientProfile();
+    void fetchPatientProfile();
   }, []);
-
-  // ==================================================
-  // GET DOCTORS
-  // ==================================================
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         setLoadingDoctors(true);
-        setError("");
-
-        const token =
-          localStorage.getItem(
-            "access_token"
-          );
-
-        const response = await fetch(
-          `${API_URL}/users/doctors`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        const response = await fetch(`${API_URL}/users/doctors`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.detail ||
-              "Unable to load doctors."
-          );
-        }
-
-        setDoctors(
-          Array.isArray(data)
-            ? data
-            : data.doctors || []
-        );
-      } catch (error) {
-        console.error(
-          "Error loading doctors:",
-          error
-        );
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load doctors. Please try again."
-        );
+        if (!response.ok) throw new Error(data.detail || "Unable to load doctors.");
+        setDoctors(Array.isArray(data) ? data : data.doctors || []);
+      } catch (err) {
+        console.error("Error loading doctors:", err);
+        setError(err instanceof Error ? err.message : "Unable to load doctors. Please try again.");
       } finally {
         setLoadingDoctors(false);
       }
     };
-
-    fetchDoctors();
+    void fetchDoctors();
   }, []);
 
-  // ==================================================
-  // APPLY VALUES FROM DAY VIEW
-  // ==================================================
+  useEffect(() => {
+    if (initialDate) setSelectedDate(initialDate);
+    if (initialDoctorId !== undefined && initialDoctorId !== null) {
+      setSelectedDoctor(String(initialDoctorId));
+    }
+    if (initialDate && initialDoctorId && initialStartTime) {
+      setStep("coverage");
+    }
+  }, [initialDate, initialDoctorId, initialStartTime]);
 
   useEffect(() => {
-    if (initialDate) {
-      setSelectedDate(initialDate);
-    }
-
-    if (
-      initialDoctorId !== undefined &&
-      initialDoctorId !== null
-    ) {
-      setSelectedDoctor(
-        String(initialDoctorId)
-      );
-    }
-  }, [
-    initialDate,
-    initialDoctorId,
-  ]);
-
-  // ==================================================
-  // SELECTED DOCTOR
-  // ==================================================
-
-  const selectedDoctorData =
-    doctors.find(
-      (doctor) =>
-        doctor.id === Number(selectedDoctor)
-    );
-
-  // ==================================================
-  // CHECK REFERRAL
-  // ==================================================
-
-  useEffect(() => {
-    if (
-      !selectedDoctor ||
-      !selectedDoctorData
-    ) {
+    if (!selectedDoctor || !selectedDoctorData) {
       setReferralStatus("idle");
       return;
     }
 
-    // ----------------------------------------------
-    // Referral not required
-    // ----------------------------------------------
-
-    if (
-      !selectedDoctorData.requires_referral
-    ) {
-      setReferralStatus(
-        "not_required"
-      );
-
+    if (!selectedDoctorData.requires_referral) {
+      setReferralStatus("not_required");
       return;
     }
 
-    // ----------------------------------------------
-    // Wait for patient information
-    // ----------------------------------------------
+    if (!patientProfile) return;
 
-    if (!patientProfile) {
-      return;
-    }
-
-    // ----------------------------------------------
-    // Check insurance
-    // ----------------------------------------------
-
-    const hasInsurance =
-      Boolean(
-        patientProfile.insurance_provider
-      ) ||
-      Boolean(
-        patientProfile.insurance_member_id
-      );
-
-    // No insurance → direct booking
     if (!hasInsurance) {
-      setReferralStatus(
-        "direct_booking"
-      );
-
+      setReferralStatus("direct_booking");
       return;
     }
-
-    // ----------------------------------------------
-    // Patient has insurance
-    // Check referral
-    // ----------------------------------------------
 
     const fetchReferral = async () => {
       try {
         setLoadingReferral(true);
         setReferralStatus("checking");
-        setError("");
-
-        const token =
-          localStorage.getItem(
-            "access_token"
-          );
-
         const response = await fetch(
           `${API_URL}/referrals/patient/${patientProfile.patient_id}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           }
         );
-
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Unable to check booking requirements.");
 
-        if (!response.ok) {
-          throw new Error(
-            data.detail ||
-              "Unable to check referral."
-          );
-        }
+        const referrals: Referral[] = Array.isArray(data)
+          ? data
+          : data.referrals || [];
 
-        const referrals: Referral[] =
-          Array.isArray(data)
-            ? data
-            : data.referrals || [];
+        const specialistReferrals = referrals.filter(
+          (referral) =>
+            referral.specialist_doctor_id === Number(selectedDoctor)
+        );
 
-        // ------------------------------------------
-        // Find referral for selected specialist
-        // ------------------------------------------
-
-        const specialistReferrals =
-          referrals.filter(
-            (referral) =>
-              referral.specialist_doctor_id ===
-              Number(selectedDoctor)
-          );
-
-        if (
-          specialistReferrals.length === 0
-        ) {
+        if (!specialistReferrals.length) {
           setReferralStatus("missing");
           return;
         }
 
-        // ------------------------------------------
-        // Check valid referral for selected date
-        // ------------------------------------------
-
-        const validReferral =
-          specialistReferrals.find(
-            (referral) => {
-              const issuedDate =
-                referral.issued_date;
-
-              const expiryDate =
-                referral.expiry_date;
-
-              const correctDate =
-                issuedDate <=
-                  selectedDate &&
-                (!expiryDate ||
-                  expiryDate >=
-                    selectedDate);
-
-              return (
-                referral.status ===
-                  "ACTIVE" &&
-                correctDate
-              );
-            }
-          );
+        const validReferral = specialistReferrals.find((referral) => {
+          const issued = referral.issued_date;
+          const expiry = referral.expiry_date;
+          const dateValid =
+            issued <= selectedDate && (!expiry || expiry >= selectedDate);
+          return referral.status === "ACTIVE" && dateValid;
+        });
 
         if (!validReferral) {
           setReferralStatus("invalid");
           return;
         }
 
-        // ------------------------------------------
-        // Check authorization
-        // ------------------------------------------
-
         if (
           validReferral.authorization_required &&
-          validReferral.authorization_status !==
-            "APPROVED"
+          validReferral.authorization_status !== "APPROVED"
         ) {
-          setReferralStatus(
-            "authorization_required"
-          );
-
+          setReferralStatus("authorization_required");
           return;
         }
 
-        // ------------------------------------------
-        // Referral verified
-        // ------------------------------------------
-
         setReferralStatus("valid");
-      } catch (error) {
-        console.error(
-          "Error checking referral:",
-          error
-        );
-
+      } catch (err) {
+        console.error("Error checking booking requirements:", err);
         setReferralStatus("error");
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Unable to check referral."
-        );
+        setError(err instanceof Error ? err.message : "Unable to verify booking requirements.");
       } finally {
         setLoadingReferral(false);
       }
     };
 
-    fetchReferral();
-  }, [
-    selectedDoctor,
-    selectedDoctorData,
-    patientProfile,
-    selectedDate,
-  ]);
+    void fetchReferral();
+  }, [selectedDoctor, selectedDoctorData, patientProfile, selectedDate, hasInsurance]);
 
-  // ==================================================
-  // DOCTOR CHANGE
-  // ==================================================
+  const loadAvailability = async () => {
+    if (!selectedDoctor || !selectedDate) return;
 
-  const handleDoctorChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-    setSelectedDoctor(
-      event.target.value
-    );
+    try {
+      setLoadingAvailability(true);
+      setAvailability(null);
+      setSelectedTime(null);
+      setShowAllSlots(false);
+      setError("");
+      setSuccess("");
 
-    setAvailability(null);
-    setSelectedTime(null);
-    setShowConfirmation(false);
+      const params = new URLSearchParams({
+        doctor_id: selectedDoctor,
+        appointment_date: selectedDate,
+      });
 
-    setReferralStatus("idle");
+      const response = await fetch(
+        `${API_URL}/appointments/availability?${params.toString()}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      const data = await response.json();
 
-    setError("");
-    setSuccess("");
+      if (!response.ok) {
+        throw new Error(data.detail || "Unable to load availability.");
+      }
+
+      setAvailability(data);
+      setLastUpdated(new Date().toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      }));
+
+      if (initialStartTime && Array.isArray(data.slots)) {
+        const matchingSlot = data.slots.find(
+          (slot: TimeSlot) =>
+            slot.start_time === initialStartTime &&
+            slot.status === "available"
+        );
+        if (matchingSlot) setSelectedTime(matchingSlot);
+      }
+    } catch (err) {
+      console.error("Error loading availability:", err);
+      setAvailability(null);
+      setError(err instanceof Error ? err.message : "Unable to load availability.");
+    } finally {
+      setLoadingAvailability(false);
+    }
   };
-
-  // ==================================================
-  // DATE CHANGE
-  // ==================================================
-
-  const handleDateChange = (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    setSelectedDate(
-      event.target.value
-    );
-
-    setAvailability(null);
-    setSelectedTime(null);
-    setShowConfirmation(false);
-
-    setReferralStatus("idle");
-
-    setError("");
-    setSuccess("");
-  };
-
-  // ==================================================
-  // GET AVAILABILITY
-  // ==================================================
 
   useEffect(() => {
-    if (
-      !selectedDoctor ||
-      !selectedDate
-    ) {
+    void loadAvailability();
+  }, [selectedDoctor, selectedDate]);
+
+  useEffect(() => {
+    if (step !== "selection" || !selectedDoctor || !selectedDate) {
       return;
     }
 
-    const fetchAvailability = async () => {
-      try {
-        setLoadingAvailability(true);
+    const interval = window.setInterval(() => {
+      void loadAvailability();
+    }, 60000);
 
-        setAvailability(null);
-        setSelectedTime(null);
-        setShowConfirmation(false);
+    return () => window.clearInterval(interval);
+  }, [step, selectedDoctor, selectedDate]);
 
-        setError("");
-        setSuccess("");
-
-        const token =
-          localStorage.getItem(
-            "access_token"
-          );
-
-        const params =
-          new URLSearchParams({
-            doctor_id:
-              selectedDoctor,
-
-            appointment_date:
-              selectedDate,
-          });
-
-        const response = await fetch(
-          `${API_URL}/appointments/availability?${params.toString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.detail ||
-              "Unable to load availability."
-          );
-        }
-
-        setAvailability(data);
-
-        // ------------------------------------------
-        // Automatically select time from Day View
-        // ------------------------------------------
-
-        if (
-          initialStartTime &&
-          Array.isArray(data.slots)
-        ) {
-          const matchingSlot =
-            data.slots.find(
-              (slot: TimeSlot) =>
-                slot.start_time ===
-                  initialStartTime &&
-                slot.status ===
-                  "available"
-            );
-
-          if (matchingSlot) {
-            setSelectedTime(
-              matchingSlot
-            );
-          }
-        }
-      } catch (error) {
-        console.error(
-          "Error loading availability:",
-          error
-        );
-
-        setAvailability(null);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load availability."
-        );
-      } finally {
-        setLoadingAvailability(false);
-      }
-    };
-
-    fetchAvailability();
-  }, [
-    selectedDoctor,
-    selectedDate,
-    initialStartTime,
-  ]);
-
-  // ==================================================
-  // SELECT TIME SLOT
-  // ==================================================
-
-  const handleTimeSelect = (
-    slot: TimeSlot
-  ) => {
-    if (
-      slot.status !== "available"
-    ) {
-      return;
-    }
-
-    setSelectedTime(slot);
-
-    setShowConfirmation(false);
-
+  const handleDoctorChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedDoctor(event.target.value);
+    setAvailability(null);
+    setSelectedTime(null);
+    setShowAllSlots(false);
+    setInsuranceActive(null);
+    setStep("selection");
     setError("");
     setSuccess("");
   };
 
-  // ==================================================
-  // CHECK WHETHER BOOKING IS ALLOWED
-  // ==================================================
-
-  const canBookAppointment = () => {
-    if (!selectedDoctorData) {
-      return false;
-    }
-
-    // Doctor does not require referral
-    if (
-      !selectedDoctorData.requires_referral
-    ) {
-      return true;
-    }
-
-    // Patient profile still loading
-    if (!patientProfile) {
-      return false;
-    }
-
-    // Check insurance
-    const hasInsurance =
-      Boolean(
-        patientProfile.insurance_provider
-      ) ||
-      Boolean(
-        patientProfile.insurance_member_id
-      );
-
-    // No insurance → direct booking
-    if (!hasInsurance) {
-      return true;
-    }
-
-    // Insurance + referral required
-    return (
-      referralStatus === "valid"
-    );
+  const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(event.target.value);
+    setAvailability(null);
+    setSelectedTime(null);
+    setShowAllSlots(false);
+    setInsuranceActive(null);
+    setStep("selection");
+    setError("");
+    setSuccess("");
   };
 
-  // ==================================================
-  // OPEN CONFIRMATION
-  // ==================================================
+  const handleTimeSelect = (slot: TimeSlot) => {
+    if (slot.status !== "available") return;
+    setSelectedTime(slot);
+    setInsuranceActive(null);
+    setStep("coverage");
+    setError("");
+    setSuccess("");
+  };
 
-  const handleConfirmBooking = () => {
-    if (
-      !selectedDoctor ||
-      !selectedDate ||
-      !selectedTime
-    ) {
-      setError(
-        "Please select doctor, date and time."
-      );
+  const getSlotDisplayStatus = (slot: TimeSlot) => {
+    if (slot.status === "booked") return "booked";
+    if (slot.status === "break") return "break";
+    if (slot.status === "unavailable") return "unavailable";
+    if (availability && availability.available_slots <= 3) return "few";
+    return "available";
+  };
 
+  const handleContinueToReview = () => {
+    if (!selectedDoctor || !selectedDate || !selectedTime) {
+      setError("Please select a doctor, date and available time.");
       return;
     }
 
-    if (
-      loadingPatientProfile
-    ) {
-      setError(
-        "Checking patient information. Please wait."
-      );
-
+    if (loadingPatientProfile || loadingReferral) {
+      setError("Please wait while we finish checking your booking information.");
       return;
     }
 
-    if (
-      loadingReferral
-    ) {
-      setError(
-        "Checking referral information. Please wait."
-      );
-
+    if (!coverageReady) {
+      setError("Please confirm whether your insurance is currently active.");
       return;
     }
 
     if (!canBookAppointment()) {
-      if (
-        referralStatus === "missing"
-      ) {
-        setError(
-          "A referral is required before booking with this specialist."
-        );
-      } else if (
-        referralStatus === "invalid"
-      ) {
-        setError(
-          "No valid referral was found for this specialist."
-        );
-      } else if (
-        referralStatus ===
-        "authorization_required"
-      ) {
-        setError(
-          "Prior authorization is required before booking this appointment."
-        );
-      } else {
-        setError(
-          "Referral verification is required before booking."
-        );
-      }
-
+      setError(eligibilityState.detail);
       return;
     }
 
     setError("");
-    setSuccess("");
-
-    setShowConfirmation(true);
+    setStep("review");
   };
 
-  // ==================================================
-  // FINAL BOOKING
-  // ==================================================
-
   const handleFinalBooking = async () => {
-    if (
-      !selectedDoctor ||
-      !selectedDate ||
-      !selectedTime
-    ) {
-      return;
-    }
-
-    // ----------------------------------------------
-    // Frontend verification
-    // ----------------------------------------------
+    if (!selectedDoctor || !selectedDate || !selectedTime) return;
 
     if (!canBookAppointment()) {
       setShowConfirmation(false);
-
-      setError(
-        "Referral verification is required before booking this appointment."
-      );
-
+      setError(eligibilityState.detail);
+      setStep("coverage");
       return;
     }
 
@@ -799,832 +522,743 @@ function AppointmentBooking({
       setBooking(true);
       setError("");
 
-      const token =
-        localStorage.getItem(
-          "access_token"
-        );
+      const response = await fetch(`${API_URL}/appointments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          doctor_id: Number(selectedDoctor),
+          appointment_date: selectedDate,
+          start_time: selectedTime.start_time,
+          end_time: selectedTime.end_time,
+          appointment_type: "IN_PERSON",
+        }),
+      });
 
-      const response = await fetch(
-        `${API_URL}/appointments`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-            doctor_id: Number(
-              selectedDoctor
-            ),
-
-            appointment_date:
-              selectedDate,
-
-            start_time:
-              selectedTime.start_time,
-
-            end_time:
-              selectedTime.end_time,
-
-            appointment_type:
-              "IN_PERSON",
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail ||
-            "Unable to book appointment."
-        );
-      }
-
-      // ------------------------------------------
-      // Booking successful
-      // ------------------------------------------
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Unable to book appointment.");
 
       setShowConfirmation(false);
-
-      setSuccess(
-        "Appointment booked successfully."
-      );
-
-      // ------------------------------------------
-      // Refresh availability
-      // ------------------------------------------
-
-      const params =
-        new URLSearchParams({
-          doctor_id:
-            selectedDoctor,
-
-          appointment_date:
-            selectedDate,
-        });
-
-      const availabilityResponse =
-        await fetch(
-          `${API_URL}/appointments/availability?${params.toString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-      if (
-        availabilityResponse.ok
-      ) {
-        const availabilityData =
-          await availabilityResponse.json();
-
-        setAvailability(
-          availabilityData
-        );
-      }
-
-      // Clear selected slot
+      setSuccess("Appointment booked successfully.");
+      setStep("selection");
       setSelectedTime(null);
+      setInsuranceActive(null);
 
-      // Tell PatientDashboard to refresh
-      if (onBookingSuccess) {
-        onBookingSuccess();
-      }
-    } catch (error) {
-      console.error(
-        "Error booking appointment:",
-        error
-      );
+      await loadAvailability();
 
+      if (onBookingSuccess) onBookingSuccess();
+    } catch (err) {
+      console.error("Error booking appointment:", err);
       setShowConfirmation(false);
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to book appointment."
-      );
+      setError(err instanceof Error ? err.message : "Unable to book appointment.");
     } finally {
       setBooking(false);
     }
   };
 
-  // ==================================================
-  // SLOT DISPLAY STATUS
-  // ==================================================
-
-  const getSlotDisplayStatus = (
-    slot: TimeSlot
-  ) => {
-    if (
-      slot.status === "booked"
-    ) {
-      return "booked";
-    }
-
-    if (
-      slot.status === "break"
-    ) {
-      return "break";
-    }
-
-    if (
-      slot.status === "unavailable"
-    ) {
-      return "unavailable";
-    }
-
-    if (
-      availability &&
-      availability.available_slots <= 3
-    ) {
-      return "few";
-    }
-
-    return "available";
+  const openConfirmation = () => {
+    if (!selectedTime || !availability) return;
+    setError("");
+    setShowConfirmation(true);
   };
 
-  // ==================================================
-  // REFERRAL STATUS MESSAGE
-  // ==================================================
+  const doctorLabel = selectedDoctorData
+    ? `${selectedDoctorData.name}${selectedDoctorData.specialization ? ` · ${selectedDoctorData.specialization}` : ""}`
+    : "Choose a doctor";
 
-  const renderReferralStatus = () => {
-    if (
-      !selectedDoctorData ||
-      !selectedDoctor
-    ) {
-      return null;
-    }
+  const selectedTimeLabel = selectedTime
+    ? `${formatTime(selectedTime.start_time)} – ${formatTime(selectedTime.end_time)}`
+    : "Select an available time";
 
-    if (
-      !selectedDoctorData.requires_referral
-    ) {
-      return (
-        <div className="booking-message success">
-          Referral is not required for this doctor. You can book directly.
-        </div>
-      );
-    }
+  const appointmentDuration = selectedTime
+    ? Math.max(
+        0,
+        (Number(selectedTime.end_time.split(":")[0]) * 60 +
+          Number(selectedTime.end_time.split(":")[1])) -
+          (Number(selectedTime.start_time.split(":")[0]) * 60 +
+            Number(selectedTime.start_time.split(":")[1]))
+      )
+    : 0;
 
-    if (
-      loadingPatientProfile
-    ) {
-      return (
-        <div className="booking-message">
-          Checking patient information...
-        </div>
-      );
-    }
+  const availabilityRate =
+    availability && availability.total_slots > 0
+      ? Math.round(
+          (availability.available_slots / availability.total_slots) * 100
+        )
+      : 0;
 
-    if (
-      loadingReferral
-    ) {
-      return (
-        <div className="booking-message">
-          Checking referral information...
-        </div>
-      );
-    }
+  const visibleSlots = availability
+    ? showAllSlots
+      ? availability.slots
+      : availability.slots.slice(0, 12)
+    : [];
 
-    if (
-      referralStatus ===
-      "direct_booking"
-    ) {
-      return (
-        <div className="booking-message success">
-          No insurance information found. You can book directly.
-        </div>
-      );
-    }
+  const hiddenSlotCount = availability
+    ? Math.max(0, availability.slots.length - visibleSlots.length)
+    : 0;
 
-    if (
-      referralStatus === "valid"
-    ) {
-      return (
-        <div className="booking-message success">
-          ✓ Referral verified. You can continue with the booking.
-        </div>
-      );
-    }
+  const goBackToSelection = () => {
+    setShowConfirmation(false);
+    setStep("selection");
+    setError("");
+  };
 
-    if (
-      referralStatus === "missing"
-    ) {
-      return (
-        <div className="booking-message error">
-          A referral is required before booking with this specialist.
-        </div>
-      );
-    }
-
-    if (
-      referralStatus === "invalid"
-    ) {
-      return (
-        <div className="booking-message error">
-          No valid referral was found for this specialist.
-        </div>
-      );
-    }
-
-    if (
-      referralStatus ===
-      "authorization_required"
-    ) {
-      return (
-        <div className="booking-message error">
-          Prior authorization is required and has not been approved yet.
-        </div>
-      );
-    }
-
-    if (
-      referralStatus === "error"
-    ) {
-      return (
-        <div className="booking-message error">
-          Unable to verify the referral. Please try again.
-        </div>
-      );
-    }
-
-    return null;
+  const goBackToCoverage = () => {
+    setShowConfirmation(false);
+    setStep("coverage");
+    setError("");
   };
 
   return (
     <div className="appointment-booking">
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
       <div className="booking-header">
-
         <div>
-
-          <p className="booking-label">
+          <div className="booking-eyebrow">
+            <span className="booking-eyebrow-dot" />
             BOOK APPOINTMENT
-          </p>
-
-          <h2>
-            Find an available appointment
-          </h2>
-
+          </div>
+          <h2>Find the right time for your care</h2>
           <p>
-            Select a doctor, date and
-            available time slot for your
-            appointment.
+            Choose your doctor, review live availability, confirm your coverage
+            details, and securely submit the appointment request.
           </p>
-
         </div>
-
+        <div className="booking-secure-badge">
+          <span>✓</span>
+          Patient portal
+        </div>
       </div>
 
-      {/* =================================================
-          DOCTOR + DATE
-      ================================================= */}
+      <div className="booking-progress" aria-label="Booking progress">
+        {[
+          ["selection", "01", "Choose"],
+          ["coverage", "02", "Coverage"],
+          ["review", "03", "Review"],
+        ].map(([key, number, label], index) => {
+          const order: BookingStep[] = ["selection", "coverage", "review"];
+          const activeIndex = order.indexOf(step);
+          const itemIndex = order.indexOf(key as BookingStep);
+          const complete = itemIndex < activeIndex;
+          const active = itemIndex === activeIndex;
 
-      <div className="booking-selection">
+          return (
+            <div className="booking-progress-item" key={key}>
+              <div className={`booking-progress-node ${active ? "active" : ""} ${complete ? "complete" : ""}`}>
+                {complete ? "✓" : number}
+              </div>
+              <span className={active ? "active" : ""}>{label}</span>
+              {index < 2 && <i />}
+            </div>
+          );
+        })}
+      </div>
 
-        <div className="booking-field">
+      {step === "selection" && (
+        <>
+      <section className="booking-selection-panel">
+        <div className="booking-section-heading">
+          <div>
+            <span className="booking-section-kicker">STEP 01</span>
+            <h3>Appointment details</h3>
+            <p>Start with the clinician and date that work for you.</p>
+          </div>
+          {availability && (
+            <button
+              type="button"
+              className="booking-refresh"
+              onClick={() => void loadAvailability()}
+              disabled={loadingAvailability}
+            >
+              ↻ {loadingAvailability ? "Checking" : "Refresh"}
+            </button>
+          )}
+        </div>
 
-          <label>
-            Select Doctor
-          </label>
-
-          <select
-            value={selectedDoctor}
-            onChange={
-              handleDoctorChange
-            }
-          >
-
-            <option value="">
-              {loadingDoctors
-                ? "Loading doctors..."
-                : "Choose a doctor"}
-            </option>
-
-            {doctors.map(
-              (doctor) => (
-
-                <option
-                  key={doctor.id}
-                  value={doctor.id}
-                >
-
-                  {doctor.name}
-
-                  {doctor.specialization
-                    ? ` - ${doctor.specialization}`
-                    : ""}
-
-                  {doctor.requires_referral
-                    ? " (Referral Required)"
-                    : ""}
-
+        <div className="booking-selection">
+          <div className="booking-field">
+            <label htmlFor="booking-doctor">Select doctor</label>
+            <div className="booking-input-shell">
+              <span className="booking-input-icon">DR</span>
+              <select
+                id="booking-doctor"
+                value={selectedDoctor}
+                onChange={handleDoctorChange}
+                disabled={loadingDoctors}
+              >
+                <option value="">
+                  {loadingDoctors ? "Loading doctors..." : "Choose a doctor"}
                 </option>
+                {doctors.map((doctor) => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name}
+                    {doctor.specialization ? ` — ${doctor.specialization}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-              )
-            )}
-
-          </select>
-
+          <div className="booking-field">
+            <label htmlFor="booking-date">Appointment date</label>
+            <div className="booking-input-shell">
+              <span className="booking-input-icon">DATE</span>
+              <input
+                id="booking-date"
+                type="date"
+                value={selectedDate}
+                min={today}
+                onChange={handleDateChange}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="booking-field">
-
-          <label>
-            Select Date
-          </label>
-
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={
-              handleDateChange
-            }
-            min={
-              new Date()
-                .toISOString()
-                .split("T")[0]
-            }
-          />
-
+        <div className="booking-context-strip">
+          <div>
+            <span>Selected clinician</span>
+            <strong>{doctorLabel}</strong>
+          </div>
+          <div>
+            <span>Appointment date</span>
+            <strong>{formatDate(selectedDate)}</strong>
+          </div>
+          <div>
+            <span>Booking type</span>
+            <strong>In-person visit</strong>
+          </div>
         </div>
+      </section>
 
-      </div>
-
-      {/* =================================================
-          REFERRAL VERIFICATION
-      ================================================= */}
-
-      {renderReferralStatus()}
-
-      {/* =================================================
-          MESSAGES
-      ================================================= */}
+        </>
+      )}
 
       {error && (
-        <div className="booking-message error">
-          {error}
+        <div className="booking-alert error" role="alert">
+          <span className="booking-alert-icon">!</span>
+          <div>
+            <strong>We need your attention</strong>
+            <p>{error}</p>
+          </div>
         </div>
       )}
 
       {success && (
-        <div className="booking-message success">
-          {success}
+        <div className="booking-alert success" role="status">
+          <span className="booking-alert-icon">✓</span>
+          <div>
+            <strong>Appointment confirmed</strong>
+            <p>{success}</p>
+          </div>
         </div>
       )}
 
-      {/* =================================================
-          AVAILABILITY
-      ================================================= */}
-
-      {selectedDoctor &&
-        selectedDate && (
-
-          <div className="availability-section">
-
-            {loadingAvailability ? (
-
-              <div className="availability-loading">
-                Checking doctor
-                availability...
-              </div>
-
-            ) : availability ? (
-
-              <>
-
-                {/* ===============================
-                    AVAILABILITY HEADER
-                =============================== */}
-
-                <div className="availability-header">
-
-                  <div>
-
-                    <h3>
-                      Doctor Availability
-                    </h3>
-
-                    <p>
-
-                      {
-                        availability.doctor_name
-                      }
-
-                      {" · "}
-
-                      {
-                        availability.date
-                      }
-
-                    </p>
-
-                  </div>
-
-                  <div className="availability-status">
-
-                    <span>
-                      🟢 Available
-                    </span>
-
-                    <span>
-                      🟡 Few Slots
-                    </span>
-
-                    <span>
-                      🔴 Fully Booked
-                    </span>
-
-                  </div>
-
-                </div>
-
-                {/* ===============================
-                    SUMMARY
-                =============================== */}
-
-                <div className="availability-summary">
-
-                  <div>
-
-                    <strong>
-                      {
-                        availability.total_slots
-                      }
-                    </strong>
-
-                    <span>
-                      Total Slots
-                    </span>
-
-                  </div>
-
-                  <div>
-
-                    <strong>
-                      {
-                        availability.booked_slots
-                      }
-                    </strong>
-
-                    <span>
-                      Booked
-                    </span>
-
-                  </div>
-
-                  <div>
-
-                    <strong>
-                      {
-                        availability.available_slots
-                      }
-                    </strong>
-
-                    <span>
-                      Available
-                    </span>
-
-                  </div>
-
-                </div>
-
-                {/* ===============================
-                    TIME SLOTS
-                =============================== */}
-
-                <div className="time-slots">
-
-                  {availability.slots.map(
-                    (slot) => {
-
-                      const displayStatus =
-                        getSlotDisplayStatus(
-                          slot
-                        );
-
-                      return (
-
-                        <button
-                          key={`${slot.start_time}-${slot.end_time}`}
-                          type="button"
-                          disabled={
-                            slot.status !==
-                            "available"
-                          }
-                          className={`time-slot ${displayStatus} ${
-                            selectedTime?.start_time ===
-                            slot.start_time
-                              ? "selected"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            handleTimeSelect(
-                              slot
-                            )
-                          }
-                        >
-
-                          <span>
-                            {slot.start_time}
-                          </span>
-
-                          <small>
-
-                            {slot.status ===
-                            "booked"
-                              ? "Booked"
-                              : slot.status ===
-                                "break"
-                              ? "Break"
-                              : slot.status ===
-                                "unavailable"
-                              ? "Unavailable"
-                              : displayStatus ===
-                                "few"
-                              ? "Few slots left"
-                              : "Available"}
-
-                          </small>
-
-                        </button>
-
-                      );
-                    }
-                  )}
-
-                </div>
-
-                {/* ===============================
-                    NO AVAILABILITY
-                =============================== */}
-
-                {!availability.available && (
-
-                  <div className="no-availability">
-
-                    {
-                      availability.message ||
-                      "No appointments available on this date."
-                    }
-
-                  </div>
-
-                )}
-
-              </>
-
-            ) : null}
-
+      {step === "selection" && (
+        <>
+      {selectedDoctor && selectedDate && (
+        <section className="availability-section">
+          <div className="availability-header">
+            <div>
+              <span className="booking-section-kicker">LIVE SCHEDULE</span>
+              <h3>{availability?.doctor_name || selectedDoctorData?.name || "Doctor availability"}</h3>
+              <p>
+                {formatDate(selectedDate)}
+                {lastUpdated ? ` · Updated ${lastUpdated}` : ""}
+              </p>
+            </div>
+            <div className="availability-live">
+              <span className="live-pulse" />
+              Live availability
+            </div>
           </div>
 
-        )}
+          {loadingAvailability ? (
+            <div className="availability-loading-card">
+              <div className="loading-spinner" />
+              <div>
+                <strong>Checking the live schedule</strong>
+                <span>Looking for open appointment times.</span>
+              </div>
+            </div>
+          ) : availability ? (
+            <>
+              <div className="availability-summary">
+                <div>
+                  <span>Total slots</span>
+                  <strong>{availability.total_slots}</strong>
+                </div>
+                <div>
+                  <span>Booked</span>
+                  <strong>{availability.booked_slots}</strong>
+                </div>
+                <div className="available-stat">
+                  <span>Available</span>
+                  <strong>{availability.available_slots}</strong>
+                </div>
+              </div>
 
-      {/* =================================================
-          SELECTED APPOINTMENT
-      ================================================= */}
+              <div className="slot-heading">
+                <div>
+                  <strong>Select a time</strong>
+                  <span>Only currently available times can be selected.</span>
+                </div>
+                <div className="slot-legend">
+                  <span><i className="dot available" /> Available</span>
+                  <span><i className="dot booked" /> Booked</span>
+                  <span><i className="dot blocked" /> Unavailable</span>
+                </div>
+              </div>
 
-      {selectedTime &&
-        availability && (
+              <div className="time-slots">
+                {visibleSlots.map((slot) => {
+                  const displayStatus = getSlotDisplayStatus(slot);
+                  const selected =
+                    selectedTime?.start_time === slot.start_time &&
+                    selectedTime?.end_time === slot.end_time;
 
-          <div className="selected-appointment">
+                  return (
+                    <button
+                      key={`${slot.start_time}-${slot.end_time}`}
+                      type="button"
+                      disabled={slot.status !== "available"}
+                      className={`time-slot ${displayStatus} ${selected ? "selected" : ""}`}
+                      onClick={() => handleTimeSelect(slot)}
+                      aria-pressed={selected}
+                    >
+                      <span>{formatTime(slot.start_time)}</span>
+                      <small>
+                        {slot.status === "booked"
+                          ? "Booked"
+                          : slot.status === "break"
+                            ? "Break"
+                            : slot.status === "unavailable"
+                              ? "Unavailable"
+                              : displayStatus === "few"
+                                ? "Few openings"
+                                : "Available"}
+                      </small>
+                      {selected && <b>✓</b>}
+                    </button>
+                  );
+                })}
+              </div>
 
+              {availability.slots.length > 12 && (
+                <div className="slot-expander">
+                  <button
+                    type="button"
+                    className="slot-expander-button"
+                    onClick={() => setShowAllSlots((value) => !value)}
+                  >
+                    {showAllSlots
+                      ? "Show fewer times"
+                      : `Show ${hiddenSlotCount} more time${hiddenSlotCount === 1 ? "" : "s"}`}
+                    <span>{showAllSlots ? "↑" : "↓"}</span>
+                  </button>
+                </div>
+              )}
+
+              {!availability.available && (
+                <div className="no-availability">
+                  <strong>No appointment openings on this date</strong>
+                  <span>
+                    {availability.message || "Try another date to find an available appointment."}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : null}
+        </section>
+      )}
+
+      {selectedTime && availability && (
+        <section className="selected-appointment">
+          <div className="selected-appointment-main">
+            <div className="selected-check">✓</div>
             <div>
-
-              <span>
-                Selected Appointment
-              </span>
-
-              <strong>
-                {
-                  availability.doctor_name
-                }
-              </strong>
-
+              <span>Selected appointment</span>
+              <strong>{availability.doctor_name}</strong>
               <p>
-
-                {selectedDate}
-
-                {" · "}
-
-                {
-                  selectedTime.start_time
-                }
-
-                {" - "}
-
-                {
-                  selectedTime.end_time
-                }
-
+                {formatDate(selectedDate)} · {formatTime(selectedTime.start_time)} – {formatTime(selectedTime.end_time)}
               </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="confirm-booking-button"
+            onClick={handleContinueToReview}
+            disabled={loadingPatientProfile || loadingReferral || booking}
+          >
+            Continue to coverage
+            <span>→</span>
+          </button>
+        </section>
+      )}
+        </>
+      )}
 
+      {selectedTime && availability && step !== "selection" && (
+        <section className="booking-step-context">
+          <div className="booking-step-context-main">
+            <div className="booking-context-avatar">
+              {availability.doctor_name
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0])
+                .join("")
+                .toUpperCase()}
+            </div>
+            <div>
+              <span>APPOINTMENT SELECTED</span>
+              <strong>{availability.doctor_name}</strong>
+              <p>
+                {formatDate(selectedDate)} · {selectedTimeLabel}
+                {appointmentDuration ? ` · ${appointmentDuration} min` : ""}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="booking-edit-selection"
+            onClick={goBackToSelection}
+            disabled={booking}
+          >
+            Edit selection
+          </button>
+        </section>
+      )}
+
+      {selectedTime && availability && step === "coverage" && (
+        <section className="coverage-panel active">
+          <div className="coverage-header">
+            <div>
+              <span className="booking-section-kicker">STEP 02</span>
+              <h3>Coverage & patient confirmation</h3>
+              <p>Review the information we have before you continue.</p>
+            </div>
+            <div className={`eligibility-pill ${eligibilityState.tone}`}>
+              <span />
+              {eligibilityState.title}
+            </div>
+          </div>
+
+          <div className="coverage-grid">
+            <div className="coverage-card">
+              <span className="coverage-card-label">INSURANCE ON FILE</span>
+              {loadingPatientProfile ? (
+                <div className="coverage-loading">Loading patient profile…</div>
+              ) : hasInsurance ? (
+                <>
+                  <strong>{patientProfile?.insurance_provider}</strong>
+                  <div className="member-row">
+                    <span>Member ID</span>
+                    <b>{maskMemberId(patientProfile?.insurance_member_id)}</b>
+                  </div>
+                  <small>Member ID is masked for privacy.</small>
+                </>
+              ) : (
+                <>
+                  <strong>Self-pay / no insurance on file</strong>
+                  <small>No payer information has been added to your patient profile.</small>
+                </>
+              )}
             </div>
 
+            <div className="coverage-card">
+              <span className="coverage-card-label">PATIENT CONFIRMATION</span>
+              <strong>Is your insurance currently active?</strong>
+              <p>
+                This is your confirmation only. It does not replace a real-time
+                payer eligibility check.
+              </p>
+              <div className="coverage-choice-group">
+                <button
+                  type="button"
+                  className={insuranceActive === true ? "selected" : ""}
+                  onClick={() => setInsuranceActive(true)}
+                >
+                  <span>✓</span>
+                  Yes, active
+                </button>
+                <button
+                  type="button"
+                  className={insuranceActive === false ? "selected" : ""}
+                  onClick={() => setInsuranceActive(false)}
+                >
+                  <span>?</span>
+                  Not sure
+                </button>
+              </div>
+            </div>
+
+            <div className="coverage-card booking-schedule-card">
+              <span className="coverage-card-label">SCHEDULE CHECK</span>
+              <strong>{availability.available_slots} openings remain</strong>
+              <div className="schedule-meter">
+                <span style={{ width: `${availabilityRate}%` }} />
+              </div>
+              <div className="schedule-meta">
+                <span>{availabilityRate}% of listed slots available</span>
+                <b>{lastUpdated ? `Updated ${lastUpdated}` : "Live schedule"}</b>
+              </div>
+              <small>
+                The appointment slot is checked again by the server when you book.
+              </small>
+            </div>
+          </div>
+
+          <div className={`eligibility-detail ${eligibilityState.tone}`}>
+            <div className="eligibility-detail-icon">
+              {eligibilityState.tone === "ready" ? "✓" : eligibilityState.tone === "loading" ? "…" : "!"}
+            </div>
+            <div>
+              <strong>{eligibilityState.title}</strong>
+              <p>{eligibilityState.detail}</p>
+            </div>
+          </div>
+
+          <div className="coverage-trust-note">
+            <span>⌁</span>
+            <p>
+              Your member ID is masked in this booking screen. Patient confirmation
+              is stored only as part of this booking session and is not a payer
+              eligibility response.
+            </p>
+          </div>
+
+          <div className="coverage-actions">
             <button
               type="button"
-              className="confirm-booking-button"
-              onClick={
-                handleConfirmBooking
-              }
-              disabled={
-                booking ||
-                loadingPatientProfile ||
-                loadingReferral
-              }
+              className="secondary-booking-button"
+              onClick={goBackToSelection}
             >
-              Confirm Appointment
+              ← Change selection
             </button>
+            <button
+              type="button"
+              className="primary-booking-button"
+              onClick={() => {
+                handleContinueToReview();
+              }}
+              disabled={!coverageReady || loadingPatientProfile || loadingReferral || !canBookAppointment()}
+            >
+              Review appointment
+              <span>→</span>
+            </button>
+          </div>
+        </section>
+      )}
 
+      {selectedTime && availability && step === "review" && (
+        <section className="review-panel">
+          <div className="review-header">
+            <div>
+              <span className="booking-section-kicker">STEP 03</span>
+              <h3>Review appointment</h3>
+              <p>Everything looks ready. Confirm the details before booking.</p>
+            </div>
+            <span className="review-ready">READY TO BOOK</span>
           </div>
 
-        )}
+          <div className="review-patient-strip">
+            <div>
+              <span>PATIENT</span>
+              <strong>{patientProfile?.name || "Current patient"}</strong>
+            </div>
+            <div>
+              <span>CONTACT</span>
+              <strong>{patientProfile?.email || "Patient portal"}</strong>
+            </div>
+            <div>
+              <span>APPOINTMENT LENGTH</span>
+              <strong>{appointmentDuration ? `${appointmentDuration} minutes` : "Standard visit"}</strong>
+            </div>
+          </div>
 
-      {/* =================================================
-          CONFIRMATION MODAL
-      ================================================= */}
-
-      {showConfirmation &&
-        selectedTime &&
-        availability && (
-
-          <div className="confirmation-overlay">
-
-            <div
-              className="confirmation-card"
-              role="dialog"
-              aria-modal="true"
-            >
-
-              <button
-                type="button"
-                className="confirmation-close"
-                onClick={() =>
-                  setShowConfirmation(
-                    false
-                  )
-                }
-                disabled={booking}
-                aria-label="Close confirmation"
-              >
-                ×
-              </button>
-
-              <div className="confirmation-icon">
-                ✓
+          <div className="review-layout">
+            <div className="review-main-card">
+              <div className="review-doctor">
+                <div className="doctor-avatar">
+                  {availability.doctor_name
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()}
+                </div>
+                <div>
+                  <span>CARE PROVIDER</span>
+                  <strong>{availability.doctor_name}</strong>
+                  <small>{selectedDoctorData?.specialization || "Healthcare provider"}</small>
+                </div>
               </div>
 
-              <p className="confirmation-label">
-                CONFIRM APPOINTMENT
-              </p>
-
-              <h3>
-                Review your appointment
-              </h3>
-
-              <p className="confirmation-subtitle">
-                Please check the details
-                before booking your
-                appointment.
-              </p>
-
-              <div className="confirmation-details">
-
+              <div className="review-details-grid">
                 <div>
-
-                  <span>
-                    Doctor
-                  </span>
-
-                  <strong>
-                    {
-                      availability.doctor_name
-                    }
-                  </strong>
-
+                  <span>Date</span>
+                  <strong>{formatDate(selectedDate)}</strong>
                 </div>
-
                 <div>
-
-                  <span>
-                    Date
-                  </span>
-
-                  <strong>
-                    {selectedDate}
-                  </strong>
-
+                  <span>Time</span>
+                  <strong>{formatTime(selectedTime.start_time)} – {formatTime(selectedTime.end_time)}</strong>
                 </div>
-
                 <div>
-
-                  <span>
-                    Time
-                  </span>
-
-                  <strong>
-
-                    {
-                      selectedTime.start_time
-                    }
-
-                    {" - "}
-
-                    {
-                      selectedTime.end_time
-                    }
-
-                  </strong>
-
+                  <span>Visit type</span>
+                  <strong>In-person</strong>
                 </div>
-
                 <div>
-
-                  <span>
-                    Appointment Type
-                  </span>
-
+                  <span>Coverage</span>
                   <strong>
-                    In Person
+                    {hasInsurance
+                      ? patientProfile?.insurance_provider || "Insurance on file"
+                      : "Self-pay / uninsured"}
                   </strong>
-
                 </div>
-
-                {/* ======================================
-                    REFERRAL INFORMATION
-                ====================================== */}
-
-                {selectedDoctorData?.requires_referral && (
-                  <div>
-
-                    <span>
-                      Referral
-                    </span>
-
-                    <strong>
-                      {referralStatus ===
-                      "valid"
-                        ? "✓ Verified"
-                        : referralStatus ===
-                          "direct_booking"
-                        ? "Not Required"
-                        : "Required"}
-                    </strong>
-
-                  </div>
-                )}
-
               </div>
-
-              <div className="confirmation-actions">
-
-                <button
-                  type="button"
-                  className="confirmation-cancel"
-                  onClick={() =>
-                    setShowConfirmation(
-                      false
-                    )
-                  }
-                  disabled={booking}
-                >
-                  Go Back
-                </button>
-
-                <button
-                  type="button"
-                  className="confirmation-submit"
-                  onClick={
-                    handleFinalBooking
-                  }
-                  disabled={
-                    booking ||
-                    !canBookAppointment()
-                  }
-                >
-                  {booking
-                    ? "Booking..."
-                    : "Confirm & Book"}
-                </button>
-
-              </div>
-
             </div>
 
+            <div className="review-side-card">
+              <span className="booking-section-kicker">BEFORE YOU BOOK</span>
+              <h4>Final confirmation</h4>
+              <ul>
+                <li><span>✓</span> Time is currently available.</li>
+                <li><span>✓</span> Patient information is loaded.</li>
+                <li><span>✓</span> Booking requirements have been checked.</li>
+              </ul>
+              <p>
+                Final booking is subject to the server confirming that the slot
+                is still available.
+              </p>
+            </div>
           </div>
 
-        )}
+          <div className="review-actions">
+            <button
+              type="button"
+              className="secondary-booking-button"
+              onClick={goBackToCoverage}
+              disabled={booking}
+            >
+              ← Back
+            </button>
+            <button
+              type="button"
+              className="primary-booking-button"
+              onClick={openConfirmation}
+              disabled={booking || !canBookAppointment()}
+            >
+              Continue to confirmation
+              <span>→</span>
+            </button>
+          </div>
+        </section>
+      )}
 
+      {showConfirmation && selectedTime && availability && (
+        <div className="confirmation-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !booking) {
+            setShowConfirmation(false);
+          }
+        }}>
+          <div className="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="booking-confirm-title">
+            <button
+              type="button"
+              className="confirmation-close"
+              onClick={() => setShowConfirmation(false)}
+              disabled={booking}
+              aria-label="Close confirmation"
+            >
+              ×
+            </button>
+
+            <div className="confirmation-top">
+              <div className="confirmation-icon">✓</div>
+              <span className="confirmation-kicker">FINAL CHECK</span>
+              <h3 id="booking-confirm-title">Ready to book?</h3>
+              <p>Confirm the appointment details below. The slot will be submitted to the scheduling system.</p>
+            </div>
+
+            <div className="confirmation-summary">
+              <div className="confirmation-summary-primary">
+                <span>APPOINTMENT</span>
+                <strong>{availability.doctor_name}</strong>
+                <p>{formatDate(selectedDate)}</p>
+                <b>{formatTime(selectedTime.start_time)} – {formatTime(selectedTime.end_time)}</b>
+              </div>
+              <div className="confirmation-summary-grid">
+                <div>
+                  <span>Patient</span>
+                  <strong>{patientProfile?.name || "Current patient"}</strong>
+                </div>
+                <div>
+                  <span>Visit</span>
+                  <strong>In-person</strong>
+                </div>
+                <div>
+                  <span>Coverage</span>
+                  <strong>{hasInsurance ? patientProfile?.insurance_provider : "Self-pay"}</strong>
+                </div>
+                <div>
+                  <span>Status</span>
+                  <strong>Ready to submit</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="confirmation-note">
+              <span>i</span>
+              <p>
+                Your appointment will only be created after the scheduling
+                server confirms the slot is still available.
+              </p>
+            </div>
+
+            <div className="confirmation-next-steps">
+              <div>
+                <span>01</span>
+                <p>Submit appointment request</p>
+              </div>
+              <div>
+                <span>02</span>
+                <p>Server re-checks the selected slot</p>
+              </div>
+              <div>
+                <span>03</span>
+                <p>Appointment is created in your account</p>
+              </div>
+            </div>
+
+            <div className="confirmation-actions">
+              <button
+                type="button"
+                className="confirmation-cancel"
+                onClick={() => setShowConfirmation(false)}
+                disabled={booking}
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                className="confirmation-submit"
+                onClick={() => void handleFinalBooking()}
+                disabled={booking || !canBookAppointment()}
+              >
+                {booking ? (
+                  <>
+                    <span className="button-spinner" />
+                    Booking…
+                  </>
+                ) : (
+                  <>Confirm & Book <span>→</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

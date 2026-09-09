@@ -1,58 +1,114 @@
 /* =========================================================
-   PATIENT REGISTRATION PAGE
+   HEALTHCARE+
+   PATIENT REGISTRATION
+   3-STEP PREMIUM REGISTRATION UI
 ========================================================= */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
+
+:root {
+  --register-blue: #1769df;
+  --register-blue-dark: #0f55b7;
+  --register-blue-soft: #eaf4ff;
+
+  --register-navy: #17385f;
+  --register-heading: #12345b;
+  --register-text: #35536f;
+  --register-muted: #7890a7;
+
+  --register-border: #dbe7f1;
+  --register-border-light: #e8eff5;
+
+  --register-bg: #f4f8fc;
+  --register-white: #ffffff;
+
+  --register-green: #1baa7a;
+  --register-red: #c85b5b;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
 
 .patient-register-page {
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 28px;
 
-  padding: 28px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
   background:
     radial-gradient(
-      circle at 8% 20%,
-      rgba(23, 105, 224, 0.12),
-      transparent 30%
+      circle at 4% 10%,
+      rgba(37, 119, 228, 0.12),
+      transparent 27%
     ),
     radial-gradient(
-      circle at 92% 80%,
-      rgba(23, 105, 224, 0.08),
+      circle at 96% 90%,
+      rgba(74, 143, 222, 0.10),
       transparent 30%
     ),
-    #f5f9ff;
+    linear-gradient(
+      135deg,
+      #edf6ff 0%,
+      #f8fbff 48%,
+      #edf5fd 100%
+    );
+
+  color: var(--register-text);
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+  overflow-x: hidden;
 }
 
 
 /* =========================================================
-   MAIN CARD
+   MAIN CONTAINER
 ========================================================= */
 
 .patient-register-container {
+  position: relative;
+
   width: 100%;
-  max-width: 1280px;
-  min-height: 820px;
+  max-width: 1480px;
+
+  min-height: 850px;
 
   display: grid;
-  grid-template-columns: 48% 52%;
+
+  grid-template-columns:
+    minmax(390px, 42%)
+    minmax(0, 58%);
 
   overflow: hidden;
 
+  border:
+    1px solid rgba(211, 226, 240, 0.95);
+
+  border-radius: 28px;
+
   background: #ffffff;
 
-  border: 1px solid #e1eaf4;
-  border-radius: 24px;
-
   box-shadow:
-    0 22px 60px rgba(35, 76, 120, 0.12);
+    0 35px 90px rgba(26, 65, 105, 0.13),
+    0 10px 30px rgba(26, 65, 105, 0.06);
 }
 
 
@@ -64,54 +120,73 @@
   position: relative;
 
   min-width: 0;
-  min-height: 820px;
+  min-height: 850px;
 
-  padding: 52px 48px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #eef7ff 0%,
-      #f5faff 55%,
-      #eaf4ff 100%
-    );
+  padding: 50px;
 
   overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 88% 28%,
+      rgba(255, 255, 255, 0.96),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 50% 70%,
+      rgba(255, 255, 255, 0.55),
+      transparent 27%
+    ),
+    linear-gradient(
+      145deg,
+      #e8f4ff 0%,
+      #f5faff 52%,
+      #e3f0ff 100%
+    );
 }
 
 
-/* Decorative circles */
+/* large background circle */
 
 .patient-register-left::before {
   content: "";
 
   position: absolute;
 
-  width: 330px;
-  height: 330px;
+  width: 570px;
+  height: 570px;
 
-  right: -150px;
   top: 100px;
+  right: -310px;
 
   border-radius: 50%;
 
-  background: rgba(255, 255, 255, 0.45);
+  background:
+    rgba(255, 255, 255, 0.42);
+
+  pointer-events: none;
 }
+
+
+/* lower background circle */
 
 .patient-register-left::after {
   content: "";
 
   position: absolute;
 
-  width: 220px;
-  height: 220px;
+  width: 390px;
+  height: 390px;
 
-  left: -120px;
-  bottom: -90px;
+  left: -260px;
+  bottom: -220px;
 
   border-radius: 50%;
 
-  background: rgba(210, 232, 255, 0.55);
+  background:
+    rgba(204, 230, 255, 0.62);
+
+  pointer-events: none;
 }
 
 
@@ -121,100 +196,166 @@
 
 .register-brand {
   position: relative;
-  z-index: 2;
+
+  z-index: 10;
 
   display: flex;
   align-items: center;
 
-  gap: 12px;
+  gap: 14px;
 }
 
 .register-brand-icon {
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
 
   flex-shrink: 0;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
 
-  border-radius: 12px;
+  border-radius: 15px;
 
-  background: #1769e0;
+  background:
+    linear-gradient(
+      145deg,
+      #287ced,
+      #1161d5
+    );
 
   color: #ffffff;
 
-  font-size: 23px;
+  font-size: 13px;
+  font-weight: 900;
+
+  letter-spacing: 0.4px;
 
   box-shadow:
-    0 8px 18px rgba(23, 105, 224, 0.20);
+    0 13px 28px rgba(23, 105, 223, 0.24);
 }
 
-.register-brand h2 {
+.register-brand-text h2 {
   margin: 0;
 
-  color: #1769e0;
+  color: var(--register-heading);
 
-  font-size: 23px;
-  font-weight: 750;
+  font-size: 24px;
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: -0.9px;
 }
 
-.register-brand span {
-  display: block;
+.register-brand-text h2 span {
+  color: var(--register-blue);
+}
 
-  margin-top: 2px;
+.register-brand-text p {
+  margin: 6px 0 0;
 
-  color: #607895;
+  color: #7b92a9;
 
-  font-size: 13px;
+  font-size: 10px;
+  line-height: 1.2;
+
+  font-weight: 500;
 }
 
 
 /* =========================================================
-   HERO
+   LEFT HERO
 ========================================================= */
 
 .register-hero {
   position: relative;
-  z-index: 2;
 
-  margin-top: 105px;
+  z-index: 5;
+
+  margin-top: 145px;
 }
 
 .register-eyebrow {
-  margin: 0 0 2px;
+  display: inline-flex;
+  align-items: center;
 
-  color: #17365d;
+  gap: 8px;
 
-  font-size: 17px;
-  font-weight: 750;
+  margin: 0;
 
-  letter-spacing: 0.3px;
+  padding: 7px 11px;
+
+  border:
+    1px solid #cfe3f6;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.68);
+
+  color: var(--register-blue);
+
+  font-size: 9px;
+
+  font-weight: 850;
+
+  letter-spacing: 1.1px;
+}
+
+.eyebrow-dot {
+  width: 7px;
+  height: 7px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: var(--register-green);
+
+  box-shadow:
+    0 0 0 4px rgba(27, 170, 122, 0.10);
+}
+
+.register-eyebrow-title {
+  margin: 37px 0 0;
+
+  color: var(--register-heading);
+
+  font-size: 15px;
+
+  font-weight: 850;
+
+  letter-spacing: 0.8px;
 }
 
 .register-hero h1 {
-  margin: 0;
+  margin: 4px 0 0;
 
-  color: #1769e0;
+  color: var(--register-heading);
 
-  font-size: 50px;
-  line-height: 1.08;
+  font-size: clamp(54px, 5vw, 76px);
 
-  font-weight: 800;
+  line-height: 0.91;
 
-  letter-spacing: -1.5px;
+  font-weight: 900;
+
+  letter-spacing: -4px;
+}
+
+.register-hero h1 span {
+  color: var(--register-blue);
 }
 
 .register-description {
   max-width: 480px;
 
-  margin: 22px 0 0;
+  margin: 27px 0 0;
 
-  color: #607895;
+  color: #69839d;
 
-  font-size: 16px;
-  line-height: 1.7;
+  font-size: 13px;
+
+  line-height: 1.85;
 }
 
 
@@ -224,140 +365,219 @@
 
 .register-floating-card {
   position: absolute;
-  z-index: 3;
+
+  z-index: 10;
 
   display: flex;
   align-items: center;
 
   gap: 12px;
 
-  padding: 14px 18px;
+  padding: 14px 17px;
 
-  background: rgba(255, 255, 255, 0.96);
+  border:
+    1px solid rgba(210, 226, 240, 0.95);
 
-  border: 1px solid #dce8f5;
+  border-radius: 16px;
 
-  border-radius: 14px;
+  background:
+    rgba(255, 255, 255, 0.90);
 
   box-shadow:
-    0 12px 30px rgba(44, 86, 130, 0.10);
+    0 20px 48px rgba(32, 76, 117, 0.10);
+
+  backdrop-filter: blur(12px);
 }
 
 .register-card-one {
-  left: 95px;
-  bottom: 205px;
+  left: 50px;
+  bottom: 184px;
+
+  min-width: 215px;
 }
 
 .register-card-two {
-  right: 65px;
-  bottom: 150px;
+  right: 42px;
+  bottom: 113px;
+
+  min-width: 205px;
 }
 
 .floating-icon {
-  width: 38px;
-  height: 38px;
+  position: relative;
+
+  width: 43px;
+  height: 43px;
 
   flex-shrink: 0;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
 
   border-radius: 50%;
 
-  background: #e8f3ff;
-
-  color: #1769e0;
-
-  font-size: 17px;
-  font-weight: 700;
+  background: #e8f4ff;
 }
 
-.register-floating-card strong {
+.floating-icon-check span {
+  position: relative;
+
+  width: 13px;
+  height: 7px;
+
   display: block;
 
-  color: #17365d;
+  border-left: 2px solid var(--register-blue);
+  border-bottom: 2px solid var(--register-blue);
 
-  font-size: 13px;
+  transform:
+    rotate(-45deg)
+    translate(1px, -1px);
 }
 
-.register-floating-card span {
+.floating-icon-plus span,
+.floating-icon-plus i {
+  position: absolute;
+
   display: block;
 
-  margin-top: 2px;
+  width: 13px;
+  height: 2px;
 
-  color: #7b8fa5;
+  border-radius: 2px;
 
-  font-size: 11px;
+  background: var(--register-blue);
+}
+
+.floating-icon-plus i {
+  transform: rotate(90deg);
+}
+
+.floating-card-copy {
+  min-width: 0;
+}
+
+.floating-card-copy strong {
+  display: block;
+
+  color: var(--register-heading);
+
+  font-size: 10px;
+
+  font-weight: 850;
+}
+
+.floating-card-copy span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #8398ac;
+
+  font-size: 8px;
+}
+
+.floating-card-status {
+  margin-left: auto;
+}
+
+.floating-card-status span {
+  display: block;
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: var(--register-green);
 }
 
 
 /* =========================================================
-   FEATURES
+   LEFT FEATURE BOX
 ========================================================= */
 
 .register-features {
   position: absolute;
 
-  z-index: 4;
+  z-index: 10;
 
-  left: 48px;
-  right: 48px;
-  bottom: 45px;
+  left: 50px;
+  right: 50px;
+  bottom: 34px;
 
   display: grid;
 
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
 
-  gap: 18px;
+  gap: 12px;
 
-  padding: 18px 20px;
+  padding: 17px 18px;
 
-  background: rgba(255, 255, 255, 0.92);
+  border:
+    1px solid rgba(211, 227, 241, 0.95);
 
-  border: 1px solid #dce8f5;
+  border-radius: 16px;
 
-  border-radius: 14px;
+  background:
+    rgba(255, 255, 255, 0.90);
 
   box-shadow:
-    0 10px 25px rgba(44, 86, 130, 0.06);
+    0 16px 38px rgba(30, 74, 115, 0.08);
+
+  backdrop-filter: blur(10px);
 }
 
 .register-feature {
+  min-width: 0;
+
   display: flex;
   align-items: flex-start;
 
-  gap: 9px;
-
-  min-width: 0;
+  gap: 8px;
 }
 
 .feature-check {
-  width: 30px;
-  height: 30px;
+  width: 27px;
+  height: 27px;
 
   flex-shrink: 0;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
 
   border-radius: 50%;
 
-  background: #e7f2ff;
+  background: #e7f3ff;
+}
 
-  color: #1769e0;
+.feature-check span {
+  position: relative;
 
-  font-size: 13px;
-  font-weight: 700;
+  width: 9px;
+  height: 5px;
+
+  display: block;
+
+  border-left: 1.7px solid var(--register-blue);
+  border-bottom: 1.7px solid var(--register-blue);
+
+  transform:
+    rotate(-45deg)
+    translate(1px, -1px);
 }
 
 .register-feature strong {
   display: block;
 
-  color: #17365d;
+  color: #294968;
 
-  font-size: 11px;
+  font-size: 8px;
+
+  line-height: 1.35;
+
+  font-weight: 850;
 }
 
 .register-feature span {
@@ -365,11 +585,11 @@
 
   margin-top: 3px;
 
-  color: #7b8fa5;
+  color: #8196aa;
 
-  font-size: 9px;
+  font-size: 7px;
 
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 
@@ -380,9 +600,31 @@
 .patient-register-right {
   min-width: 0;
 
-  padding: 55px 62px 45px;
+  padding: 52px 64px 42px;
 
   background: #ffffff;
+
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    #c6d9eb
+    transparent;
+}
+
+.patient-register-right::-webkit-scrollbar {
+  width: 7px;
+}
+
+.patient-register-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.patient-register-right::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+
+  background: #c6d9eb;
 }
 
 
@@ -391,42 +633,239 @@
 ========================================================= */
 
 .patient-register-header {
-  margin-bottom: 25px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  margin-bottom: 32px;
+}
+
+.register-content-label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: var(--register-blue);
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.2px;
 }
 
 .patient-register-header h1 {
   margin: 0;
 
-  color: #102f59;
+  color: var(--register-heading);
 
-  font-size: 29px;
-  font-weight: 750;
+  font-size: 31px;
 
-  line-height: 1.25;
+  line-height: 1.16;
 
-  letter-spacing: -0.6px;
+  font-weight: 900;
+
+  letter-spacing: -1.2px;
 }
 
 .patient-register-header p {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
 
-  color: #718096;
+  color: #7b90a5;
 
-  font-size: 14px;
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+.register-secure-badge {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 8px 11px;
+
+  border:
+    1px solid #d9e9f7;
+
+  border-radius: 999px;
+
+  background: #f6fbff;
+
+  color: #65809a;
+
+  font-size: 8px;
+
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+.secure-dot {
+  width: 7px;
+  height: 7px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: var(--register-green);
 }
 
 
 /* =========================================================
-   PAGE TITLE
+   PROGRESS
 ========================================================= */
 
-.patient-register-right > h2 {
-  margin: 0 0 23px;
+.registration-progress {
+  width: 100%;
 
-  color: #1769e0;
+  display: grid;
 
-  font-size: 23px;
-  font-weight: 750;
+  grid-template-columns:
+    auto minmax(35px, 1fr)
+    auto minmax(35px, 1fr)
+    auto;
+
+  align-items: center;
+
+  margin-bottom: 38px;
+}
+
+.progress-step {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  opacity: 0.48;
+
+  transition:
+    opacity 0.2s ease;
+}
+
+.progress-step.active {
+  opacity: 1;
+}
+
+.progress-circle {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid #d5e2ee;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  color: #8ca1b4;
+
+  font-size: 11px;
+
+  font-weight: 850;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.progress-step.active .progress-circle {
+  border-color: var(--register-blue);
+
+  background: var(--register-blue);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 18px rgba(23, 105, 223, 0.20);
+}
+
+.progress-step.completed .progress-circle {
+  border-color: var(--register-green);
+
+  background: #edf9f5;
+
+  color: var(--register-green);
+
+  box-shadow: none;
+}
+
+.circle-check {
+  position: relative;
+
+  width: 11px;
+  height: 6px;
+
+  display: block;
+
+  border-left:
+    2px solid var(--register-green);
+
+  border-bottom:
+    2px solid var(--register-green);
+
+  transform:
+    rotate(-45deg)
+    translate(1px, -1px);
+}
+
+.progress-copy {
+  min-width: 0;
+}
+
+.progress-copy strong {
+  display: block;
+
+  color: var(--register-heading);
+
+  font-size: 9px;
+
+  font-weight: 850;
+
+  white-space: nowrap;
+}
+
+.progress-copy span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #8ca0b2;
+
+  font-size: 7px;
+
+  white-space: nowrap;
+}
+
+.progress-line {
+  height: 1px;
+
+  margin:
+    0 12px;
+
+  background: #dce6ef;
+
+  transition:
+    background 0.25s ease;
+}
+
+.progress-line-active {
+  background: var(--register-blue);
 }
 
 
@@ -437,137 +876,184 @@
 .patient-register-form {
   width: 100%;
 
-  max-height: 650px;
-
-  overflow-y: auto;
-
-  padding-right: 15px;
-
-  scrollbar-width: thin;
-
-  scrollbar-color:
-    #c8d9eb
-    transparent;
-}
-
-.patient-register-form::-webkit-scrollbar {
-  width: 6px;
-}
-
-.patient-register-form::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.patient-register-form::-webkit-scrollbar-thumb {
-  background: #c8d9eb;
-
-  border-radius: 10px;
+  max-width: 800px;
 }
 
 
 /* =========================================================
-   SECTION
+   STEP PANEL
 ========================================================= */
 
-.patient-register-section {
-  margin-bottom: 27px;
+.registration-step-panel {
+  width: 100%;
 }
 
-.patient-register-section h3 {
-  position: relative;
+.step-panel-heading {
+  display: flex;
+  align-items: flex-start;
 
-  margin: 0 0 19px;
+  gap: 14px;
 
-  padding-bottom: 11px;
-
-  color: #17365d;
-
-  font-size: 16px;
-  font-weight: 700;
-
-  border-bottom: 1px solid #e0e8f1;
+  margin-bottom: 29px;
 }
 
-.patient-register-section h3::after {
-  content: "";
-
-  position: absolute;
-
-  left: 0;
-  bottom: -1px;
-
+.step-panel-badge {
   width: 46px;
-  height: 2px;
+  height: 46px;
 
-  background: #1769e0;
+  flex-shrink: 0;
 
-  border-radius: 2px;
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid #d7e9f8;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #edf7ff,
+      #e5f2ff
+    );
+
+  color: var(--register-blue);
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.7px;
+}
+
+.step-panel-heading > div:last-child {
+  min-width: 0;
+}
+
+.step-panel-heading > div:last-child > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--register-blue);
+
+  font-size: 8px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+}
+
+.step-panel-heading h2 {
+  margin: 0;
+
+  color: var(--register-heading);
+
+  font-size: 21px;
+
+  line-height: 1.2;
+
+  font-weight: 900;
+
+  letter-spacing: -0.5px;
+}
+
+.step-panel-heading p {
+  max-width: 600px;
+
+  margin: 6px 0 0;
+
+  color: #7b91a6;
+
+  font-size: 10px;
+
+  line-height: 1.6;
 }
 
 
 /* =========================================================
-   FORM GROUP
+   FORM FIELDS
 ========================================================= */
+
+.form-fields {
+  width: 100%;
+}
 
 .patient-form-group {
-  margin-bottom: 17px;
+  margin-bottom: 20px;
 }
 
 .patient-form-group label {
   display: block;
 
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 
-  color: #243b53;
+  color: #294665;
 
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 10px;
+
+  line-height: 1.3;
+
+  font-weight: 850;
 }
 
+.patient-form-group label b {
+  color: var(--register-blue);
 
-/* =========================================================
-   INPUTS
-========================================================= */
+  font-weight: 900;
+}
 
 .patient-form-group input,
 .patient-form-group select {
   width: 100%;
-  height: 48px;
 
-  padding: 0 14px;
+  height: 53px;
 
-  border: 1px solid #d4e0ec;
+  padding:
+    0 15px;
 
-  border-radius: 8px;
+  border:
+    1px solid #d6e3ee;
 
-  background: #ffffff;
-
-  color: #243b53;
-
-  font-size: 14px;
+  border-radius: 10px;
 
   outline: none;
 
+  background: #fbfdff;
+
+  color: #294665;
+
+  font-family: inherit;
+
+  font-size: 11px;
+
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.patient-form-group input::placeholder {
-  color: #9aacc0;
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .patient-form-group input:hover,
 .patient-form-group select:hover {
-  border-color: #b9cadc;
+  border-color: #b9cede;
+
+  background: #ffffff;
 }
 
 .patient-form-group input:focus,
 .patient-form-group select:focus {
-  border-color: #1769e0;
+  border-color: var(--register-blue);
+
+  background: #ffffff;
 
   box-shadow:
-    0 0 0 3px rgba(23, 105, 224, 0.09);
+    0 0 0 4px
+    rgba(23, 105, 223, 0.08);
+}
+
+.patient-form-group input::placeholder {
+  color: #9aafc2;
 }
 
 .patient-form-group select {
@@ -576,58 +1062,388 @@
 
 
 /* =========================================================
-   BUTTON
+   DATE INPUT
+========================================================= */
+
+.patient-form-group input[type="date"] {
+  cursor: pointer;
+}
+
+.patient-form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+
+  opacity: 0.55;
+}
+
+
+/* =========================================================
+   PASSWORD
+========================================================= */
+
+.password-input-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 72px;
+}
+
+.password-toggle {
+  position: absolute;
+
+  top: 50%;
+  right: 9px;
+
+  transform: translateY(-50%);
+
+  height: 29px;
+
+  padding:
+    0 10px;
+
+  border: 0;
+
+  border-radius: 6px;
+
+  background: #edf5fd;
+
+  color: var(--register-blue);
+
+  font-family: inherit;
+
+  font-size: 8px;
+
+  font-weight: 850;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.password-toggle:hover {
+  background: #dcecff;
+
+  color: var(--register-blue-dark);
+}
+
+.password-toggle:focus-visible {
+  outline:
+    3px solid
+    rgba(23, 105, 223, 0.15);
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   HELP TEXT
+========================================================= */
+
+.field-help {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #8b9fb2;
+
+  font-size: 7px;
+
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   TWO COLUMN FIELDS
+========================================================= */
+
+.form-row-two {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+
+/* =========================================================
+   SECTION MINI LABEL
+========================================================= */
+
+.section-mini-label {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin:
+    3px 0 18px;
+
+  color: #6d87a0;
+
+  font-size: 8px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.15px;
+}
+
+.section-mini-label::after {
+  content: "";
+
+  height: 1px;
+
+  flex: 1;
+
+  background: #e5edf4;
+}
+
+.insurance-label {
+  margin-top: 9px;
+}
+
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+.registration-summary {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 8px;
+
+  padding: 14px 15px;
+
+  border:
+    1px solid #dcebe6;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f7fcfa,
+      #f2faf7
+    );
+}
+
+.summary-status {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #e4f7f0;
+}
+
+.summary-status span {
+  width: 8px;
+  height: 8px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: var(--register-green);
+}
+
+.registration-summary strong {
+  display: block;
+
+  color: #28614e;
+
+  font-size: 9px;
+
+  font-weight: 850;
+}
+
+.registration-summary p {
+  margin: 4px 0 0;
+
+  color: #78978d;
+
+  font-size: 7px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   ACTION ROW
+========================================================= */
+
+.step-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-top: 31px;
+
+  padding-top: 21px;
+
+  border-top:
+    1px solid #e8eef4;
+}
+
+.step-action-right {
+  justify-content: flex-end;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
 ========================================================= */
 
 .patient-register-button {
-  width: 100%;
-  height: 50px;
+  min-width: 178px;
 
-  margin-top: 3px;
+  height: 51px;
 
-  border: none;
+  padding:
+    0 20px;
 
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  background: #1769e0;
+  gap: 14px;
+
+  border:
+    1px solid var(--register-blue);
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #287dec 0%,
+      #1769df 100%
+    );
 
   color: #ffffff;
 
-  font-size: 15px;
-  font-weight: 700;
+  font-family: inherit;
+
+  font-size: 10px;
+
+  font-weight: 850;
 
   cursor: pointer;
 
   box-shadow:
-    0 8px 20px rgba(23, 105, 224, 0.20);
+    0 12px 25px
+    rgba(23, 105, 223, 0.18);
 
   transition:
-    background 0.2s ease,
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
-.patient-register-button:hover {
-  background: #125bc5;
-
-  transform: translateY(-1px);
+.patient-register-button:hover:not(:disabled) {
+  transform: translateY(-2px);
 
   box-shadow:
-    0 10px 24px rgba(23, 105, 224, 0.25);
+    0 16px 31px
+    rgba(23, 105, 223, 0.25);
+
+  filter: brightness(1.02);
 }
 
-.patient-register-button:active {
+.patient-register-button:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .patient-register-button:disabled {
-  background: #9bbbe3;
+  opacity: 0.62;
 
   cursor: not-allowed;
 
   box-shadow: none;
+}
 
-  transform: none;
+.button-arrow {
+  font-size: 15px;
+
+  line-height: 1;
+}
+
+.patient-submit-button {
+  min-width: 225px;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.patient-back-button {
+  height: 51px;
+
+  padding:
+    0 17px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 9px;
+
+  border:
+    1px solid #d9e5ef;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #55728d;
+
+  font-family: inherit;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.patient-back-button:hover:not(:disabled) {
+  border-color: #b9cddd;
+
+  background: #f8fbfe;
+
+  color: var(--register-heading);
+}
+
+.patient-back-button span {
+  font-size: 14px;
+
+  line-height: 1;
+}
+
+.patient-back-button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
 }
 
 
@@ -636,22 +1452,187 @@
 ========================================================= */
 
 .patient-register-message {
-  margin: 15px 0 0;
+  width: 100%;
 
-  padding: 12px;
+  margin: 18px 0 0;
 
-  border-radius: 8px;
+  padding: 12px 14px;
 
-  background: #f0f7ff;
+  display: flex;
+  align-items: center;
 
-  border: 1px solid #d7e7f8;
+  gap: 9px;
 
-  color: #1769e0;
+  border-radius: 9px;
 
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 9px;
+
+  line-height: 1.5;
+
+  font-weight: 750;
+}
+
+.patient-register-message.success {
+  border:
+    1px solid #cce9dd;
+
+  background: #f2fbf7;
+
+  color: #197957;
+}
+
+.patient-register-message.error {
+  border:
+    1px solid #efd7d7;
+
+  background: #fff7f7;
+
+  color: #b35454;
+}
+
+.message-indicator {
+  width: 7px;
+  height: 7px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+
+/* =========================================================
+   FOOTER NOTE
+========================================================= */
+
+.registration-footer-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  margin-top: 22px;
+
+  padding-top: 16px;
+
+  border-top:
+    1px solid #edf2f6;
+
+  color: #96a7b7;
+
+  font-size: 7px;
+
+  line-height: 1.5;
 
   text-align: center;
+}
+
+.footer-lock {
+  position: relative;
+
+  width: 8px;
+  height: 7px;
+
+  display: block;
+
+  flex-shrink: 0;
+
+  border:
+    1px solid #94a5b4;
+
+  border-radius: 2px;
+}
+
+.footer-lock::before {
+  content: "";
+
+  position: absolute;
+
+  left: 1px;
+  top: -5px;
+
+  width: 4px;
+  height: 5px;
+
+  border:
+    1px solid #94a5b4;
+
+  border-bottom: 0;
+
+  border-radius:
+    4px 4px 0 0;
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.patient-register-page
+button:focus-visible,
+.patient-register-page
+input:focus-visible,
+.patient-register-page
+select:focus-visible {
+  outline:
+    3px solid
+    rgba(23, 105, 223, 0.15);
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   LAPTOP
+========================================================= */
+
+@media (max-width: 1250px) {
+
+  .patient-register-page {
+    padding: 20px;
+  }
+
+  .patient-register-container {
+    grid-template-columns:
+      minmax(360px, 40%)
+      minmax(0, 60%);
+
+    min-height: 800px;
+  }
+
+  .patient-register-left {
+    min-height: 800px;
+
+    padding: 42px;
+  }
+
+  .patient-register-right {
+    padding:
+      44px 48px 38px;
+  }
+
+  .register-hero {
+    margin-top: 120px;
+  }
+
+  .register-hero h1 {
+    font-size: 57px;
+  }
+
+  .register-card-one {
+    left: 42px;
+  }
+
+  .register-card-two {
+    right: 28px;
+  }
+
+  .register-features {
+    left: 42px;
+    right: 42px;
+  }
 }
 
 
@@ -659,77 +1640,83 @@
    TABLET
 ========================================================= */
 
-@media (max-width: 1050px) {
+@media (max-width: 980px) {
 
   .patient-register-page {
-    padding: 20px;
+    padding: 16px;
   }
 
   .patient-register-container {
-    grid-template-columns: 42% 58%;
+    grid-template-columns: 1fr;
 
-    min-height: 760px;
+    max-width: 760px;
+
+    min-height: auto;
   }
 
   .patient-register-left {
-    min-height: 760px;
+    min-height: 430px;
 
-    padding: 42px 32px;
-  }
-
-  .patient-register-right {
-    padding: 42px 38px;
+    padding: 34px;
   }
 
   .register-hero {
-    margin-top: 75px;
+    margin-top: 70px;
   }
 
   .register-hero h1 {
-    font-size: 42px;
+    font-size: 52px;
   }
 
   .register-description {
-    font-size: 14px;
+    max-width: 550px;
   }
 
-  .register-floating-card {
-    display: none;
+  .register-card-one {
+    left: 34px;
+    bottom: 105px;
+  }
+
+  .register-card-two {
+    right: 34px;
+    bottom: 105px;
   }
 
   .register-features {
-    left: 25px;
-    right: 25px;
-
-    grid-template-columns: 1fr;
-
-    gap: 8px;
+    left: 34px;
+    right: 34px;
+    bottom: 25px;
   }
 
-  .register-feature {
-    align-items: center;
+  .patient-register-right {
+    padding:
+      40px 42px 42px;
   }
 }
 
 
 /* =========================================================
-   LARGE MOBILE
+   MOBILE
 ========================================================= */
 
-@media (max-width: 800px) {
+@media (max-width: 650px) {
 
   .patient-register-page {
-    min-height: 100svh;
-
     padding: 0;
 
-    align-items: flex-start;
+    display: block;
+
+    background:
+      linear-gradient(
+        145deg,
+        #edf6ff,
+        #f8fbff
+      );
   }
 
   .patient-register-container {
     width: 100%;
-
-    max-width: 700px;
+    max-width: none;
 
     min-height: 100svh;
 
@@ -737,61 +1724,107 @@
 
     overflow: visible;
 
-    border: none;
+    border: 0;
 
     border-radius: 0;
 
     box-shadow: none;
-
-    background: transparent;
   }
 
 
-  /* =======================================================
-     MOBILE HERO
-  ======================================================= */
+  /* LEFT */
 
   .patient-register-left {
-    width: 100%;
+    min-height: 330px;
 
-    min-height: 285px;
-
-    padding: 30px 28px;
-
-    overflow: hidden;
-
-    background:
-      linear-gradient(
-        145deg,
-        #eef7ff 0%,
-        #f5faff 55%,
-        #eaf4ff 100%
-      );
+    padding:
+      24px 20px 25px;
   }
+
+  .patient-register-left::before {
+    width: 350px;
+    height: 350px;
+
+    right: -220px;
+
+    top: 45px;
+  }
+
+  .patient-register-left::after {
+    width: 260px;
+    height: 260px;
+
+    left: -160px;
+    bottom: -160px;
+  }
+
+
+  /* BRAND */
+
+  .register-brand {
+    gap: 10px;
+  }
+
+  .register-brand-icon {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 12px;
+
+    font-size: 11px;
+  }
+
+  .register-brand-text h2 {
+    font-size: 20px;
+  }
+
+  .register-brand-text p {
+    margin-top: 5px;
+
+    font-size: 8px;
+  }
+
+
+  /* HERO */
 
   .register-hero {
     margin-top: 45px;
   }
 
   .register-eyebrow {
-    font-size: 13px;
+    padding:
+      6px 9px;
+
+    font-size: 8px;
+  }
+
+  .register-eyebrow-title {
+    margin-top: 26px;
+
+    font-size: 11px;
   }
 
   .register-hero h1 {
-    font-size: 38px;
+    font-size: 42px;
+
+    letter-spacing: -2.3px;
   }
 
   .register-description {
-    max-width: 520px;
+    max-width: 350px;
 
-    margin-top: 12px;
+    margin-top: 14px;
 
-    font-size: 13px;
+    font-size: 10px;
 
-    line-height: 1.55;
+    line-height: 1.65;
   }
 
-  .register-floating-card {
+
+  /* FLOATING CARDS */
+
+  .register-card-one,
+  .register-card-two {
     display: none;
   }
 
@@ -800,400 +1833,296 @@
   }
 
 
-  /* =======================================================
-     MOBILE FORM
-  ======================================================= */
+  /* RIGHT */
 
   .patient-register-right {
-    width: 100%;
-
-    padding: 32px 28px 45px;
-
-    background: transparent;
-  }
-
-  .patient-register-form {
-    max-height: none;
+    padding:
+      30px 20px 40px;
 
     overflow: visible;
-
-    padding-right: 0;
   }
-}
 
 
-/* =========================================================
-   MOBILE 600px
-========================================================= */
+  /* HEADER */
 
-@media (max-width: 600px) {
-
-  /*
-    IMPORTANT:
-    Entire mobile page uses the same background.
-    No white block between Hero and Form.
-  */
-
-  .patient-register-page {
-    width: 100%;
-
-    min-height: 100svh;
-
+  .patient-register-header {
     display: block;
 
-    padding: 0;
-
-    background:
-      radial-gradient(
-        circle at 8% 20%,
-        rgba(23, 105, 224, 0.12),
-        transparent 30%
-      ),
-      radial-gradient(
-        circle at 92% 80%,
-        rgba(23, 105, 224, 0.08),
-        transparent 30%
-      ),
-      linear-gradient(
-        145deg,
-        #eef7ff 0%,
-        #f5faff 55%,
-        #eaf4ff 100%
-      );
+    margin-bottom: 28px;
   }
 
-
-  /* Entire container transparent */
-
-  .patient-register-container {
-    width: 100%;
-
-    min-height: 100svh;
-
-    background: transparent;
-
-    border: none;
-
-    border-radius: 0;
-
-    box-shadow: none;
+  .register-content-label {
+    font-size: 8px;
   }
 
-
-  /* -------------------------------------------------------
-     HERO
-  ------------------------------------------------------- */
-
-  .patient-register-left {
-    min-height: 245px;
-
-    padding: 22px 20px;
-
-    background: transparent;
-  }
-
-  .register-brand {
-    gap: 9px;
-  }
-
-  .register-brand-icon {
-    width: 42px;
-    height: 42px;
-
-    border-radius: 11px;
-
-    font-size: 19px;
-  }
-
-  .register-brand h2 {
-    font-size: 19px;
-  }
-
-  .register-brand span {
-    font-size: 10px;
-  }
-
-  .register-hero {
-    margin-top: 38px;
-  }
-
-  .register-eyebrow {
-    font-size: 10px;
-  }
-
-  .register-hero h1 {
-    margin-top: 2px;
-
-    font-size: 32px;
+  .patient-register-header h1 {
+    font-size: 25px;
 
     letter-spacing: -0.8px;
   }
 
-  .register-description {
-    max-width: 330px;
+  .patient-register-header p {
+    font-size: 9px;
+  }
 
-    margin-top: 9px;
+  .register-secure-badge {
+    display: inline-flex;
 
-    font-size: 11px;
+    margin-top: 14px;
 
-    line-height: 1.5;
+    font-size: 7px;
   }
 
 
-  /* -------------------------------------------------------
-     FORM
-  ------------------------------------------------------- */
+  /* PROGRESS */
+
+  .registration-progress {
+    margin-bottom: 31px;
+
+    grid-template-columns:
+      auto minmax(15px, 1fr)
+      auto minmax(15px, 1fr)
+      auto;
+  }
+
+  .progress-step {
+    gap: 6px;
+  }
+
+  .progress-circle {
+    width: 34px;
+    height: 34px;
+
+    font-size: 10px;
+  }
+
+  .progress-copy strong {
+    font-size: 8px;
+  }
+
+  .progress-copy span {
+    display: none;
+  }
+
+  .progress-line {
+    margin:
+      0 7px;
+  }
+
+
+  /* STEP */
+
+  .step-panel-heading {
+    gap: 10px;
+
+    margin-bottom: 25px;
+  }
+
+  .step-panel-badge {
+    width: 40px;
+    height: 40px;
+
+    border-radius: 11px;
+
+    font-size: 9px;
+  }
+
+  .step-panel-heading > div:last-child > span {
+    font-size: 7px;
+  }
+
+  .step-panel-heading h2 {
+    font-size: 19px;
+  }
+
+  .step-panel-heading p {
+    margin-top: 5px;
+
+    font-size: 8px;
+
+    line-height: 1.55;
+  }
+
+
+  /* FIELDS */
+
+  .patient-form-group {
+    margin-bottom: 17px;
+  }
+
+  .patient-form-group label {
+    margin-bottom: 7px;
+
+    font-size: 9px;
+  }
+
+  .patient-form-group input,
+  .patient-form-group select {
+    height: 50px;
+
+    padding:
+      0 13px;
+
+    border-radius: 9px;
+
+    font-size: 16px;
+  }
+
+  .field-help {
+    font-size: 7px;
+  }
+
+  .form-row-two {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+
+  /* ACTIONS */
+
+  .step-action-row {
+    margin-top: 25px;
+
+    padding-top: 18px;
+  }
+
+  .patient-register-button {
+    min-width: 155px;
+
+    height: 49px;
+
+    padding:
+      0 16px;
+
+    font-size: 9px;
+  }
+
+  .patient-submit-button {
+    min-width: 190px;
+  }
+
+  .patient-back-button {
+    height: 49px;
+
+    font-size: 9px;
+  }
+
+
+  /* SUMMARY */
+
+  .registration-summary {
+    padding: 12px;
+
+    gap: 10px;
+  }
+
+  .summary-status {
+    width: 30px;
+    height: 30px;
+  }
+
+  .registration-summary strong {
+    font-size: 8px;
+  }
+
+  .registration-summary p {
+    font-size: 7px;
+  }
+
+
+  /* FOOTER */
+
+  .registration-footer-note {
+    font-size: 7px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 390px) {
+
+  .patient-register-left {
+    min-height: 300px;
+
+    padding:
+      20px 16px 22px;
+  }
+
+  .register-brand-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .register-brand-text h2 {
+    font-size: 18px;
+  }
+
+  .register-hero {
+    margin-top: 39px;
+  }
+
+  .register-hero h1 {
+    font-size: 37px;
+  }
+
+  .register-description {
+    max-width: 300px;
+
+    font-size: 9px;
+  }
 
   .patient-register-right {
-    padding: 28px 20px 40px;
-
-    background: transparent;
-  }
-
-  .patient-register-header {
-    margin-bottom: 21px;
+    padding:
+      27px 16px 35px;
   }
 
   .patient-register-header h1 {
     font-size: 22px;
-
-    line-height: 1.25;
   }
 
-  .patient-register-header p {
-    margin-top: 5px;
-
-    font-size: 11px;
+  .registration-progress {
+    grid-template-columns:
+      auto 1fr
+      auto 1fr
+      auto;
   }
 
-  .patient-register-right > h2 {
-    margin-bottom: 22px;
-
-    font-size: 20px;
+  .progress-circle {
+    width: 32px;
+    height: 32px;
   }
 
-
-  /* -------------------------------------------------------
-     SECTION
-  ------------------------------------------------------- */
-
-  .patient-register-section {
-    margin-bottom: 25px;
+  .progress-line {
+    margin:
+      0 4px;
   }
 
-  .patient-register-section h3 {
-    margin-bottom: 16px;
-
-    padding-bottom: 9px;
-
-    font-size: 15px;
-  }
-
-
-  /* -------------------------------------------------------
-     FORM GROUP
-  ------------------------------------------------------- */
-
-  .patient-form-group {
-    margin-bottom: 15px;
-  }
-
-  .patient-form-group label {
-    margin-bottom: 6px;
-
-    font-size: 12px;
-  }
-
-
-  /* -------------------------------------------------------
-     INPUTS
-  ------------------------------------------------------- */
-
-  .patient-form-group input,
-  .patient-form-group select {
-    width: 100%;
-
-    height: 47px;
-
-    padding: 0 13px;
-
-    border-radius: 9px;
-
-    /*
-      16px prevents iPhone Safari
-      from zooming while typing.
-    */
-    font-size: 16px;
-  }
-
-  .patient-form-group input:focus,
-  .patient-form-group select:focus {
-    box-shadow:
-      0 0 0 3px rgba(23, 105, 224, 0.08);
-  }
-
-
-  /* -------------------------------------------------------
-     BUTTON
-  ------------------------------------------------------- */
-
-  .patient-register-button {
-    width: 100%;
-
-    height: 48px;
-
-    margin-top: 5px;
-
-    border-radius: 9px;
-
-    font-size: 13px;
-  }
-
-  .patient-register-message {
-    margin-top: 13px;
-
-    padding: 10px;
-
-    font-size: 11px;
-  }
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-   iPhone SE / 360px
-========================================================= */
-
-@media (max-width: 380px) {
-
-  .patient-register-left {
-    min-height: 225px;
-
-    padding: 19px 17px;
-
-    background: transparent;
-  }
-
-  .register-brand-icon {
-    width: 39px;
-    height: 39px;
-  }
-
-  .register-brand h2 {
-    font-size: 18px;
-  }
-
-  .register-brand span {
-    font-size: 9px;
-  }
-
-  .register-hero {
-    margin-top: 32px;
-  }
-
-  .register-hero h1 {
-    font-size: 29px;
-  }
-
-  .register-description {
-    max-width: 290px;
-
-    font-size: 10px;
-  }
-
-
-  .patient-register-right {
-    padding: 25px 17px 35px;
-
-    background: transparent;
-  }
-
-  .patient-register-header h1 {
-    font-size: 20px;
-  }
-
-  .patient-register-header p {
-    font-size: 10px;
-  }
-
-  .patient-register-right > h2 {
-    font-size: 18px;
-  }
-
-  .patient-register-section h3 {
-    font-size: 14px;
-  }
-
-  .patient-form-group {
-    margin-bottom: 13px;
-  }
-
-  .patient-form-group label {
-    font-size: 11px;
-  }
-
-  .patient-form-group input,
-  .patient-form-group select {
-    height: 45px;
-
-    font-size: 16px;
-  }
-
-  .patient-register-button {
-    height: 46px;
-
-    font-size: 12px;
-  }
-}
-
-
-/* =========================================================
-   VERY SMALL DEVICES
-========================================================= */
-
-@media (max-width: 330px) {
-
-  .patient-register-left {
-    min-height: 205px;
-  }
-
-  .register-hero {
-    margin-top: 27px;
-  }
-
-  .register-hero h1 {
-    font-size: 27px;
-  }
-
-  .register-description {
-    display: none;
-  }
-
-  .patient-register-right {
-    padding-left: 15px;
-    padding-right: 15px;
-  }
-
-  .patient-register-header h1 {
-    font-size: 19px;
-  }
-
-  .patient-register-right > h2 {
+  .step-panel-heading h2 {
     font-size: 17px;
   }
-}
 
+  .step-panel-heading p {
+    font-size: 7px;
+  }
 
-/* =========================================================
-   ACCESSIBILITY
-========================================================= */
+  .patient-register-button {
+    min-width: 140px;
 
-.patient-register-button:focus-visible,
-.patient-form-group input:focus-visible,
-.patient-form-group select:focus-visible {
-  outline: 3px solid rgba(23, 105, 224, 0.18);
+    font-size: 8px;
+  }
 
-  outline-offset: 2px;
+  .patient-submit-button {
+    min-width: 168px;
+  }
+
+  .patient-back-button {
+    padding:
+      0 12px;
+  }
 }
 
 
@@ -1203,9 +2132,13 @@
 
 @media (prefers-reduced-motion: reduce) {
 
-  .patient-register-button,
-  .patient-form-group input,
-  .patient-form-group select {
-    transition: none;
+  .patient-register-page *,
+  .patient-register-page *::before,
+  .patient-register-page *::after {
+    transition: none !important;
+
+    animation: none !important;
+
+    scroll-behavior: auto !important;
   }
 }
