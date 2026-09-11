@@ -1,4 +1,12 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -8,7 +16,11 @@ from app.database.connection import Base
 class ScheduleException(Base):
     __tablename__ = "schedule_exceptions"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     doctor_id = Column(
         Integer,
@@ -17,9 +29,15 @@ class ScheduleException(Base):
         index=True,
     )
 
-    exception_date = Column(Date, nullable=False)
+    exception_date = Column(
+        Date,
+        nullable=False,
+    )
 
-    reason = Column(String, nullable=True)
+    reason = Column(
+        String,
+        nullable=True,
+    )
 
     is_available = Column(
         Boolean,
@@ -27,12 +45,19 @@ class ScheduleException(Base):
         nullable=False,
     )
 
-    notes = Column(String, nullable=True)
+    notes = Column(
+        String,
+        nullable=True,
+    )
 
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
     )
+
+    # ==================================================
+    # RELATIONSHIPS
+    # ==================================================
 
     doctor = relationship(
         "Doctor",

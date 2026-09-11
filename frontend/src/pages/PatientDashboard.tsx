@@ -20,6 +20,15 @@ import type {
 
 import "./PatientDashboard.css";
 
+type AppointmentStatus =
+  | "SCHEDULED"
+  | "CONFIRMED"
+  | "CHECKED_IN"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
 interface Appointment {
   id: number;
   doctor_id: number;
@@ -27,7 +36,22 @@ interface Appointment {
   appointment_date: string;
   start_time: string;
   end_time: string;
-  status: string;
+  status: AppointmentStatus | string;
+
+  /*
+   * The backend is the single source of truth
+   * for the human-readable appointment status.
+   *
+   * Examples currently returned by the API:
+   * Waiting
+   * Attended
+   * With Doctor
+   * Completed
+   * Cancelled
+   * Not Attended
+   */
+  status_label?: string | null;
+
   appointment_type: string;
   reason?: string | null;
   notes?: string | null;
@@ -83,12 +107,81 @@ type DashboardPanel =
   | "notifications"
   | null;
 
-const ACTIVE_APPOINTMENT_STATUSES = [
-  "SCHEDULED",
-  "CONFIRMED",
-  "CHECKED_IN",
-  "IN_PROGRESS",
-];
+/* ==================================================
+   DYNAMIC STATUS HELPERS
+   ================================================== */
+
+/**
+ * Return the backend-provided display label.
+ *
+ * No appointment business status is hardcoded here.
+ * The API response is the source of truth.
+ *
+ * The fallback only protects the UI if an older backend
+ * response does not yet contain status_label.
+ */
+function getAppointmentStatusLabel(
+  appointment: Pick<
+    Appointment,
+    "status" | "status_label"
+  >,
+): string {
+  const backendLabel =
+    appointment.status_label?.trim();
+
+  if (backendLabel) {
+    return backendLabel;
+  }
+
+  return appointment.status
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(
+      /\b\w/g,
+      (letter) =>
+        letter.toUpperCase(),
+    );
+}
+
+/**
+ * Generate a CSS-safe class from the backend status label.
+ *
+ * Example:
+ *
+ * "Waiting"      -> waiting
+ * "Attended"     -> attended
+ * "With Doctor"  -> with-doctor
+ * "Completed"    -> completed
+ * "Not Attended" -> not-attended
+ *
+ * No status-to-class business mapping is maintained here.
+ */
+function getAppointmentStatusClass(
+  appointment: Pick<
+    Appointment,
+    "status" | "status_label"
+  >,
+): string {
+  const label =
+    getAppointmentStatusLabel(
+      appointment,
+    );
+
+  const normalized =
+    label
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-",
+      )
+      .replace(
+        /^-+|-+$/g,
+        "",
+      );
+
+  return normalized || "unknown";
+}
 
 function getTodayDate(): string {
   const today = new Date();
@@ -1208,7 +1301,9 @@ function PatientDashboard() {
               appointmentDate >=
                 now &&
               appointment.status !==
-                "CANCELLED"
+                "CANCELLED" &&
+              appointment.status !==
+                "NO_SHOW"
             );
           },
         )
@@ -1224,16 +1319,18 @@ function PatientDashboard() {
   // NOTIFICATIONS
   // ==================================================
 
+  /*
+   * Notifications are now based on the actual appointment
+   * records returned by the backend.
+   *
+   * No frontend status whitelist is maintained.
+   */
   const notificationAppointments =
     useMemo(() => {
-      return upcomingAppointments
-        .filter(
-          (appointment) =>
-            ACTIVE_APPOINTMENT_STATUSES.includes(
-              appointment.status,
-            ),
-        )
-        .slice(0, 5);
+      return upcomingAppointments.slice(
+        0,
+        5,
+      );
     }, [
       upcomingAppointments,
     ]);
@@ -1385,18 +1482,25 @@ function PatientDashboard() {
   };
 
   // ==================================================
-  // DAY VIEW — CONTROLLED DATE
+  // DAY VIEW
   // ==================================================
 
   const openDayView = (dateKey: string) => {
-    const parsedDate = new Date(`${dateKey}T00:00:00`);
+    const parsedDate = new Date(
+      `${dateKey}T00:00:00`,
+    );
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(
+        parsedDate.getTime(),
+      )
+    ) {
       return;
     }
 
-    // The selected date is the single source of truth.
-    setSelectedDate(dateKey);
+    setSelectedDate(
+      dateKey,
+    );
 
     setCurrentMonth(
       new Date(
@@ -1406,8 +1510,13 @@ function PatientDashboard() {
       ),
     );
 
-    setCalendarView("day");
-    setShowDayView(true);
+    setCalendarView(
+      "day",
+    );
+
+    setShowDayView(
+      true,
+    );
   };
 
   const openTodayDayView =
@@ -1415,7 +1524,9 @@ function PatientDashboard() {
       const today =
         new Date();
 
-      openDayView(getDateKey(today));
+      openDayView(
+        getDateKey(today),
+      );
     };
 
   const closeDayView = () => {
@@ -1428,15 +1539,26 @@ function PatientDashboard() {
     );
   };
 
-  const handleDayDateChange = (date: string) => {
-    const parsedDate = new Date(`${date}T00:00:00`);
+  const handleDayDateChange = (
+    date: string,
+  ) => {
+    const parsedDate =
+      new Date(
+        `${date}T00:00:00`,
+      );
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(
+        parsedDate.getTime(),
+      )
+    ) {
       return;
     }
 
-    // Day View navigation updates the same parent-controlled date.
-    setSelectedDate(date);
+    setSelectedDate(
+      date,
+    );
+
     setCurrentMonth(
       new Date(
         parsedDate.getFullYear(),
@@ -1459,9 +1581,10 @@ function PatientDashboard() {
       false,
     );
 
-    // Preserve the date selected in Month / Week / Day View.
     setBookingDate(
-      date || selectedDate || todayDate,
+      date ||
+        selectedDate ||
+        todayDate,
     );
 
     setBookingDoctorId(
@@ -1616,7 +1739,13 @@ function PatientDashboard() {
   // ==================================================
 
   return (
-    <div className="patient-dashboard">
+    <div
+      className={`patient-dashboard${
+        showBooking
+          ? " booking-open"
+          : ""
+      }`}
+    >
 
       {/* ==================================================
           SIDEBAR
@@ -2186,7 +2315,9 @@ function PatientDashboard() {
                       : ""
                   }
                   onClick={() =>
-                    openDayView(selectedDate)
+                    openDayView(
+                      selectedDate,
+                    )
                   }
                 >
                   Day
@@ -2251,7 +2382,8 @@ function PatientDashboard() {
                           type="button"
                           key={dateKey}
                           aria-current={
-                            dateKey === selectedDate
+                            dateKey ===
+                            selectedDate
                               ? "date"
                               : undefined
                           }
@@ -2269,12 +2401,15 @@ function PatientDashboard() {
                               ? "today"
                               : ""
                           } ${
-                            dateKey === selectedDate
+                            dateKey ===
+                            selectedDate
                               ? "selected-day"
                               : ""
                           }`}
                           onClick={() =>
-                            openDayView(dateKey)
+                            openDayView(
+                              dateKey,
+                            )
                           }
                         >
 
@@ -2369,8 +2504,6 @@ function PatientDashboard() {
                       length: 7,
                     },
                     (_, index) => {
-                      // Build the visible week from the selected calendar date,
-                      // not from today's system date.
                       const referenceDate =
                         new Date(
                           `${selectedDate}T00:00:00`,
@@ -2425,7 +2558,8 @@ function PatientDashboard() {
                               ? "today"
                               : ""
                           } ${
-                            dateKey === selectedDate
+                            dateKey ===
+                            selectedDate
                               ? "selected-day"
                               : ""
                           }`}
@@ -2435,12 +2569,15 @@ function PatientDashboard() {
                             type="button"
                             className="week-day-header"
                             aria-current={
-                              dateKey === selectedDate
+                              dateKey ===
+                              selectedDate
                                 ? "date"
                                 : undefined
                             }
                             onClick={() =>
-                              openDayView(dateKey)
+                              openDayView(
+                                dateKey,
+                              )
                             }
                           >
                             <span>
@@ -2494,10 +2631,14 @@ function PatientDashboard() {
                                       }
                                     </span>
 
-                                    <small>
-                                      {
-                                        appointment.status
-                                      }
+                                    <small
+                                      className={`appointment-status-text ${getAppointmentStatusClass(
+                                        appointment,
+                                      )}`}
+                                    >
+                                      {getAppointmentStatusLabel(
+                                        appointment,
+                                      )}
                                     </small>
                                   </button>
                                 ),
@@ -2663,25 +2804,25 @@ function PatientDashboard() {
                           </span>
 
                           <span>
-
                             {formatTime(
                               appointment.start_time,
                             )}
-
                             {" - "}
-
                             {formatTime(
                               appointment.end_time,
                             )}
-
                           </span>
 
                         </div>
 
-                        <span className="appointment-status">
-                          {
-                            appointment.status
-                          }
+                        <span
+                          className={`appointment-status ${getAppointmentStatusClass(
+                            appointment,
+                          )}`}
+                        >
+                          {getAppointmentStatusLabel(
+                            appointment,
+                          )}
                         </span>
 
                       </button>
@@ -2728,6 +2869,7 @@ function PatientDashboard() {
               <span>
                 Find Doctor
               </span>
+
             </button>
 
             <button
@@ -2743,6 +2885,7 @@ function PatientDashboard() {
               <span>
                 Book Appointment
               </span>
+
             </button>
 
             <button
@@ -2758,6 +2901,7 @@ function PatientDashboard() {
               <span>
                 Medical Records
               </span>
+
             </button>
 
             <button
@@ -2773,6 +2917,7 @@ function PatientDashboard() {
               <span>
                 Health Summary
               </span>
+
             </button>
 
           </div>
@@ -2866,6 +3011,16 @@ function PatientDashboard() {
                         appointment.end_time,
                       )}
                     </span>
+
+                    <small
+                      className={`appointment-status-text ${getAppointmentStatusClass(
+                        appointment,
+                      )}`}
+                    >
+                      {getAppointmentStatusLabel(
+                        appointment,
+                      )}
+                    </small>
                   </button>
                 ),
               )}
@@ -2883,7 +3038,9 @@ function PatientDashboard() {
 
       {showDayView && (
         <DayView
-          key={selectedDate}
+          key={
+            selectedDate
+          }
           selectedDate={
             selectedDate
           }
@@ -3011,10 +3168,14 @@ function PatientDashboard() {
               }
             </h2>
 
-            <div className="appointment-details-status">
-              {
-                selectedAppointment.status
-              }
+            <div
+              className={`appointment-details-status ${getAppointmentStatusClass(
+                selectedAppointment,
+              )}`}
+            >
+              {getAppointmentStatusLabel(
+                selectedAppointment,
+              )}
             </div>
 
             <div className="appointment-details-grid">
@@ -3308,10 +3469,14 @@ function PatientDashboard() {
 
                         </div>
 
-                        <span className="appointment-status">
-                          {
-                            appointment.status
-                          }
+                        <span
+                          className={`appointment-status ${getAppointmentStatusClass(
+                            appointment,
+                          )}`}
+                        >
+                          {getAppointmentStatusLabel(
+                            appointment,
+                          )}
                         </span>
 
                       </button>
@@ -4318,10 +4483,14 @@ function PatientDashboard() {
                               )}
                             </span>
 
-                            <small>
-                              {
-                                appointment.status
-                              }
+                            <small
+                              className={`appointment-status-text ${getAppointmentStatusClass(
+                                appointment,
+                              )}`}
+                            >
+                              {getAppointmentStatusLabel(
+                                appointment,
+                              )}
                             </small>
 
                           </div>

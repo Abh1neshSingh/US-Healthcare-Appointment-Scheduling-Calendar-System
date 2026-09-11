@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import (
-    get_current_user,
-    require_roles,
-)
+from app.core.dependencies import require_roles
 from app.database.connection import get_db
 
 from app.schemas.user import (
@@ -81,21 +78,12 @@ def register_patient(
 
 @router.get("/me")
 def get_current_user_profile(
-    current_user=Depends(get_current_user),
+    current_user=Depends(
+        require_roles(["PATIENT"])
+    ),
     db: Session = Depends(get_db),
 ):
-    if current_user["role"] != UserRole.PATIENT.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "This endpoint is available "
-                "for patients only"
-            ),
-        )
-
-    user_id = int(
-        current_user["user_id"]
-    )
+    user_id = int(current_user["user_id"])
 
     patient = (
         db.query(Patient)
@@ -137,21 +125,12 @@ def get_current_user_profile(
 @router.put("/me")
 def update_current_user_profile(
     user_data: PatientProfileUpdate,
-    current_user=Depends(get_current_user),
+    current_user=Depends(
+        require_roles(["PATIENT"])
+    ),
     db: Session = Depends(get_db),
 ):
-    if current_user["role"] != UserRole.PATIENT.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "This endpoint is available "
-                "for patients only"
-            ),
-        )
-
-    user_id = int(
-        current_user["user_id"]
-    )
+    user_id = int(current_user["user_id"])
 
     patient = (
         db.query(Patient)
@@ -186,9 +165,10 @@ def update_current_user_profile(
     # --------------------------------------------------
 
     if user_data.name is not None:
-        user.name = user_data.name.strip()
-
-        if not user.name:
+        # sourcery skip: use-named-expression
+        if cleaned_name := user_data.name.strip():
+            user.name = cleaned_name
+        else:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Name cannot be empty",
@@ -416,28 +396,24 @@ def create_admin_by_admin(
     }
 
 
-
-
 # ==================================================
 # CURRENT LOGGED-IN ADMIN
 # ==================================================
 
 @router.get("/admin/me")
 def get_current_admin_profile(
-    current_user=Depends(get_current_user),
+    current_user=Depends(
+        require_roles(["ADMIN"])
+    ),
     db: Session = Depends(get_db),
 ):
-    if current_user["role"] != UserRole.ADMIN.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is available for administrators only",
-        )
-
     user_id = int(current_user["user_id"])
 
     user = (
         db.query(User)
-        .filter(User.id == user_id)
+        .filter(
+            User.id == user_id
+        )
         .first()
     )
 
@@ -491,7 +467,10 @@ def create_patient_by_admin(
             detail="Email already registered",
         )
 
-    # Validate PCP when one is supplied.
+    # --------------------------------------------------
+    # PCP VALIDATION
+    # --------------------------------------------------
+
     if patient_data.pcp_doctor_id is not None:
         pcp = (
             db.query(Doctor)
@@ -511,6 +490,12 @@ def create_patient_by_admin(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Selected PCP doctor is inactive",
+            )
+
+        if not pcp.user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected PCP doctor account is inactive",
             )
 
     patient = create_patient(
@@ -542,7 +527,7 @@ def create_patient_by_admin(
 
 # ==================================================
 # VIEW ADMINS
-# Admin only
+# ADMIN ONLY
 # ==================================================
 
 @router.get("/admins")
@@ -577,59 +562,81 @@ def get_admins(
 
 # ==================================================
 # VIEW DOCTORS
-# Admin + Patient
+# ADMIN + RECEPTIONIST + PATIENT
 # ==================================================
 
 @router.get("/doctors")
 def get_doctors(
     current_user=Depends(
         require_roles(
-            ["ADMIN", "PATIENT"]
+            ["ADMIN", "RECEPTIONIST", "PATIENT"]
         )
     ),
     db: Session = Depends(get_db),
 ):
-    doctors = (
+    doctors_query = (
         db.query(Doctor)
         .join(Doctor.user)
         .filter(
-            Doctor.user.has(
-                role=UserRole.DOCTOR.value
-            )
+            User.role == UserRole.DOCTOR.value
         )
+    )
+
+    # Patients should only see doctors who are
+    # currently active and able to receive bookings.
+    if current_user["role"] == UserRole.PATIENT.value:
+        doctors_query = doctors_query.filter(
+            Doctor.active.is_(True),
+            User.is_active.is_(True),
+        )
+
+    doctors = (
+        doctors_query
+        .order_by(User.name.asc(), Doctor.id.asc())
         .all()
     )
 
+    response = []
+
+    for doctor in doctors:
+        doctor_data = {
+            "id": doctor.id,
+            "user_id": doctor.user_id,
+            "name": doctor.user.name,
+            "email": doctor.user.email,
+            "specialization": doctor.specialization,
+            "department": doctor.department,
+            "requires_referral": doctor.requires_referral,
+            "active": doctor.active,
+            "state": doctor.state,
+            "profile_photo": doctor.profile_photo,
+        }
+
+        # Credential information is restricted to admins.
+        if current_user["role"] == UserRole.ADMIN.value:
+            doctor_data.update(
+                {
+                    "license_number": doctor.license_number,
+                    "npi_number": doctor.npi_number,
+                }
+            )
+
+        response.append(doctor_data)
+
     return {
-        "doctors": [
-            {
-                "id": doctor.id,
-                "user_id": doctor.user_id,
-                "name": doctor.user.name,
-                "email": doctor.user.email,
-                "specialization": doctor.specialization,
-                "department": doctor.department,
-                "license_number": doctor.license_number,
-                "npi_number": doctor.npi_number,
-                "requires_referral": doctor.requires_referral,
-                "active": doctor.active,
-                "state": doctor.state,
-                "profile_photo": doctor.profile_photo,
-            }
-            for doctor in doctors
-        ]
+        "doctors": response
     }
 
 
 # ==================================================
 # VIEW PATIENTS
-# Admin only
+# ADMIN + RECEPTIONIST
 # ==================================================
 
 @router.get("/patients")
 def get_patients(
     _current_user=Depends(
-        require_roles(["ADMIN"])
+        require_roles(["ADMIN", "RECEPTIONIST"])
     ),
     db: Session = Depends(get_db),
 ):
@@ -641,6 +648,7 @@ def get_patients(
                 role=UserRole.PATIENT.value
             )
         )
+        .order_by(User.name.asc(), Patient.id.asc())
         .all()
     )
 
@@ -669,7 +677,7 @@ def get_patients(
 
 # ==================================================
 # VIEW RECEPTIONISTS
-# Admin only
+# ADMIN ONLY
 # ==================================================
 
 @router.get("/receptionists")
@@ -687,6 +695,7 @@ def get_receptionists(
                 role=UserRole.RECEPTIONIST.value
             )
         )
+        .order_by(User.name.asc(), Receptionist.id.asc())
         .all()
     )
 

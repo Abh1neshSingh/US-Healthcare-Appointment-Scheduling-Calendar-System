@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import API_URL from "../config";
+import AdminCalendar from "../components/AdminCalendar";
 import "./AdminDashboard.css";
 
 type Role =
@@ -23,7 +24,9 @@ type View =
   | "doctors"
   | "receptionists"
   | "patients"
-  | "admins";
+  | "admins"
+  | "appointments"
+  | "calendar";
 
 interface ApiEnvelope<T = unknown> {
   detail?: string;
@@ -40,6 +43,23 @@ interface AdminProfile {
   name: string;
   email: string;
   role: string;
+}
+
+interface StaffAppointment {
+  id: number;
+  patient_id: number;
+  patient_name: string;
+  patient_email?: string | null;
+  doctor_id: number;
+  doctor_name: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  status_label?: string | null;
+  appointment_type?: string | null;
+  reason?: string | null;
+  notes?: string | null;
 }
 
 interface Doctor {
@@ -108,28 +128,32 @@ const ROLE_CARDS: RoleCard[] = [
   {
     role: "ADMIN",
     title: "Administrator",
-    description: "Manage users, staff and platform access.",
+    description:
+      "Manage users, staff and platform access.",
     level: "Level 01 · Administration",
     icon: "A",
   },
   {
     role: "DOCTOR",
     title: "Doctor",
-    description: "Clinical provider with scheduling access.",
+    description:
+      "Clinical provider with scheduling access.",
     level: "Level 02 · Clinical",
     icon: "D",
   },
   {
     role: "RECEPTIONIST",
     title: "Receptionist",
-    description: "Front-desk staff for patient operations.",
+    description:
+      "Front-desk staff for patient operations.",
     level: "Level 03 · Front Desk",
     icon: "R",
   },
   {
     role: "PATIENT",
     title: "Patient",
-    description: "Patient portal account and healthcare profile.",
+    description:
+      "Patient portal account and healthcare profile.",
     level: "Level 04 · Patient",
     icon: "P",
   },
@@ -195,11 +219,39 @@ const initialAdmin = {
 const getToken = () =>
   localStorage.getItem("access_token");
 
+const getCurrentRole = (): string => {
+  const token = getToken();
+
+  if (!token) return "";
+
+  try {
+    const payload = JSON.parse(
+      atob(
+        token
+          .split(".")[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/"),
+      ),
+    ) as {
+      role?: string;
+    };
+
+    return String(
+      payload.role || "",
+    ).toUpperCase();
+  } catch {
+    return "";
+  }
+};
+
 const readJson = async (
   response: Response,
-): Promise<ApiEnvelope | Record<string, unknown>> => {
+): Promise<
+  ApiEnvelope | Record<string, unknown>
+> => {
   try {
-    const data: unknown = await response.json();
+    const data: unknown =
+      await response.json();
 
     if (
       data !== null &&
@@ -217,15 +269,20 @@ const readJson = async (
 };
 
 const getDetail = (
-  data: ApiEnvelope | Record<string, unknown>,
+  data:
+    | ApiEnvelope
+    | Record<string, unknown>,
   fallback: string,
 ) =>
   typeof data.detail === "string"
     ? data.detail
-    : fallback;
+    : typeof data.message === "string"
+      ? data.message
+      : fallback;
 
 const getFirstName = (name: string) =>
-  name.trim().split(/\s+/)[0] || "Administrator";
+  name.trim().split(/\s+/)[0] ||
+  "Administrator";
 
 const getInitials = (name: string) =>
   name
@@ -237,10 +294,14 @@ const getInitials = (name: string) =>
     .join("")
     .toUpperCase() || "A";
 
-const formatDate = (value?: string | null) => {
+const formatDate = (
+  value?: string | null,
+) => {
   if (!value) return "—";
 
-  const date = new Date(`${value}T00:00:00`);
+  const date = new Date(
+    `${value}T00:00:00`,
+  );
 
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -271,11 +332,37 @@ const AdminDashboard = () => {
   const [admin, setAdmin] =
     useState<AdminProfile | null>(null);
 
+  const [currentRole, setCurrentRole] =
+    useState<string>("");
+
+  const [appointments, setAppointments] =
+    useState<StaffAppointment[]>([]);
+
+  const [
+    appointmentFilter,
+    setAppointmentFilter,
+  ] = useState<
+    | "ALL"
+    | "WAITING"
+    | "ATTENDED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "NOT_ATTENDED"
+    | "CANCELLED"
+  >("ALL");
+
+  const [
+    updatingAppointmentId,
+    setUpdatingAppointmentId,
+  ] = useState<number | null>(null);
+
   const [doctors, setDoctors] =
     useState<Doctor[]>([]);
 
-  const [receptionists, setReceptionists] =
-    useState<Receptionist[]>([]);
+  const [
+    receptionists,
+    setReceptionists,
+  ] = useState<Receptionist[]>([]);
 
   const [patients, setPatients] =
     useState<Patient[]>([]);
@@ -286,22 +373,26 @@ const AdminDashboard = () => {
   const [loading, setLoading] =
     useState(false);
 
-  const [loadingDirectory, setLoadingDirectory] =
-    useState(false);
+  const [
+    loadingDirectory,
+    setLoadingDirectory,
+  ] = useState(false);
 
   const [message, setMessage] =
     useState("");
 
   const [messageType, setMessageType] =
-    useState<"success" | "error" | "info">(
-      "info",
-    );
+    useState<
+      "success" | "error" | "info"
+    >("info");
 
   const [search, setSearch] =
     useState("");
 
-  const [mobileMenuOpen, setMobileMenuOpen] =
-    useState(false);
+  const [
+    mobileMenuOpen,
+    setMobileMenuOpen,
+  ] = useState(false);
 
   const [profileOpen, setProfileOpen] =
     useState(false);
@@ -309,8 +400,10 @@ const AdminDashboard = () => {
   const [doctorForm, setDoctorForm] =
     useState(initialDoctor);
 
-  const [receptionistForm, setReceptionistForm] =
-    useState(initialReceptionist);
+  const [
+    receptionistForm,
+    setReceptionistForm,
+  ] = useState(initialReceptionist);
 
   const [patientForm, setPatientForm] =
     useState(initialPatient);
@@ -321,7 +414,10 @@ const AdminDashboard = () => {
   const showMessage = useCallback(
     (
       text: string,
-      type: "success" | "error" | "info" = "info",
+      type:
+        | "success"
+        | "error"
+        | "info" = "info",
     ) => {
       setMessage(text);
       setMessageType(type);
@@ -329,10 +425,16 @@ const AdminDashboard = () => {
     [],
   );
 
-  const handleUnauthorized = useCallback(() => {
-    localStorage.removeItem("access_token");
-    navigate("/login", { replace: true });
-  }, [navigate]);
+  const handleUnauthorized =
+    useCallback(() => {
+      localStorage.removeItem(
+        "access_token",
+      );
+
+      navigate("/login", {
+        replace: true,
+      });
+    }, [navigate]);
 
   const request = useCallback(
     async (
@@ -375,7 +477,8 @@ const AdminDashboard = () => {
         return null;
       }
 
-      const data = await readJson(response);
+      const data =
+        await readJson(response);
 
       return {
         response,
@@ -387,6 +490,15 @@ const AdminDashboard = () => {
 
   const loadAdminProfile =
     useCallback(async () => {
+      const role = getCurrentRole();
+
+      setCurrentRole(role);
+
+      if (role !== "ADMIN") {
+        setAdmin(null);
+        return;
+      }
+
       const result = await request(
         "/users/admin/me",
       );
@@ -394,11 +506,6 @@ const AdminDashboard = () => {
       if (!result) return;
 
       if (!result.response.ok) {
-        /*
-         * Older backend builds may not yet have
-         * /users/admin/me. Keep the UI usable while
-         * the endpoint is added.
-         */
         return;
       }
 
@@ -412,19 +519,43 @@ const AdminDashboard = () => {
       setLoadingDirectory(true);
 
       try {
+        /*
+         * Read the role directly from the token here.
+         * This avoids the first-load React state race where
+         * currentRole can still be empty while the requests run.
+         */
+        const role =
+          getCurrentRole();
+
+        setCurrentRole(role);
+
         const [
           doctorResult,
           receptionistResult,
           patientResult,
           adminResult,
+          appointmentResult,
         ] = await Promise.all([
           request("/users/doctors"),
-          request("/users/receptionists"),
+
+          request(
+            "/users/receptionists",
+          ),
+
           request("/users/patients"),
-          request("/users/admins"),
+
+          role === "ADMIN"
+            ? request("/users/admins")
+            : Promise.resolve(null),
+
+          request(
+            "/appointments/staff",
+          ),
         ]);
 
-        if (doctorResult?.response.ok) {
+        if (
+          doctorResult?.response.ok
+        ) {
           const data =
             doctorResult.data as ApiEnvelope<Doctor>;
 
@@ -436,7 +567,8 @@ const AdminDashboard = () => {
         }
 
         if (
-          receptionistResult?.response.ok
+          receptionistResult?.response
+            .ok
         ) {
           const data =
             receptionistResult.data as ApiEnvelope<Receptionist>;
@@ -450,24 +582,49 @@ const AdminDashboard = () => {
           );
         }
 
-        if (patientResult?.response.ok) {
+        if (
+          patientResult?.response.ok
+        ) {
           const data =
             patientResult.data as ApiEnvelope<Patient>;
 
           setPatients(
-            Array.isArray(data.patients)
+            Array.isArray(
+              data.patients,
+            )
               ? data.patients
               : [],
           );
         }
 
-        if (adminResult?.response.ok) {
+        if (
+          adminResult?.response.ok
+        ) {
           const data =
             adminResult.data as ApiEnvelope<AdminProfile>;
 
           setAdmins(
             Array.isArray(data.admins)
               ? data.admins
+              : [],
+          );
+        }
+
+        if (
+          appointmentResult?.response
+            .ok
+        ) {
+          const data =
+            appointmentResult.data as {
+              count?: number;
+              appointments?: StaffAppointment[];
+            };
+
+          setAppointments(
+            Array.isArray(
+              data.appointments,
+            )
+              ? data.appointments
               : [],
           );
         }
@@ -489,12 +646,82 @@ const AdminDashboard = () => {
   useEffect(() => {
     void loadAdminProfile();
     void loadDirectories();
-  }, [loadAdminProfile, loadDirectories]);
+  }, [
+    loadAdminProfile,
+    loadDirectories,
+  ]);
+
+  /*
+   * Keep appointment lifecycle synchronized
+   * with backend automatic NO_SHOW processing.
+   */
+  useEffect(() => {
+    const intervalId =
+      window.setInterval(() => {
+        void loadDirectories();
+      }, 30_000);
+
+    return () => {
+      window.clearInterval(
+        intervalId,
+      );
+    };
+  }, [loadDirectories]);
 
   const closeMenus = () => {
     setMobileMenuOpen(false);
     setProfileOpen(false);
   };
+
+  const canCreateRole = useCallback(
+    (role: Role) => {
+      if (currentRole === "ADMIN") {
+        return true;
+      }
+
+      if (
+        currentRole ===
+        "RECEPTIONIST"
+      ) {
+        return (
+          role === "DOCTOR" ||
+          role ===
+            "RECEPTIONIST" ||
+          role === "PATIENT"
+        );
+      }
+
+      return false;
+    },
+    [currentRole],
+  );
+
+  const canViewDirectory =
+    useCallback(
+      (
+        directory:
+          | "doctors"
+          | "receptionists"
+          | "patients"
+          | "admins"
+          | "appointments",
+      ) => {
+        if (
+          directory === "admins"
+        ) {
+          return (
+            currentRole === "ADMIN"
+          );
+        }
+
+        return (
+          currentRole === "ADMIN" ||
+          currentRole ===
+            "RECEPTIONIST"
+        );
+      },
+      [currentRole],
+    );
 
   const openDashboard = () => {
     setView("dashboard");
@@ -503,7 +730,17 @@ const AdminDashboard = () => {
     closeMenus();
   };
 
-  const openCreate = (role: Role) => {
+  const openCreate = (
+    role: Role,
+  ) => {
+    if (!canCreateRole(role)) {
+      showMessage(
+        "You do not have permission to create this role.",
+        "error",
+      );
+      return;
+    }
+
     setCreateRole(role);
     setCreateStep(1);
     setView("create");
@@ -513,22 +750,61 @@ const AdminDashboard = () => {
   };
 
   const openDirectory = (
-    nextView: "doctors" | "receptionists" | "patients" | "admins",
+    nextView:
+      | "doctors"
+      | "receptionists"
+      | "patients"
+      | "admins"
+      | "appointments",
   ) => {
+    if (
+      !canViewDirectory(nextView)
+    ) {
+      showMessage(
+        nextView === "admins"
+          ? "Only administrators can access the administrator directory."
+          : "You do not have permission to access this directory.",
+        "error",
+      );
+      return;
+    }
+
     setView(nextView);
     setSearch("");
     setMessage("");
     closeMenus();
   };
 
-  const resetRoleForm = (role: Role) => {
+  const openCalendar = () => {
+    if (
+      currentRole !== "ADMIN" &&
+      currentRole !== "RECEPTIONIST"
+    ) {
+      showMessage(
+        "You do not have permission to access the appointment calendar.",
+        "error",
+      );
+      return;
+    }
+
+    setView("calendar");
+    setSearch("");
+    setMessage("");
+    closeMenus();
+  };
+
+  const resetRoleForm = (
+    role: Role,
+  ) => {
     if (role === "DOCTOR") {
       setDoctorForm({
         ...initialDoctor,
       });
     }
 
-    if (role === "RECEPTIONIST") {
+    if (
+      role === "RECEPTIONIST"
+    ) {
       setReceptionistForm({
         ...initialReceptionist,
       });
@@ -547,7 +823,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const selectCreateRole = (role: Role) => {
+  const selectCreateRole = (
+    role: Role,
+  ) => {
     setCreateRole(role);
     setCreateStep(1);
     setMessage("");
@@ -557,6 +835,16 @@ const AdminDashboard = () => {
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+
+    if (
+      !canCreateRole(createRole)
+    ) {
+      showMessage(
+        "You do not have permission to create this role.",
+        "error",
+      );
+      return;
+    }
 
     if (createStep !== 3) {
       setCreateStep((step) =>
@@ -570,67 +858,102 @@ const AdminDashboard = () => {
 
     try {
       let path = "";
-      let body: Record<string, unknown>;
+      let body: Record<
+        string,
+        unknown
+      >;
 
       if (createRole === "DOCTOR") {
         path = "/users/doctors";
 
         body = {
           ...doctorForm,
+
           npi_number:
-            doctorForm.npi_number || null,
+            doctorForm.npi_number ||
+            null,
+
           sub_specialization:
             doctorForm.sub_specialization ||
             null,
+
           medical_school:
             doctorForm.medical_school ||
             null,
+
           board_certification:
             doctorForm.board_certification ||
             null,
+
           years_of_experience:
             doctorForm.years_of_experience
               ? Number(
                   doctorForm.years_of_experience,
                 )
               : null,
+
           department:
-            doctorForm.department || null,
+            doctorForm.department ||
+            null,
+
           clinic_name:
-            doctorForm.clinic_name || null,
+            doctorForm.clinic_name ||
+            null,
+
           clinic_address:
-            doctorForm.clinic_address || null,
-          city: doctorForm.city || null,
-          state: doctorForm.state || null,
+            doctorForm.clinic_address ||
+            null,
+
+          city:
+            doctorForm.city || null,
+
+          state:
+            doctorForm.state || null,
+
           zip_code:
-            doctorForm.zip_code || null,
+            doctorForm.zip_code ||
+            null,
+
           consultation_fee:
             doctorForm.consultation_fee
               ? Number(
                   doctorForm.consultation_fee,
                 )
               : null,
-          bio: doctorForm.bio || null,
+
+          bio:
+            doctorForm.bio || null,
+
           languages:
-            doctorForm.languages || null,
+            doctorForm.languages ||
+            null,
         };
       } else if (
-        createRole === "RECEPTIONIST"
+        createRole ===
+        "RECEPTIONIST"
       ) {
-        path = "/users/receptionists";
+        path =
+          "/users/receptionists";
 
         body = {
           ...receptionistForm,
+
           department:
             receptionistForm.department ||
             null,
+
           phone:
-            receptionistForm.phone || null,
+            receptionistForm.phone ||
+            null,
+
           hire_date:
             receptionistForm.hire_date ||
             null,
+
           shift:
-            receptionistForm.shift || null,
+            receptionistForm.shift ||
+            null,
+
           clinic_location:
             receptionistForm.clinic_location ||
             null,
@@ -642,14 +965,21 @@ const AdminDashboard = () => {
 
         body = {
           ...patientForm,
-          city: patientForm.city || null,
-          state: patientForm.state || null,
+
+          city:
+            patientForm.city || null,
+
+          state:
+            patientForm.state || null,
+
           insurance_provider:
             patientForm.insurance_provider ||
             null,
+
           insurance_member_id:
             patientForm.insurance_member_id ||
             null,
+
           pcp_doctor_id:
             patientForm.pcp_doctor_id
               ? Number(
@@ -675,7 +1005,9 @@ const AdminDashboard = () => {
 
       if (!result) return;
 
-      if (!result.response.ok) {
+      if (
+        !result.response.ok
+      ) {
         showMessage(
           getDetail(
             result.data,
@@ -690,7 +1022,8 @@ const AdminDashboard = () => {
       const roleLabel =
         ROLE_CARDS.find(
           (role) =>
-            role.role === createRole,
+            role.role ===
+            createRole,
         )?.title || "User";
 
       showMessage(
@@ -717,16 +1050,98 @@ const AdminDashboard = () => {
     }
   };
 
-  const updateDoctor =
-    <K extends keyof typeof doctorForm>(
-      key: K,
-      value: (typeof doctorForm)[K],
-    ) => {
-      setDoctorForm((current) => ({
+  const updateAppointmentStatus =
+    useCallback(
+      async (
+        appointmentId: number,
+        nextStatus: string,
+      ) => {
+        setUpdatingAppointmentId(
+          appointmentId,
+        );
+
+        try {
+          const result =
+            await request(
+              `/appointments/${appointmentId}/status`,
+              {
+                method: "PATCH",
+                body: JSON.stringify({
+                  status: nextStatus,
+                }),
+              },
+            );
+
+          if (!result) return;
+
+          if (
+            !result.response.ok
+          ) {
+            showMessage(
+              getDetail(
+                result.data,
+                "Unable to update appointment status.",
+              ),
+              "error",
+            );
+
+            return;
+          }
+
+          showMessage(
+            nextStatus ===
+              "CHECKED_IN"
+              ? "Patient marked as arrived."
+              : nextStatus ===
+                  "IN_PROGRESS"
+                ? "Visit started."
+                : nextStatus ===
+                    "COMPLETED"
+                  ? "Appointment completed."
+                  : nextStatus ===
+                      "CANCELLED"
+                    ? "Appointment cancelled."
+                    : "Appointment status updated.",
+            "success",
+          );
+
+          await loadDirectories();
+        } catch (error) {
+          console.error(
+            "Appointment status update error:",
+            error,
+          );
+
+          showMessage(
+            "Unable to connect to the server.",
+            "error",
+          );
+        } finally {
+          setUpdatingAppointmentId(
+            null,
+          );
+        }
+      },
+      [
+        request,
+        showMessage,
+        loadDirectories,
+      ],
+    );
+
+  const updateDoctor = <
+    K extends keyof typeof doctorForm,
+  >(
+    key: K,
+    value: (typeof doctorForm)[K],
+  ) => {
+    setDoctorForm(
+      (current) => ({
         ...current,
         [key]: value,
-      }));
-    };
+      }),
+    );
+  };
 
   const updateReceptionist =
     <
@@ -735,33 +1150,41 @@ const AdminDashboard = () => {
       key: K,
       value: (typeof receptionistForm)[K],
     ) => {
-      setReceptionistForm((current) => ({
-        ...current,
-        [key]: value,
-      }));
+      setReceptionistForm(
+        (current) => ({
+          ...current,
+          [key]: value,
+        }),
+      );
     };
 
-  const updatePatient =
-    <K extends keyof typeof patientForm>(
-      key: K,
-      value: (typeof patientForm)[K],
-    ) => {
-      setPatientForm((current) => ({
+  const updatePatient = <
+    K extends keyof typeof patientForm,
+  >(
+    key: K,
+    value: (typeof patientForm)[K],
+  ) => {
+    setPatientForm(
+      (current) => ({
         ...current,
         [key]: value,
-      }));
-    };
+      }),
+    );
+  };
 
-  const updateAdmin =
-    <K extends keyof typeof adminForm>(
-      key: K,
-      value: (typeof adminForm)[K],
-    ) => {
-      setAdminForm((current) => ({
+  const updateAdmin = <
+    K extends keyof typeof adminForm,
+  >(
+    key: K,
+    value: (typeof adminForm)[K],
+  ) => {
+    setAdminForm(
+      (current) => ({
         ...current,
         [key]: value,
-      }));
-    };
+      }),
+    );
+  };
 
   const filteredDoctors =
     useMemo(() => {
@@ -770,20 +1193,21 @@ const AdminDashboard = () => {
 
       if (!query) return doctors;
 
-      return doctors.filter((doctor) =>
-        [
-          doctor.name,
-          doctor.email,
-          doctor.specialization,
-          doctor.department,
-          doctor.license_number,
-          doctor.city,
-          doctor.state,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(query),
+      return doctors.filter(
+        (doctor) =>
+          [
+            doctor.name,
+            doctor.email,
+            doctor.specialization,
+            doctor.department,
+            doctor.license_number,
+            doctor.city,
+            doctor.state,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(query),
       );
     }, [doctors, search]);
 
@@ -792,7 +1216,8 @@ const AdminDashboard = () => {
       const query =
         search.trim().toLowerCase();
 
-      if (!query) return receptionists;
+      if (!query)
+        return receptionists;
 
       return receptionists.filter(
         (staff) =>
@@ -810,7 +1235,10 @@ const AdminDashboard = () => {
             .toLowerCase()
             .includes(query),
       );
-    }, [receptionists, search]);
+    }, [
+      receptionists,
+      search,
+    ]);
 
   const filteredPatients =
     useMemo(() => {
@@ -819,52 +1247,230 @@ const AdminDashboard = () => {
 
       if (!query) return patients;
 
-      return patients.filter((patient) =>
-        [
-          patient.name,
-          patient.email,
-          patient.phone,
-          patient.city,
-          patient.state,
-          patient.insurance_provider,
-          patient.insurance_member_id,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(query),
+      return patients.filter(
+        (patient) =>
+          [
+            patient.name,
+            patient.email,
+            patient.phone,
+            patient.city,
+            patient.state,
+            patient.insurance_provider,
+            patient.insurance_member_id,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(query),
       );
     }, [patients, search]);
 
-  const filteredAdmins = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const filteredAdmins =
+    useMemo(() => {
+      const query =
+        search.trim().toLowerCase();
 
-    if (!query) return admins;
+      if (!query) return admins;
 
-    return admins.filter((user) =>
-      [user.name, user.email, user.role]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [admins, search]);
+      return admins.filter(
+        (user) =>
+          [
+            user.name,
+            user.email,
+            user.role,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(query),
+      );
+    }, [admins, search]);
+
+  /*
+   * Backend is the source of truth for the lifecycle label.
+   * The fallback exists only for older API responses that may
+   * not yet include status_label.
+   */
+  const appointmentStatusLabel = (
+    appointment: StaffAppointment,
+  ): string => {
+    if (
+      appointment.status_label &&
+      appointment.status_label.trim()
+    ) {
+      return appointment.status_label;
+    }
+
+    switch (
+      appointment.status.toUpperCase()
+    ) {
+      case "SCHEDULED":
+      case "CONFIRMED":
+        return "Waiting";
+
+      case "CHECKED_IN":
+        return "Attended";
+
+      case "IN_PROGRESS":
+        return "With Doctor";
+
+      case "COMPLETED":
+        return "Completed";
+
+      case "NO_SHOW":
+        return "Not Attended";
+
+      case "CANCELLED":
+        return "Cancelled";
+
+      default:
+        return appointment.status;
+    }
+  };
+
+  const filteredAppointments =
+    useMemo(() => {
+      const query =
+        search.trim().toLowerCase();
+
+      return appointments.filter(
+        (appointment) => {
+          const rawStatus =
+            appointment.status.toUpperCase();
+
+          const statusLabel =
+            appointmentStatusLabel(
+              appointment,
+            );
+
+          const matchesFilter =
+            appointmentFilter ===
+              "ALL" ||
+            (appointmentFilter ===
+              "WAITING" &&
+              [
+                "SCHEDULED",
+                "CONFIRMED",
+              ].includes(
+                rawStatus,
+              )) ||
+            (appointmentFilter ===
+              "ATTENDED" &&
+              rawStatus ===
+                "CHECKED_IN") ||
+            (appointmentFilter ===
+              "IN_PROGRESS" &&
+              rawStatus ===
+                "IN_PROGRESS") ||
+            (appointmentFilter ===
+              "COMPLETED" &&
+              rawStatus ===
+                "COMPLETED") ||
+            (appointmentFilter ===
+              "NOT_ATTENDED" &&
+              rawStatus ===
+                "NO_SHOW") ||
+            (appointmentFilter ===
+              "CANCELLED" &&
+              rawStatus ===
+                "CANCELLED");
+
+          const matchesSearch =
+            !query ||
+            [
+              appointment.patient_name,
+              appointment.patient_email,
+              appointment.doctor_name,
+              appointment.appointment_date,
+              appointment.appointment_type,
+              appointment.reason,
+              statusLabel,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+              .includes(query);
+
+          return (
+            matchesFilter &&
+            matchesSearch
+          );
+        },
+      );
+    }, [
+      appointments,
+      appointmentFilter,
+      search,
+    ]);
+
+  const appointmentCounts =
+    useMemo(() => {
+      const counts = {
+        all: appointments.length,
+        waiting: 0,
+        attended: 0,
+        inProgress: 0,
+        completed: 0,
+        notAttended: 0,
+        cancelled: 0,
+      };
+
+      appointments.forEach(
+        (appointment) => {
+          const status =
+            appointment.status.toUpperCase();
+
+          if (
+            status === "SCHEDULED" ||
+            status === "CONFIRMED"
+          ) {
+            counts.waiting += 1;
+          } else if (
+            status === "CHECKED_IN"
+          ) {
+            counts.attended += 1;
+          } else if (
+            status === "IN_PROGRESS"
+          ) {
+            counts.inProgress += 1;
+          } else if (
+            status === "COMPLETED"
+          ) {
+            counts.completed += 1;
+          } else if (
+            status === "NO_SHOW"
+          ) {
+            counts.notAttended += 1;
+          } else if (
+            status === "CANCELLED"
+          ) {
+            counts.cancelled += 1;
+          }
+        },
+      );
+
+      return counts;
+    }, [appointments]);
 
   const currentDirectoryCount =
     view === "doctors"
       ? filteredDoctors.length
-      : view === "receptionists"
+      : view ===
+          "receptionists"
         ? filteredReceptionists.length
         : view === "patients"
           ? filteredPatients.length
-          : filteredAdmins.length;
+          : view === "admins"
+            ? filteredAdmins.length
+            : filteredAppointments.length;
 
   const pageTitle =
     view === "create"
       ? `Create ${
           ROLE_CARDS.find(
             (role) =>
-              role.role === createRole,
+              role.role ===
+              createRole,
           )?.title || "User"
         }`
       : view === "doctors"
@@ -873,7 +1479,14 @@ const AdminDashboard = () => {
           ? "Receptionists"
           : view === "patients"
             ? "Patients"
-            : "Administration Overview";
+            : view === "admins"
+              ? "Administrators"
+              : view ===
+                  "appointments"
+                ? "Appointment Operations"
+                : view === "calendar"
+                  ? "Appointment Calendar"
+                  : "Administration Overview";
 
   const pageDescription =
     view === "create"
@@ -884,348 +1497,844 @@ const AdminDashboard = () => {
           ? "Review front-desk staff and operational assignments."
           : view === "patients"
             ? "Review registered patients and available demographic and insurance information."
-            : "Manage users, clinical staff and patient accounts from one secure workspace.";
+            : view === "admins"
+              ? "Review administrator accounts and privileged access."
+              : view ===
+                  "appointments"
+                ? "Manage patient arrival and appointment lifecycle from one live operational view."
+                : view === "calendar"
+                  ? "View existing patient appointments and book appointments for walk-in patients without affecting the existing administration workflows."
+                  : "Manage users, clinical staff, patients and appointment operations from one secure workspace.";
 
-  const roleCount = (role: Role) => {
-    if (role === "DOCTOR") return doctors.length;
-    if (role === "RECEPTIONIST")
+  const roleCount = (
+    role: Role,
+  ) => {
+    if (role === "DOCTOR")
+      return doctors.length;
+
+    if (
+      role === "RECEPTIONIST"
+    )
       return receptionists.length;
-    if (role === "PATIENT") return patients.length;
-    if (role === "ADMIN") return admins.length;
+
+    if (role === "PATIENT")
+      return patients.length;
+
+    if (role === "ADMIN")
+      return admins.length;
+
     return "—";
   };
 
-  const renderRoleSpecificForm = () => {
-    if (createRole === "DOCTOR") {
+  const renderRoleSpecificForm =
+    () => {
+      if (createRole === "DOCTOR") {
+        return (
+          <>
+            <div className="form-section-heading">
+              <span>
+                Clinical profile
+              </span>
+
+              <h3>
+                Professional information
+              </h3>
+
+              <p>
+                Credentials and clinical information used by scheduling and provider discovery.
+              </p>
+            </div>
+
+            <div className="field-grid">
+              <Field
+                label="Full name"
+                required
+                value={
+                  doctorForm.name
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "name",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Email"
+                type="email"
+                required
+                value={
+                  doctorForm.email
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "email",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Password"
+                type="password"
+                required
+                minLength={8}
+                value={
+                  doctorForm.password
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "password",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="License number"
+                required
+                value={
+                  doctorForm.license_number
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "license_number",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="NPI number"
+                value={
+                  doctorForm.npi_number
+                }
+                maxLength={10}
+                valueInputMode="numeric"
+                onChange={(value) =>
+                  updateDoctor(
+                    "npi_number",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Specialization"
+                required
+                placeholder="Cardiology"
+                value={
+                  doctorForm.specialization
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "specialization",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Sub-specialization"
+                placeholder="Interventional Cardiology"
+                value={
+                  doctorForm.sub_specialization
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "sub_specialization",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Qualification"
+                required
+                placeholder="MD / DO"
+                value={
+                  doctorForm.qualification
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "qualification",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Medical school"
+                value={
+                  doctorForm.medical_school
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "medical_school",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Board certification"
+                value={
+                  doctorForm.board_certification
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "board_certification",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Years of experience"
+                type="number"
+                min={0}
+                max={70}
+                value={
+                  doctorForm.years_of_experience
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "years_of_experience",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Department"
+                value={
+                  doctorForm.department
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "department",
+                    value,
+                  )
+                }
+              />
+            </div>
+
+            <div className="form-section-heading section-divider">
+              <span>Practice</span>
+
+              <h3>
+                Clinic and consultation
+              </h3>
+
+              <p>
+                Practice details used by patients when selecting a provider.
+              </p>
+            </div>
+
+            <div className="field-grid">
+              <Field
+                label="Clinic name"
+                value={
+                  doctorForm.clinic_name
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "clinic_name",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Clinic address"
+                value={
+                  doctorForm.clinic_address
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "clinic_address",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="City"
+                value={
+                  doctorForm.city
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "city",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="State"
+                value={
+                  doctorForm.state
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "state",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="ZIP code"
+                value={
+                  doctorForm.zip_code
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "zip_code",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Consultation fee"
+                type="number"
+                min={0}
+                step="0.01"
+                value={
+                  doctorForm.consultation_fee
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "consultation_fee",
+                    value,
+                  )
+                }
+              />
+
+              <SelectField
+                label="Consultation mode"
+                value={
+                  doctorForm.consultation_mode
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "consultation_mode",
+                    value,
+                  )
+                }
+                options={[
+                  [
+                    "IN_PERSON",
+                    "In person",
+                  ],
+                  [
+                    "TELEHEALTH",
+                    "Telehealth",
+                  ],
+                  [
+                    "BOTH",
+                    "In person + Telehealth",
+                  ],
+                ]}
+              />
+
+              <Field
+                label="Languages"
+                placeholder="English, Spanish"
+                value={
+                  doctorForm.languages
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "languages",
+                    value,
+                  )
+                }
+              />
+
+              <TextAreaField
+                label="Professional bio"
+                full
+                value={
+                  doctorForm.bio
+                }
+                onChange={(value) =>
+                  updateDoctor(
+                    "bio",
+                    value,
+                  )
+                }
+              />
+            </div>
+
+            <label className="toggle-field">
+              <input
+                type="checkbox"
+                checked={
+                  doctorForm.accepting_new_patients
+                }
+                onChange={(event) =>
+                  updateDoctor(
+                    "accepting_new_patients",
+                    event.target.checked,
+                  )
+                }
+              />
+
+              <span>
+                <strong>
+                  Accepting new patients
+                </strong>
+
+                <small>
+                  Make this provider available for new-patient scheduling.
+                </small>
+              </span>
+            </label>
+          </>
+        );
+      }
+
+      if (
+        createRole ===
+        "RECEPTIONIST"
+      ) {
+        return (
+          <>
+            <div className="form-section-heading">
+              <span>
+                Front desk
+              </span>
+
+              <h3>
+                Employee information
+              </h3>
+
+              <p>
+                Create an operational account for scheduling and patient support.
+              </p>
+            </div>
+
+            <div className="field-grid">
+              <Field
+                label="Full name"
+                required
+                value={
+                  receptionistForm.name
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "name",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Email"
+                type="email"
+                required
+                value={
+                  receptionistForm.email
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "email",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Password"
+                type="password"
+                required
+                minLength={8}
+                value={
+                  receptionistForm.password
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "password",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Employee ID"
+                required
+                placeholder="EMP-1001"
+                value={
+                  receptionistForm.employee_id
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "employee_id",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Department"
+                value={
+                  receptionistForm.department
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "department",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Phone"
+                type="tel"
+                value={
+                  receptionistForm.phone
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "phone",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Hire date"
+                type="date"
+                value={
+                  receptionistForm.hire_date
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "hire_date",
+                    value,
+                  )
+                }
+              />
+
+              <SelectField
+                label="Shift"
+                value={
+                  receptionistForm.shift
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "shift",
+                    value,
+                  )
+                }
+                options={[
+                  [
+                    "",
+                    "Select shift",
+                  ],
+                  [
+                    "MORNING",
+                    "Morning",
+                  ],
+                  [
+                    "AFTERNOON",
+                    "Afternoon",
+                  ],
+                  [
+                    "EVENING",
+                    "Evening",
+                  ],
+                  [
+                    "NIGHT",
+                    "Night",
+                  ],
+                ]}
+              />
+
+              <Field
+                label="Clinic location"
+                value={
+                  receptionistForm.clinic_location
+                }
+                onChange={(value) =>
+                  updateReceptionist(
+                    "clinic_location",
+                    value,
+                  )
+                }
+              />
+            </div>
+          </>
+        );
+      }
+
+      if (
+        createRole === "PATIENT"
+      ) {
+        return (
+          <>
+            <div className="form-section-heading">
+              <span>
+                Patient profile
+              </span>
+
+              <h3>
+                Account and demographics
+              </h3>
+
+              <p>
+                Create the patient portal account and core registration information.
+              </p>
+            </div>
+
+            <div className="field-grid">
+              <Field
+                label="Full name"
+                required
+                value={
+                  patientForm.name
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "name",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Email"
+                type="email"
+                required
+                value={
+                  patientForm.email
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "email",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Password"
+                type="password"
+                required
+                minLength={8}
+                value={
+                  patientForm.password
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "password",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Date of birth"
+                type="date"
+                required
+                value={
+                  patientForm.date_of_birth
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "date_of_birth",
+                    value,
+                  )
+                }
+              />
+
+              <SelectField
+                label="Gender"
+                required
+                value={
+                  patientForm.gender
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "gender",
+                    value,
+                  )
+                }
+                options={[
+                  [
+                    "",
+                    "Select gender",
+                  ],
+                  [
+                    "MALE",
+                    "Male",
+                  ],
+                  [
+                    "FEMALE",
+                    "Female",
+                  ],
+                  [
+                    "OTHER",
+                    "Other",
+                  ],
+                  [
+                    "PREFER_NOT_TO_SAY",
+                    "Prefer not to say",
+                  ],
+                ]}
+              />
+
+              <Field
+                label="Phone"
+                type="tel"
+                required
+                value={
+                  patientForm.phone
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "phone",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="City"
+                value={
+                  patientForm.city
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "city",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="State"
+                value={
+                  patientForm.state
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "state",
+                    value,
+                  )
+                }
+              />
+            </div>
+
+            <div className="form-section-heading section-divider">
+              <span>Coverage</span>
+
+              <h3>
+                Insurance information
+              </h3>
+
+              <p>
+                Store the coverage information that can be used during booking and RCM workflows.
+              </p>
+            </div>
+
+            <div className="field-grid">
+              <Field
+                label="Insurance provider"
+                placeholder="Payer / insurance company"
+                value={
+                  patientForm.insurance_provider
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "insurance_provider",
+                    value,
+                  )
+                }
+              />
+
+              <Field
+                label="Member ID"
+                placeholder="Insurance member ID"
+                value={
+                  patientForm.insurance_member_id
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "insurance_member_id",
+                    value,
+                  )
+                }
+              />
+
+              <SelectField
+                label="Primary care provider"
+                value={
+                  patientForm.pcp_doctor_id
+                }
+                onChange={(value) =>
+                  updatePatient(
+                    "pcp_doctor_id",
+                    value,
+                  )
+                }
+                options={[
+                  [
+                    "",
+                    "No PCP selected",
+                  ],
+                  ...doctors.map<
+                    [string, string]
+                  >((doctor) => [
+                    String(doctor.id),
+                    doctor.name,
+                  ]),
+                ]}
+              />
+            </div>
+          </>
+        );
+      }
+
       return (
         <>
           <div className="form-section-heading">
-            <span>Clinical profile</span>
-            <h3>Professional information</h3>
-            <p>
-              Credentials and clinical information used by scheduling and provider discovery.
-            </p>
-          </div>
-
-          <div className="field-grid">
-            <Field
-              label="Full name"
-              required
-              value={doctorForm.name}
-              onChange={(value) =>
-                updateDoctor("name", value)
-              }
-            />
-
-            <Field
-              label="Email"
-              type="email"
-              required
-              value={doctorForm.email}
-              onChange={(value) =>
-                updateDoctor("email", value)
-              }
-            />
-
-            <Field
-              label="Password"
-              type="password"
-              required
-              minLength={8}
-              value={doctorForm.password}
-              onChange={(value) =>
-                updateDoctor(
-                  "password",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="License number"
-              required
-              value={
-                doctorForm.license_number
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "license_number",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="NPI number"
-              value={doctorForm.npi_number}
-              maxLength={10}
-              valueInputMode="numeric"
-              onChange={(value) =>
-                updateDoctor(
-                  "npi_number",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Specialization"
-              required
-              placeholder="Cardiology"
-              value={
-                doctorForm.specialization
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "specialization",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Sub-specialization"
-              placeholder="Interventional Cardiology"
-              value={
-                doctorForm.sub_specialization
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "sub_specialization",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Qualification"
-              required
-              placeholder="MD / DO"
-              value={
-                doctorForm.qualification
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "qualification",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Medical school"
-              value={
-                doctorForm.medical_school
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "medical_school",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Board certification"
-              value={
-                doctorForm.board_certification
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "board_certification",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Years of experience"
-              type="number"
-              min={0}
-              max={70}
-              value={
-                doctorForm.years_of_experience
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "years_of_experience",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Department"
-              value={doctorForm.department}
-              onChange={(value) =>
-                updateDoctor(
-                  "department",
-                  value,
-                )
-              }
-            />
-          </div>
-
-          <div className="form-section-heading section-divider">
-            <span>Practice</span>
-            <h3>Clinic and consultation</h3>
-            <p>
-              Practice details used by patients when selecting a provider.
-            </p>
-          </div>
-
-          <div className="field-grid">
-            <Field
-              label="Clinic name"
-              value={doctorForm.clinic_name}
-              onChange={(value) =>
-                updateDoctor(
-                  "clinic_name",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Clinic address"
-              value={
-                doctorForm.clinic_address
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "clinic_address",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="City"
-              value={doctorForm.city}
-              onChange={(value) =>
-                updateDoctor("city", value)
-              }
-            />
-
-            <Field
-              label="State"
-              value={doctorForm.state}
-              onChange={(value) =>
-                updateDoctor("state", value)
-              }
-            />
-
-            <Field
-              label="ZIP code"
-              value={doctorForm.zip_code}
-              onChange={(value) =>
-                updateDoctor(
-                  "zip_code",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Consultation fee"
-              type="number"
-              min={0}
-              step="0.01"
-              value={
-                doctorForm.consultation_fee
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "consultation_fee",
-                  value,
-                )
-              }
-            />
-
-            <SelectField
-              label="Consultation mode"
-              value={
-                doctorForm.consultation_mode
-              }
-              onChange={(value) =>
-                updateDoctor(
-                  "consultation_mode",
-                  value,
-                )
-              }
-              options={[
-                ["IN_PERSON", "In person"],
-                ["TELEHEALTH", "Telehealth"],
-                ["BOTH", "In person + Telehealth"],
-              ]}
-            />
-
-            <Field
-              label="Languages"
-              placeholder="English, Spanish"
-              value={doctorForm.languages}
-              onChange={(value) =>
-                updateDoctor(
-                  "languages",
-                  value,
-                )
-              }
-            />
-
-            <TextAreaField
-              label="Professional bio"
-              full
-              value={doctorForm.bio}
-              onChange={(value) =>
-                updateDoctor("bio", value)
-              }
-            />
-          </div>
-
-          <label className="toggle-field">
-            <input
-              type="checkbox"
-              checked={
-                doctorForm.accepting_new_patients
-              }
-              onChange={(event) =>
-                updateDoctor(
-                  "accepting_new_patients",
-                  event.target.checked,
-                )
-              }
-            />
             <span>
-              <strong>
-                Accepting new patients
-              </strong>
-              <small>
-                Make this provider available for new-patient scheduling.
-              </small>
+              Administration
             </span>
-          </label>
-        </>
-      );
-    }
 
-    if (createRole === "RECEPTIONIST") {
-      return (
-        <>
-          <div className="form-section-heading">
-            <span>Front desk</span>
-            <h3>Employee information</h3>
+            <h3>
+              Administrator account
+            </h3>
+
             <p>
-              Create an operational account for scheduling and patient support.
+              Grant another user the existing ADMIN role. Use this carefully.
             </p>
+          </div>
+
+          <div className="admin-warning">
+            <strong>
+              Privileged access
+            </strong>
+
+            <span>
+              An administrator can manage healthcare users and operational data available to the admin role.
+            </span>
           </div>
 
           <div className="field-grid">
             <Field
               label="Full name"
               required
-              value={receptionistForm.name}
+              value={
+                adminForm.name
+              }
               onChange={(value) =>
-                updateReceptionist(
+                updateAdmin(
                   "name",
                   value,
                 )
@@ -1236,9 +2345,11 @@ const AdminDashboard = () => {
               label="Email"
               type="email"
               required
-              value={receptionistForm.email}
+              value={
+                adminForm.email
+              }
               onChange={(value) =>
-                updateReceptionist(
+                updateAdmin(
                   "email",
                   value,
                 )
@@ -1251,96 +2362,11 @@ const AdminDashboard = () => {
               required
               minLength={8}
               value={
-                receptionistForm.password
+                adminForm.password
               }
               onChange={(value) =>
-                updateReceptionist(
+                updateAdmin(
                   "password",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Employee ID"
-              required
-              placeholder="EMP-1001"
-              value={
-                receptionistForm.employee_id
-              }
-              onChange={(value) =>
-                updateReceptionist(
-                  "employee_id",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Department"
-              value={
-                receptionistForm.department
-              }
-              onChange={(value) =>
-                updateReceptionist(
-                  "department",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Phone"
-              type="tel"
-              value={receptionistForm.phone}
-              onChange={(value) =>
-                updateReceptionist(
-                  "phone",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Hire date"
-              type="date"
-              value={
-                receptionistForm.hire_date
-              }
-              onChange={(value) =>
-                updateReceptionist(
-                  "hire_date",
-                  value,
-                )
-              }
-            />
-
-            <SelectField
-              label="Shift"
-              value={receptionistForm.shift}
-              onChange={(value) =>
-                updateReceptionist(
-                  "shift",
-                  value,
-                )
-              }
-              options={[
-                ["", "Select shift"],
-                ["MORNING", "Morning"],
-                ["AFTERNOON", "Afternoon"],
-                ["EVENING", "Evening"],
-                ["NIGHT", "Night"],
-              ]}
-            />
-
-            <Field
-              label="Clinic location"
-              value={
-                receptionistForm.clinic_location
-              }
-              onChange={(value) =>
-                updateReceptionist(
-                  "clinic_location",
                   value,
                 )
               }
@@ -1348,246 +2374,10 @@ const AdminDashboard = () => {
           </div>
         </>
       );
-    }
-
-    if (createRole === "PATIENT") {
-      return (
-        <>
-          <div className="form-section-heading">
-            <span>Patient profile</span>
-            <h3>Account and demographics</h3>
-            <p>
-              Create the patient portal account and core registration information.
-            </p>
-          </div>
-
-          <div className="field-grid">
-            <Field
-              label="Full name"
-              required
-              value={patientForm.name}
-              onChange={(value) =>
-                updatePatient("name", value)
-              }
-            />
-
-            <Field
-              label="Email"
-              type="email"
-              required
-              value={patientForm.email}
-              onChange={(value) =>
-                updatePatient(
-                  "email",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Password"
-              type="password"
-              required
-              minLength={8}
-              value={patientForm.password}
-              onChange={(value) =>
-                updatePatient(
-                  "password",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Date of birth"
-              type="date"
-              required
-              value={
-                patientForm.date_of_birth
-              }
-              onChange={(value) =>
-                updatePatient(
-                  "date_of_birth",
-                  value,
-                )
-              }
-            />
-
-            <SelectField
-              label="Gender"
-              required
-              value={patientForm.gender}
-              onChange={(value) =>
-                updatePatient(
-                  "gender",
-                  value,
-                )
-              }
-              options={[
-                ["", "Select gender"],
-                ["MALE", "Male"],
-                ["FEMALE", "Female"],
-                ["OTHER", "Other"],
-                [
-                  "PREFER_NOT_TO_SAY",
-                  "Prefer not to say",
-                ],
-              ]}
-            />
-
-            <Field
-              label="Phone"
-              type="tel"
-              required
-              value={patientForm.phone}
-              onChange={(value) =>
-                updatePatient(
-                  "phone",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="City"
-              value={patientForm.city}
-              onChange={(value) =>
-                updatePatient(
-                  "city",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="State"
-              value={patientForm.state}
-              onChange={(value) =>
-                updatePatient(
-                  "state",
-                  value,
-                )
-              }
-            />
-          </div>
-
-          <div className="form-section-heading section-divider">
-            <span>Coverage</span>
-            <h3>Insurance information</h3>
-            <p>
-              Store the coverage information that can be used during booking and RCM workflows.
-            </p>
-          </div>
-
-          <div className="field-grid">
-            <Field
-              label="Insurance provider"
-              placeholder="Payer / insurance company"
-              value={
-                patientForm.insurance_provider
-              }
-              onChange={(value) =>
-                updatePatient(
-                  "insurance_provider",
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Member ID"
-              placeholder="Insurance member ID"
-              value={
-                patientForm.insurance_member_id
-              }
-              onChange={(value) =>
-                updatePatient(
-                  "insurance_member_id",
-                  value,
-                )
-              }
-            />
-
-            <SelectField
-              label="Primary care provider"
-              value={patientForm.pcp_doctor_id}
-              onChange={(value) =>
-                updatePatient(
-                  "pcp_doctor_id",
-                  value,
-                )
-              }
-              options={[
-                ["", "No PCP selected"],
-                ...doctors.map<[string, string]>((doctor) => [
-                  String(doctor.id),
-                  doctor.name,
-                ]),
-              ]}
-            />
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <div className="form-section-heading">
-          <span>Administration</span>
-          <h3>Administrator account</h3>
-          <p>
-            Grant another user the existing ADMIN role. Use this carefully.
-          </p>
-        </div>
-
-        <div className="admin-warning">
-          <strong>Privileged access</strong>
-          <span>
-            An administrator can manage healthcare users and operational data available to the admin role.
-          </span>
-        </div>
-
-        <div className="field-grid">
-          <Field
-            label="Full name"
-            required
-            value={adminForm.name}
-            onChange={(value) =>
-              updateAdmin("name", value)
-            }
-          />
-
-          <Field
-            label="Email"
-            type="email"
-            required
-            value={adminForm.email}
-            onChange={(value) =>
-              updateAdmin("email", value)
-            }
-          />
-
-          <Field
-            label="Password"
-            type="password"
-            required
-            minLength={8}
-            value={adminForm.password}
-            onChange={(value) =>
-              updateAdmin(
-                "password",
-                value,
-              )
-            }
-          />
-        </div>
-      </>
-    );
-  };
+    };
 
   return (
     <div className="admin-shell">
-
       <header className="admin-topbar">
         <div className="admin-brand-area">
           <button
@@ -1606,16 +2396,24 @@ const AdminDashboard = () => {
           <button
             type="button"
             className="admin-brand"
-            onClick={openDashboard}
+            onClick={
+              openDashboard
+            }
           >
             <span className="admin-brand-mark">
               +
             </span>
 
             <span>
-              <strong>HealthCare+</strong>
+              <strong>
+                HealthCare+
+              </strong>
+
               <small>
-                Administration
+                {currentRole ===
+                "RECEPTIONIST"
+                  ? "Front Desk"
+                  : "Administration"}
               </small>
             </span>
           </button>
@@ -1635,7 +2433,9 @@ const AdminDashboard = () => {
                 ? "admin-nav-link active"
                 : "admin-nav-link"
             }
-            onClick={openDashboard}
+            onClick={
+              openDashboard
+            }
           >
             Overview
           </button>
@@ -1648,7 +2448,9 @@ const AdminDashboard = () => {
                 : "admin-nav-link"
             }
             onClick={() =>
-              openDirectory("doctors")
+              openDirectory(
+                "doctors",
+              )
             }
           >
             Doctors
@@ -1678,7 +2480,9 @@ const AdminDashboard = () => {
                 : "admin-nav-link"
             }
             onClick={() =>
-              openDirectory("patients")
+              openDirectory(
+                "patients",
+              )
             }
           >
             Patients
@@ -1687,16 +2491,52 @@ const AdminDashboard = () => {
           <button
             type="button"
             className={
-              view === "admins"
+              view === "appointments"
                 ? "admin-nav-link active"
                 : "admin-nav-link"
             }
             onClick={() =>
-              openDirectory("admins")
+              openDirectory(
+                "appointments",
+              )
             }
           >
-            Admins
+            Appointments
           </button>
+
+          {(currentRole === "ADMIN" ||
+            currentRole === "RECEPTIONIST") && (
+            <button
+              type="button"
+              className={
+                view === "calendar"
+                  ? "admin-nav-link active"
+                  : "admin-nav-link"
+              }
+              onClick={openCalendar}
+            >
+              Calendar
+            </button>
+          )}
+
+          {currentRole ===
+            "ADMIN" && (
+            <button
+              type="button"
+              className={
+                view === "admins"
+                  ? "admin-nav-link active"
+                  : "admin-nav-link"
+              }
+              onClick={() =>
+                openDirectory(
+                  "admins",
+                )
+              }
+            >
+              Admins
+            </button>
+          )}
 
           <button
             type="button"
@@ -1717,7 +2557,9 @@ const AdminDashboard = () => {
             onClick={() =>
               void loadDirectories()
             }
-            disabled={loadingDirectory}
+            disabled={
+              loadingDirectory
+            }
             aria-label="Refresh directory"
           >
             ↻
@@ -1729,10 +2571,13 @@ const AdminDashboard = () => {
               className="admin-profile-trigger"
               onClick={() =>
                 setProfileOpen(
-                  (value) => !value,
+                  (value) =>
+                    !value,
                 )
               }
-              aria-expanded={profileOpen}
+              aria-expanded={
+                profileOpen
+              }
             >
               <span className="admin-avatar">
                 {getInitials(
@@ -1744,9 +2589,18 @@ const AdminDashboard = () => {
               <span className="admin-profile-text">
                 <strong>
                   {admin?.name ||
-                    "Administrator"}
+                    (currentRole ===
+                    "RECEPTIONIST"
+                      ? "Receptionist"
+                      : "Administrator")}
                 </strong>
-                <small>Administrator</small>
+
+                <small>
+                  {currentRole ===
+                  "RECEPTIONIST"
+                    ? "Receptionist"
+                    : "Administrator"}
+                </small>
               </span>
 
               <span className="profile-caret">
@@ -1760,13 +2614,21 @@ const AdminDashboard = () => {
                   <span className="dropdown-label">
                     Signed in as
                   </span>
+
                   <strong>
                     {admin?.name ||
-                      "Administrator"}
+                      (currentRole ===
+                      "RECEPTIONIST"
+                        ? "Receptionist"
+                        : "Administrator")}
                   </strong>
+
                   <small>
                     {admin?.email ||
-                      "Administrator account"}
+                      (currentRole ===
+                      "RECEPTIONIST"
+                        ? "Receptionist account"
+                        : "Administrator account")}
                   </small>
                 </div>
 
@@ -1776,9 +2638,13 @@ const AdminDashboard = () => {
                     localStorage.removeItem(
                       "access_token",
                     );
-                    navigate("/login", {
-                      replace: true,
-                    });
+
+                    navigate(
+                      "/login",
+                      {
+                        replace: true,
+                      },
+                    );
                   }}
                 >
                   Sign out
@@ -1793,21 +2659,34 @@ const AdminDashboard = () => {
         <div className="admin-page-heading">
           <div>
             <div className="admin-breadcrumb">
-              <span>Administration</span>
+              <span>
+                Administration
+              </span>
+
               <b>/</b>
-              <span>{pageTitle}</span>
+
+              <span>
+                {pageTitle}
+              </span>
             </div>
 
-            <h1>{pageTitle}</h1>
+            <h1>
+              {pageTitle}
+            </h1>
 
-            <p>{pageDescription}</p>
+            <p>
+              {pageDescription}
+            </p>
           </div>
 
-          {view !== "dashboard" && (
+          {view !==
+            "dashboard" && (
             <button
               type="button"
               className="heading-secondary-button"
-              onClick={openDashboard}
+              onClick={
+                openDashboard
+              }
             >
               ← Overview
             </button>
@@ -1820,17 +2699,24 @@ const AdminDashboard = () => {
             role="status"
           >
             <span>
-              {messageType === "success"
+              {messageType ===
+              "success"
                 ? "✓"
-                : messageType === "error"
+                : messageType ===
+                    "error"
                   ? "!"
                   : "i"}
             </span>
-            <p>{message}</p>
+
+            <p>
+              {message}
+            </p>
 
             <button
               type="button"
-              onClick={() => setMessage("")}
+              onClick={() =>
+                setMessage("")
+              }
               aria-label="Dismiss message"
             >
               ×
@@ -1838,7 +2724,8 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {view === "dashboard" && (
+        {view ===
+          "dashboard" && (
           <>
             <section className="admin-hero">
               <div>
@@ -1848,17 +2735,23 @@ const AdminDashboard = () => {
 
                 <h2>
                   Good{" "}
-                  {new Date().getHours() < 12
+                  {new Date().getHours() <
+                  12
                     ? "morning"
-                    : new Date().getHours() < 17
+                    : new Date().getHours() <
+                        17
                       ? "afternoon"
-                      : new Date().getHours() < 21
+                      : new Date().getHours() <
+                          21
                         ? "evening"
                         : "night"}
                   ,{" "}
                   {getFirstName(
                     admin?.name ||
-                      "Administrator",
+                      (currentRole ===
+                      "RECEPTIONIST"
+                        ? "Receptionist"
+                        : "Administrator"),
                   )}
                   .
                 </h2>
@@ -1870,10 +2763,12 @@ const AdminDashboard = () => {
 
               <div className="system-status">
                 <span className="status-pulse" />
+
                 <div>
                   <strong>
                     System connected
                   </strong>
+
                   <small>
                     Live directory data
                   </small>
@@ -1884,12 +2779,16 @@ const AdminDashboard = () => {
             <section className="overview-stats">
               <StatCard
                 label="Doctors"
-                value={doctors.length}
+                value={
+                  doctors.length
+                }
                 detail="Clinical providers"
                 icon="D"
                 tone="blue"
                 onClick={() =>
-                  openDirectory("doctors")
+                  openDirectory(
+                    "doctors",
+                  )
                 }
               />
 
@@ -1910,21 +2809,45 @@ const AdminDashboard = () => {
 
               <StatCard
                 label="Patients"
-                value={patients.length}
+                value={
+                  patients.length
+                }
                 detail="Registered patients"
                 icon="P"
                 tone="purple"
                 onClick={() =>
-                  openDirectory("patients")
+                  openDirectory(
+                    "patients",
+                  )
                 }
               />
 
               <StatCard
                 label="User roles"
-                value="4"
-                detail="Supported access levels"
+                value={
+                  currentRole ===
+                  "RECEPTIONIST"
+                    ? "3"
+                    : "4"
+                }
+                detail="Available access levels"
                 icon="A"
                 tone="orange"
+              />
+
+              <StatCard
+                label="Appointments"
+                value={
+                  appointments.length
+                }
+                detail="Live appointment records"
+                icon="C"
+                tone="cyan"
+                onClick={() =>
+                  openDirectory(
+                    "appointments",
+                  )
+                }
               />
             </section>
 
@@ -1934,9 +2857,11 @@ const AdminDashboard = () => {
                   <span className="section-eyebrow">
                     ROLE MANAGEMENT
                   </span>
+
                   <h2>
                     Create a new account
                   </h2>
+
                   <p>
                     Select the role first. The next steps automatically show only the fields required for that role.
                   </p>
@@ -1944,48 +2869,65 @@ const AdminDashboard = () => {
               </div>
 
               <div className="role-grid">
-                {ROLE_CARDS.map((role) => (
-                  <button
-                    type="button"
-                    className="role-card"
-                    key={role.role}
-                    onClick={() =>
-                      openCreate(
-                        role.role,
-                      )
-                    }
-                  >
-                    <span
-                      className={`role-icon ${role.role.toLowerCase()}`}
+                {ROLE_CARDS.filter(
+                  (role) =>
+                    canCreateRole(
+                      role.role,
+                    ),
+                ).map(
+                  (role) => (
+                    <button
+                      type="button"
+                      className="role-card"
+                      key={
+                        role.role
+                      }
+                      onClick={() =>
+                        openCreate(
+                          role.role,
+                        )
+                      }
                     >
-                      {role.icon}
-                    </span>
-
-                    <span className="role-content">
-                      <small>
-                        {role.level}
-                      </small>
-
-                      <strong>
-                        {role.title}
-                      </strong>
-
-                      <span>
-                        {role.description}
+                      <span
+                        className={`role-icon ${role.role.toLowerCase()}`}
+                      >
+                        {
+                          role.icon
+                        }
                       </span>
-                    </span>
 
-                    <span className="role-count">
-                      {roleCount(
-                        role.role,
-                      )}
-                    </span>
+                      <span className="role-content">
+                        <small>
+                          {
+                            role.level
+                          }
+                        </small>
 
-                    <span className="role-arrow">
-                      →
-                    </span>
-                  </button>
-                ))}
+                        <strong>
+                          {
+                            role.title
+                          }
+                        </strong>
+
+                        <span>
+                          {
+                            role.description
+                          }
+                        </span>
+                      </span>
+
+                      <span className="role-count">
+                        {roleCount(
+                          role.role,
+                        )}
+                      </span>
+
+                      <span className="role-arrow">
+                        →
+                      </span>
+                    </button>
+                  ),
+                )}
               </div>
             </section>
 
@@ -1995,9 +2937,11 @@ const AdminDashboard = () => {
                   <span className="section-eyebrow">
                     DIRECTORY
                   </span>
+
                   <h2>
                     People and access
                   </h2>
+
                   <p>
                     Open a live directory to review registered users.
                   </p>
@@ -2019,7 +2963,9 @@ const AdminDashboard = () => {
               <div className="directory-shortcuts">
                 <DirectoryShortcut
                   title="Doctors"
-                  count={doctors.length}
+                  count={
+                    doctors.length
+                  }
                   detail="Clinical providers"
                   tone="blue"
                   onClick={() =>
@@ -2045,7 +2991,9 @@ const AdminDashboard = () => {
 
                 <DirectoryShortcut
                   title="Patients"
-                  count={patients.length}
+                  count={
+                    patients.length
+                  }
                   detail="Patient accounts"
                   tone="purple"
                   onClick={() =>
@@ -2054,9 +3002,31 @@ const AdminDashboard = () => {
                     )
                   }
                 />
+
+                <DirectoryShortcut
+                  title="Appointments"
+                  count={
+                    appointments.length
+                  }
+                  detail="Lifecycle operations"
+                  tone="orange"
+                  onClick={() =>
+                    openDirectory(
+                      "appointments",
+                    )
+                  }
+                />
               </div>
             </section>
           </>
+        )}
+
+        {view === "calendar" && (
+          <AdminCalendar
+            onBookingSuccess={() => {
+              void loadDirectories();
+            }}
+          />
         )}
 
         {view === "create" && (
@@ -2066,49 +3036,68 @@ const AdminDashboard = () => {
                 <span>
                   ACCOUNT WORKFLOW
                 </span>
+
                 <strong>
                   Choose role
                 </strong>
               </div>
 
               <div className="create-role-list">
-                {ROLE_CARDS.map((role) => (
-                  <button
-                    type="button"
-                    key={role.role}
-                    className={
-                      createRole === role.role
-                        ? "create-role-item active"
-                        : "create-role-item"
-                    }
-                    onClick={() =>
-                      selectCreateRole(
-                        role.role,
-                      )
-                    }
-                  >
-                    <span
-                      className={`role-mini-icon ${role.role.toLowerCase()}`}
+                {ROLE_CARDS.filter(
+                  (role) =>
+                    canCreateRole(
+                      role.role,
+                    ),
+                ).map(
+                  (role) => (
+                    <button
+                      type="button"
+                      key={
+                        role.role
+                      }
+                      className={
+                        createRole ===
+                        role.role
+                          ? "create-role-item active"
+                          : "create-role-item"
+                      }
+                      onClick={() =>
+                        selectCreateRole(
+                          role.role,
+                        )
+                      }
                     >
-                      {role.icon}
-                    </span>
+                      <span
+                        className={`role-mini-icon ${role.role.toLowerCase()}`}
+                      >
+                        {
+                          role.icon
+                        }
+                      </span>
 
-                    <span>
-                      <strong>
-                        {role.title}
-                      </strong>
-                      <small>
-                        {role.level}
-                      </small>
-                    </span>
-                  </button>
-                ))}
+                      <span>
+                        <strong>
+                          {
+                            role.title
+                          }
+                        </strong>
+
+                        <small>
+                          {
+                            role.level
+                          }
+                        </small>
+                      </span>
+                    </button>
+                  ),
+                )}
               </div>
 
               <div className="workflow-note">
                 <strong>
                   Controlled access
                 </strong>
+
                 <span>
                   Role-specific fields are submitted to the corresponding protected API endpoint.
                 </span>
@@ -2119,11 +3108,13 @@ const AdminDashboard = () => {
               <div className="create-panel-header">
                 <div>
                   <span className="section-eyebrow">
-                    {ROLE_CARDS.find(
-                      (role) =>
-                        role.role ===
-                        createRole,
-                    )?.level}
+                    {
+                      ROLE_CARDS.find(
+                        (role) =>
+                          role.role ===
+                          createRole,
+                      )?.level
+                    }
                   </span>
 
                   <h2>
@@ -2165,34 +3156,50 @@ const AdminDashboard = () => {
                 <span
                   style={{
                     width: `${
-                      (createStep / 3) * 100
+                      (createStep /
+                        3) *
+                      100
                     }%`,
                   }}
                 />
               </div>
 
               <form
-                onSubmit={createUser}
+                onSubmit={
+                  createUser
+                }
                 className="create-form"
               >
-                {createStep === 1 && (
+                {createStep ===
+                  1 && (
                   <div className="workflow-step">
                     <div className="workflow-step-heading">
-                      <span>STEP 01</span>
+                      <span>
+                        STEP 01
+                      </span>
+
                       <h3>
                         Select access level
                       </h3>
+
                       <p>
                         Choose the account type before entering role-specific information.
                       </p>
                     </div>
 
                     <div className="role-select-grid">
-                      {ROLE_CARDS.map(
+                      {ROLE_CARDS.filter(
+                        (role) =>
+                          canCreateRole(
+                            role.role,
+                          ),
+                      ).map(
                         (role) => (
                           <button
                             type="button"
-                            key={role.role}
+                            key={
+                              role.role
+                            }
                             className={
                               createRole ===
                               role.role
@@ -2237,13 +3244,18 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                {createStep === 2 && (
+                {createStep ===
+                  2 && (
                   <div className="workflow-step">
                     <div className="workflow-step-heading">
-                      <span>STEP 02</span>
+                      <span>
+                        STEP 02
+                      </span>
+
                       <h3>
                         Account setup
                       </h3>
+
                       <p>
                         Verify the identity and login credentials for this account.
                       </p>
@@ -2301,36 +3313,39 @@ const AdminDashboard = () => {
                                 ? patientForm.name
                                 : adminForm.name
                         }
-                        onChange={(value) => {
+                        onChange={(
+                          value,
+                        ) => {
                           if (
                             createRole ===
                             "DOCTOR"
-                          )
+                          ) {
                             updateDoctor(
                               "name",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "RECEPTIONIST"
-                          )
+                          ) {
                             updateReceptionist(
                               "name",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "PATIENT"
-                          )
+                          ) {
                             updatePatient(
                               "name",
                               value,
                             );
-                          else
+                          } else {
                             updateAdmin(
                               "name",
                               value,
                             );
+                          }
                         }}
                       />
 
@@ -2350,36 +3365,39 @@ const AdminDashboard = () => {
                                 ? patientForm.email
                                 : adminForm.email
                         }
-                        onChange={(value) => {
+                        onChange={(
+                          value,
+                        ) => {
                           if (
                             createRole ===
                             "DOCTOR"
-                          )
+                          ) {
                             updateDoctor(
                               "email",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "RECEPTIONIST"
-                          )
+                          ) {
                             updateReceptionist(
                               "email",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "PATIENT"
-                          )
+                          ) {
                             updatePatient(
                               "email",
                               value,
                             );
-                          else
+                          } else {
                             updateAdmin(
                               "email",
                               value,
                             );
+                          }
                         }}
                       />
 
@@ -2400,46 +3418,53 @@ const AdminDashboard = () => {
                                 ? patientForm.password
                                 : adminForm.password
                         }
-                        onChange={(value) => {
+                        onChange={(
+                          value,
+                        ) => {
                           if (
                             createRole ===
                             "DOCTOR"
-                          )
+                          ) {
                             updateDoctor(
                               "password",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "RECEPTIONIST"
-                          )
+                          ) {
                             updateReceptionist(
                               "password",
                               value,
                             );
-                          else if (
+                          } else if (
                             createRole ===
                             "PATIENT"
-                          )
+                          ) {
                             updatePatient(
                               "password",
                               value,
                             );
-                          else
+                          } else {
                             updateAdmin(
                               "password",
                               value,
                             );
+                          }
                         }}
                       />
                     </div>
                   </div>
                 )}
 
-                {createStep === 3 && (
+                {createStep ===
+                  3 && (
                   <div className="workflow-step">
                     <div className="workflow-step-heading">
-                      <span>STEP 03</span>
+                      <span>
+                        STEP 03
+                      </span>
+
                       <h3>
                         {createRole ===
                         "DOCTOR"
@@ -2452,6 +3477,7 @@ const AdminDashboard = () => {
                               ? "Patient profile"
                               : "Administrator profile"}
                       </h3>
+
                       <p>
                         Enter the information required for this role.
                       </p>
@@ -2474,7 +3500,8 @@ const AdminDashboard = () => {
                       } else {
                         setCreateStep(
                           (step) =>
-                            (step - 1) as
+                            (step -
+                              1) as
                               | 1
                               | 2
                               | 3,
@@ -2482,7 +3509,8 @@ const AdminDashboard = () => {
                       }
                     }}
                   >
-                    {createStep === 1
+                    {createStep ===
+                    1
                       ? "Cancel"
                       : "Back"}
                   </button>
@@ -2494,7 +3522,8 @@ const AdminDashboard = () => {
                   >
                     {loading
                       ? "Creating..."
-                      : createStep < 3
+                      : createStep <
+                          3
                         ? "Continue"
                         : `Create ${
                             ROLE_CARDS.find(
@@ -2511,9 +3540,12 @@ const AdminDashboard = () => {
         )}
 
         {(view === "doctors" ||
-          view === "receptionists" ||
+          view ===
+            "receptionists" ||
           view === "patients" ||
-          view === "admins") && (
+          view === "admins" ||
+          view ===
+            "appointments") && (
           <section className="directory-card">
             <div className="directory-toolbar">
               <div>
@@ -2522,7 +3554,9 @@ const AdminDashboard = () => {
                 </span>
 
                 <h2>
-                  {currentDirectoryCount}{" "}
+                  {
+                    currentDirectoryCount
+                  }{" "}
                   matching records
                 </h2>
 
@@ -2533,24 +3567,35 @@ const AdminDashboard = () => {
 
               <div className="directory-actions">
                 <label className="directory-search">
-                  <span>⌕</span>
+                  <span>
+                    ⌕
+                  </span>
 
                   <input
                     type="search"
                     value={search}
-                    onChange={(event) =>
+                    onChange={(
+                      event,
+                    ) =>
                       setSearch(
-                        event.target.value,
+                        event.target
+                          .value,
                       )
                     }
                     placeholder={
-                      view === "patients"
+                      view ===
+                      "patients"
                         ? "Search patients..."
-                        : view === "doctors"
+                        : view ===
+                            "doctors"
                           ? "Search doctors..."
-                          : view === "receptionists"
+                          : view ===
+                              "receptionists"
                             ? "Search receptionists..."
-                            : "Search administrators..."
+                            : view ===
+                                "appointments"
+                              ? "Search patient or doctor..."
+                              : "Search administrators..."
                     }
                     aria-label="Search directory"
                   />
@@ -2585,7 +3630,8 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {view === "doctors" && (
+            {view ===
+              "doctors" && (
               <DoctorTable
                 doctors={
                   filteredDoctors
@@ -2602,7 +3648,8 @@ const AdminDashboard = () => {
               />
             )}
 
-            {view === "patients" && (
+            {view ===
+              "patients" && (
               <PatientTable
                 patients={
                   filteredPatients
@@ -2610,8 +3657,37 @@ const AdminDashboard = () => {
               />
             )}
 
-            {view === "admins" && (
-              <AdminTable admins={filteredAdmins} />
+            {view ===
+              "admins" && (
+              <AdminTable
+                admins={
+                  filteredAdmins
+                }
+              />
+            )}
+
+            {view ===
+              "appointments" && (
+              <AppointmentOperations
+                appointments={
+                  filteredAppointments
+                }
+                counts={
+                  appointmentCounts
+                }
+                filter={
+                  appointmentFilter
+                }
+                onFilterChange={
+                  setAppointmentFilter
+                }
+                updatingAppointmentId={
+                  updatingAppointmentId
+                }
+                onStatusChange={
+                  updateAppointmentStatus
+                }
+              />
             )}
           </section>
         )}
@@ -2623,7 +3699,9 @@ const AdminDashboard = () => {
 interface FieldProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string,
+  ) => void;
   type?: string;
   required?: boolean;
   placeholder?: string;
@@ -2660,8 +3738,11 @@ const Field = ({
   >
     <span>
       {label}
+
       {required && (
-        <b aria-hidden="true">*</b>
+        <b aria-hidden="true">
+          *
+        </b>
       )}
     </span>
 
@@ -2669,7 +3750,9 @@ const Field = ({
       type={type}
       value={value}
       onChange={(event) =>
-        onChange(event.target.value)
+        onChange(
+          event.target.value,
+        )
       }
       required={required}
       placeholder={
@@ -2681,7 +3764,9 @@ const Field = ({
       min={min}
       max={max}
       step={step}
-      inputMode={valueInputMode}
+      inputMode={
+        valueInputMode
+      }
     />
   </label>
 );
@@ -2689,8 +3774,13 @@ const Field = ({
 interface SelectFieldProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
-  options: [string, string][];
+  onChange: (
+    value: string,
+  ) => void;
+  options: [
+    string,
+    string,
+  ][];
   required?: boolean;
 }
 
@@ -2704,25 +3794,39 @@ const SelectField = ({
   <label className="modern-field">
     <span>
       {label}
+
       {required && (
-        <b aria-hidden="true">*</b>
+        <b aria-hidden="true">
+          *
+        </b>
       )}
     </span>
 
     <select
       value={value}
       onChange={(event) =>
-        onChange(event.target.value)
+        onChange(
+          event.target.value,
+        )
       }
       required={required}
     >
       {options.map(
-        ([optionValue, optionLabel]) => (
+        ([
+          optionValue,
+          optionLabel,
+        ]) => (
           <option
-            value={optionValue}
-            key={optionValue}
+            value={
+              optionValue
+            }
+            key={
+              optionValue
+            }
           >
-            {optionLabel}
+            {
+              optionLabel
+            }
           </option>
         ),
       )}
@@ -2733,7 +3837,9 @@ const SelectField = ({
 interface TextAreaProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string,
+  ) => void;
   full?: boolean;
 }
 
@@ -2750,13 +3856,17 @@ const TextAreaField = ({
         : "modern-field"
     }
   >
-    <span>{label}</span>
+    <span>
+      {label}
+    </span>
 
     <textarea
       rows={5}
       value={value}
       onChange={(event) =>
-        onChange(event.target.value)
+        onChange(
+          event.target.value,
+        )
       }
       placeholder={`Enter ${label.toLowerCase()}`}
     />
@@ -2791,9 +3901,17 @@ const StatCard = ({
     </span>
 
     <span>
-      <small>{label}</small>
-      <strong>{value}</strong>
-      <em>{detail}</em>
+      <small>
+        {label}
+      </small>
+
+      <strong>
+        {value}
+      </strong>
+
+      <em>
+        {detail}
+      </em>
     </span>
   </button>
 );
@@ -2825,12 +3943,22 @@ const DirectoryShortcut = ({
     </span>
 
     <span>
-      <strong>{title}</strong>
-      <small>{detail}</small>
+      <strong>
+        {title}
+      </strong>
+
+      <small>
+        {detail}
+      </small>
     </span>
 
-    <b>{count}</b>
-    <i>→</i>
+    <b>
+      {count}
+    </b>
+
+    <i>
+      →
+    </i>
   </button>
 );
 
@@ -2853,121 +3981,159 @@ const DoctorTable = ({
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Provider</th>
-            <th>Specialization</th>
-            <th>Credentials</th>
-            <th>Location</th>
-            <th>Experience</th>
-            <th>Consultation</th>
-            <th>Status</th>
+            <th>
+              Provider
+            </th>
+
+            <th>
+              Specialization
+            </th>
+
+            <th>
+              Credentials
+            </th>
+
+            <th>
+              Location
+            </th>
+
+            <th>
+              Experience
+            </th>
+
+            <th>
+              Consultation
+            </th>
+
+            <th>
+              Status
+            </th>
           </tr>
         </thead>
 
         <tbody>
-          {doctors.map((doctor) => (
-            <tr key={doctor.id}>
-              <td>
-                <div className="person-cell">
-                  <span className="person-avatar blue">
-                    {getInitials(
-                      doctor.name,
-                    )}
-                  </span>
+          {doctors.map(
+            (doctor) => (
+              <tr
+                key={
+                  doctor.id
+                }
+              >
+                <td>
+                  <div className="person-cell">
+                    <span className="person-avatar blue">
+                      {getInitials(
+                        doctor.name,
+                      )}
+                    </span>
 
+                    <span>
+                      <strong>
+                        {
+                          doctor.name
+                        }
+                      </strong>
+
+                      <small>
+                        {doctor.email ||
+                          "Email not available"}
+                      </small>
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  <strong>
+                    {doctor.specialization ||
+                      "—"}
+                  </strong>
+
+                  <small className="table-muted">
+                    {doctor.department ||
+                      "Department not provided"}
+                  </small>
+                </td>
+
+                <td>
                   <span>
-                    <strong>
-                      {doctor.name}
-                    </strong>
-                    <small>
-                      {doctor.email ||
-                        "Email not available"}
-                    </small>
+                    {doctor.qualification ||
+                      "—"}
                   </span>
-                </div>
-              </td>
 
-              <td>
-                <strong>
-                  {doctor.specialization ||
+                  <small className="table-muted">
+                    License{" "}
+                    {doctor.license_number ||
+                      "—"}
+                  </small>
+                </td>
+
+                <td>
+                  {[
+                    doctor.city,
+                    doctor.state,
+                  ]
+                    .filter(
+                      Boolean,
+                    )
+                    .join(
+                      ", ",
+                    ) || "—"}
+                </td>
+
+                <td>
+                  {doctor.years_of_experience ??
                     "—"}
-                </strong>
-                <small className="table-muted">
-                  {doctor.department ||
-                    "Department not provided"}
-                </small>
-              </td>
 
-              <td>
-                <span>
-                  {doctor.qualification ||
-                    "—"}
-                </span>
-                <small className="table-muted">
-                  License{" "}
-                  {doctor.license_number ||
-                    "—"}
-                </small>
-              </td>
+                  {doctor.years_of_experience !==
+                    null &&
+                  doctor.years_of_experience !==
+                    undefined
+                    ? " yrs"
+                    : ""}
+                </td>
 
-              <td>
-                {[
-                  doctor.city,
-                  doctor.state,
-                ]
-                  .filter(Boolean)
-                  .join(", ") ||
-                  "—"}
-              </td>
+                <td>
+                  <strong>
+                    {doctor.consultation_fee !==
+                      null &&
+                    doctor.consultation_fee !==
+                      undefined &&
+                    doctor.consultation_fee !==
+                      ""
+                      ? `$${Number(
+                          doctor.consultation_fee,
+                        ).toFixed(
+                          2,
+                        )}`
+                      : "—"}
+                  </strong>
 
-              <td>
-                {doctor.years_of_experience ??
-                  "—"}
-                {doctor.years_of_experience !==
-                  null &&
-                doctor.years_of_experience !==
-                  undefined
-                  ? " yrs"
-                  : ""}
-              </td>
+                  <small className="table-muted">
+                    {doctor.consultation_mode ||
+                      "Mode not provided"}
+                  </small>
+                </td>
 
-              <td>
-                <strong>
-                  {doctor.consultation_fee !==
-                  null &&
-                  doctor.consultation_fee !==
-                    undefined &&
-                  doctor.consultation_fee !==
-                    ""
-                    ? `$${Number(
-                        doctor.consultation_fee,
-                      ).toFixed(2)}`
-                    : "—"}
-                </strong>
+                <td>
+                  <span
+                    className={
+                      doctor.accepting_new_patients ===
+                      false
+                        ? "table-status danger"
+                        : "table-status success"
+                    }
+                  >
+                    <i />
 
-                <small className="table-muted">
-                  {doctor.consultation_mode ||
-                    "Mode not provided"}
-                </small>
-              </td>
-
-              <td>
-                <span
-                  className={
-                    doctor.accepting_new_patients ===
+                    {doctor.accepting_new_patients ===
                     false
-                      ? "table-status danger"
-                      : "table-status success"
-                  }
-                >
-                  <i />
-                  {doctor.accepting_new_patients ===
-                  false
-                    ? "Not accepting"
-                    : "Accepting"}
-                </span>
-              </td>
-            </tr>
-          ))}
+                      ? "Not accepting"
+                      : "Accepting"}
+                  </span>
+                </td>
+              </tr>
+            ),
+          )}
         </tbody>
       </table>
     </div>
@@ -2979,7 +4145,9 @@ const ReceptionistTable = ({
 }: {
   receptionists: Receptionist[];
 }) => {
-  if (!receptionists.length) {
+  if (
+    !receptionists.length
+  ) {
     return (
       <EmptyDirectory
         title="No receptionists found"
@@ -2993,72 +4161,102 @@ const ReceptionistTable = ({
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Staff member</th>
-            <th>Employee ID</th>
-            <th>Department</th>
-            <th>Phone</th>
-            <th>Shift</th>
-            <th>Clinic</th>
-            <th>Hire date</th>
+            <th>
+              Staff member
+            </th>
+
+            <th>
+              Employee ID
+            </th>
+
+            <th>
+              Department
+            </th>
+
+            <th>
+              Phone
+            </th>
+
+            <th>
+              Shift
+            </th>
+
+            <th>
+              Clinic
+            </th>
+
+            <th>
+              Hire date
+            </th>
           </tr>
         </thead>
 
         <tbody>
-          {receptionists.map((staff) => (
-            <tr key={staff.id}>
-              <td>
-                <div className="person-cell">
-                  <span className="person-avatar green">
-                    {getInitials(
-                      staff.name,
-                    )}
+          {receptionists.map(
+            (staff) => (
+              <tr
+                key={
+                  staff.id
+                }
+              >
+                <td>
+                  <div className="person-cell">
+                    <span className="person-avatar green">
+                      {getInitials(
+                        staff.name,
+                      )}
+                    </span>
+
+                    <span>
+                      <strong>
+                        {
+                          staff.name
+                        }
+                      </strong>
+
+                      <small>
+                        {staff.email ||
+                          "Email not available"}
+                      </small>
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  {staff.employee_id ||
+                    "—"}
+                </td>
+
+                <td>
+                  {staff.department ||
+                    "—"}
+                </td>
+
+                <td>
+                  {staff.phone ||
+                    "—"}
+                </td>
+
+                <td>
+                  <span className="soft-badge">
+                    {staff.shift ||
+                      "Not assigned"}
                   </span>
+                </td>
 
-                  <span>
-                    <strong>
-                      {staff.name}
-                    </strong>
-                    <small>
-                      {staff.email ||
-                        "Email not available"}
-                    </small>
-                  </span>
-                </div>
-              </td>
+                <td>
+                  {staff.clinic_location ||
+                    "—"}
+                </td>
 
-              <td>
-                {staff.employee_id ||
-                  "—"}
-              </td>
-
-              <td>
-                {staff.department ||
-                  "—"}
-              </td>
-
-              <td>
-                {staff.phone || "—"}
-              </td>
-
-              <td>
-                <span className="soft-badge">
-                  {staff.shift ||
-                    "Not assigned"}
-                </span>
-              </td>
-
-              <td>
-                {staff.clinic_location ||
-                  "—"}
-              </td>
-
-              <td>
-                {formatDate(
-                  staff.hire_date,
-                )}
-              </td>
-            </tr>
-          ))}
+                <td>
+                  {formatDate(
+                    staff.hire_date,
+                  )}
+                </td>
+              </tr>
+            ),
+          )}
         </tbody>
       </table>
     </div>
@@ -3084,85 +4282,588 @@ const PatientTable = ({
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Patient</th>
-            <th>Date of birth</th>
-            <th>Contact</th>
-            <th>Location</th>
-            <th>Insurance</th>
-            <th>Member ID</th>
-            <th>PCP</th>
+            <th>
+              Patient
+            </th>
+
+            <th>
+              Date of birth
+            </th>
+
+            <th>
+              Contact
+            </th>
+
+            <th>
+              Location
+            </th>
+
+            <th>
+              Insurance
+            </th>
+
+            <th>
+              Member ID
+            </th>
+
+            <th>
+              PCP
+            </th>
           </tr>
         </thead>
 
         <tbody>
-          {patients.map((patient) => (
-            <tr key={patient.id}>
-              <td>
-                <div className="person-cell">
-                  <span className="person-avatar purple">
-                    {getInitials(
-                      patient.name,
-                    )}
-                  </span>
+          {patients.map(
+            (patient) => (
+              <tr
+                key={
+                  patient.id
+                }
+              >
+                <td>
+                  <div className="person-cell">
+                    <span className="person-avatar purple">
+                      {getInitials(
+                        patient.name,
+                      )}
+                    </span>
 
-                  <span>
-                    <strong>
-                      {patient.name}
-                    </strong>
-                    <small>
-                      {patient.email}
-                    </small>
-                  </span>
-                </div>
-              </td>
+                    <span>
+                      <strong>
+                        {
+                          patient.name
+                        }
+                      </strong>
 
-              <td>
-                {formatDate(
-                  patient.date_of_birth,
-                )}
-                <small className="table-muted">
-                  {patient.gender ||
-                    "Gender not provided"}
-                </small>
-              </td>
+                      <small>
+                        {
+                          patient.email
+                        }
+                      </small>
+                    </span>
+                  </div>
+                </td>
 
-              <td>
-                {patient.phone ||
-                  "—"}
-              </td>
+                <td>
+                  {formatDate(
+                    patient.date_of_birth,
+                  )}
 
-              <td>
-                {[
-                  patient.city,
-                  patient.state,
-                ]
-                  .filter(Boolean)
-                  .join(", ") ||
-                  "—"}
-              </td>
+                  <small className="table-muted">
+                    {patient.gender ||
+                      "Gender not provided"}
+                  </small>
+                </td>
 
-              <td>
-                {patient.insurance_provider ||
-                  "No insurance on file"}
-              </td>
+                <td>
+                  {patient.phone ||
+                    "—"}
+                </td>
 
-              <td>
-                {patient.insurance_member_id ||
-                  "Not provided"}
-              </td>
+                <td>
+                  {[
+                    patient.city,
+                    patient.state,
+                  ]
+                    .filter(
+                      Boolean,
+                    )
+                    .join(
+                      ", ",
+                    ) || "—"}
+                </td>
 
-              <td>
-                {patient.pcp_doctor_id
-                  ? `Doctor #${patient.pcp_doctor_id}`
-                  : "No PCP"}
-              </td>
-            </tr>
-          ))}
+                <td>
+                  {patient.insurance_provider ||
+                    "No insurance on file"}
+                </td>
+
+                <td>
+                  {patient.insurance_member_id ||
+                    "Not provided"}
+                </td>
+
+                <td>
+                  {patient.pcp_doctor_id
+                    ? `Doctor #${patient.pcp_doctor_id}`
+                    : "No PCP"}
+                </td>
+              </tr>
+            ),
+          )}
         </tbody>
       </table>
     </div>
   );
 };
+
+interface AppointmentOperationsProps {
+  appointments: StaffAppointment[];
+
+  counts: {
+    all: number;
+    waiting: number;
+    attended: number;
+    inProgress: number;
+    completed: number;
+    notAttended: number;
+    cancelled: number;
+  };
+
+  filter:
+    | "ALL"
+    | "WAITING"
+    | "ATTENDED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "NOT_ATTENDED"
+    | "CANCELLED";
+
+  onFilterChange: (
+    value:
+      | "ALL"
+      | "WAITING"
+      | "ATTENDED"
+      | "IN_PROGRESS"
+      | "COMPLETED"
+      | "NOT_ATTENDED"
+      | "CANCELLED",
+  ) => void;
+
+  updatingAppointmentId:
+    | number
+    | null;
+
+  onStatusChange: (
+    appointmentId: number,
+    status: string,
+  ) => void;
+}
+
+const appointmentLabel = (
+  appointment: StaffAppointment,
+): string => {
+  if (
+    appointment.status_label &&
+    appointment.status_label.trim()
+  ) {
+    return appointment.status_label;
+  }
+
+  switch (
+    appointment.status.toUpperCase()
+  ) {
+    case "SCHEDULED":
+    case "CONFIRMED":
+      return "Waiting";
+
+    case "CHECKED_IN":
+      return "Attended";
+
+    case "IN_PROGRESS":
+      return "With Doctor";
+
+    case "COMPLETED":
+      return "Completed";
+
+    case "NO_SHOW":
+      return "Not Attended";
+
+    case "CANCELLED":
+      return "Cancelled";
+
+    default:
+      return appointment.status;
+  }
+};
+
+const appointmentClass = (
+  status: string,
+): string => {
+  switch (status.toUpperCase()) {
+    case "SCHEDULED":
+    case "CONFIRMED":
+      return "waiting";
+
+    /*
+     * Keep the existing CSS class name "attempted"
+     * so the current AdminDashboard.css remains compatible.
+     * The user-facing label is correctly "Attended".
+     */
+    case "CHECKED_IN":
+      return "attempted";
+
+    case "IN_PROGRESS":
+      return "in-progress";
+
+    case "COMPLETED":
+      return "completed";
+
+    /*
+     * Keep the existing CSS class name for styling
+     * compatibility. User-facing terminology is "Not Attended".
+     */
+    case "NO_SHOW":
+      return "not-attempted";
+
+    case "CANCELLED":
+      return "cancelled";
+
+    default:
+      return "unknown";
+  }
+};
+
+const formatAppointmentTime = (
+  value: string,
+) => {
+  if (!value) return "—";
+
+  const [
+    hourPart,
+    minutePart,
+  ] = value.split(":");
+
+  const hour = Number(
+    hourPart,
+  );
+
+  if (
+    Number.isNaN(hour) ||
+    !minutePart
+  ) {
+    return value;
+  }
+
+  const suffix =
+    hour >= 12 ? "PM" : "AM";
+
+  const displayHour =
+    hour % 12 || 12;
+
+  return `${displayHour}:${minutePart.slice(
+    0,
+    2,
+  )} ${suffix}`;
+};
+
+const AppointmentOperations = ({
+  appointments,
+  counts,
+  filter,
+  onFilterChange,
+  updatingAppointmentId,
+  onStatusChange,
+}: AppointmentOperationsProps) => (
+  <div className="appointment-operations">
+    <div className="appointment-lifecycle-banner">
+      <div>
+        <span className="section-eyebrow">
+          LIVE APPOINTMENT FLOW
+        </span>
+
+        <h3>
+          Arrival → Visit → Completion
+        </h3>
+
+        <p>
+          Waiting becomes Attended when front desk marks the patient as arrived. After the scheduled end time, an unarrived appointment becomes Not Attended automatically.
+        </p>
+      </div>
+
+      <div className="lifecycle-flow">
+        <span className="waiting">
+          Waiting
+        </span>
+
+        <b>→</b>
+
+        <span className="attempted">
+          Attended
+        </span>
+
+        <b>→</b>
+
+        <span className="in-progress">
+          With Doctor
+        </span>
+
+        <b>→</b>
+
+        <span className="completed">
+          Completed
+        </span>
+      </div>
+    </div>
+
+    <div className="appointment-status-filters">
+      {[
+        [
+          "ALL",
+          "All",
+          counts.all,
+        ],
+        [
+          "WAITING",
+          "Waiting",
+          counts.waiting,
+        ],
+        [
+          "ATTENDED",
+          "Attended",
+          counts.attended,
+        ],
+        [
+          "IN_PROGRESS",
+          "With Doctor",
+          counts.inProgress,
+        ],
+        [
+          "COMPLETED",
+          "Completed",
+          counts.completed,
+        ],
+        [
+          "NOT_ATTENDED",
+          "Not Attended",
+          counts.notAttended,
+        ],
+        [
+          "CANCELLED",
+          "Cancelled",
+          counts.cancelled,
+        ],
+      ].map(
+        ([
+          value,
+          label,
+          count,
+        ]) => (
+          <button
+            type="button"
+            key={String(
+              value,
+            )}
+            className={
+              filter === value
+                ? "appointment-filter active"
+                : "appointment-filter"
+            }
+            onClick={() =>
+              onFilterChange(
+                value as AppointmentOperationsProps["filter"],
+              )
+            }
+          >
+            <span>
+              {label}
+            </span>
+
+            <b>
+              {count}
+            </b>
+          </button>
+        ),
+      )}
+    </div>
+
+    {appointments.length ===
+    0 ? (
+      <EmptyDirectory
+        title="No appointments found"
+        detail="There are no appointment records matching the current filter or search."
+      />
+    ) : (
+      <div className="staff-appointment-list">
+        {appointments.map(
+          (appointment) => {
+            const status =
+              appointment.status.toUpperCase();
+
+            const busy =
+              updatingAppointmentId ===
+              appointment.id;
+
+            return (
+              <article
+                className="staff-appointment-card"
+                key={
+                  appointment.id
+                }
+              >
+                <div className="appointment-time-block">
+                  <strong>
+                    {formatAppointmentTime(
+                      appointment.start_time,
+                    )}
+                  </strong>
+
+                  <span>
+                    {formatAppointmentTime(
+                      appointment.end_time,
+                    )}
+                  </span>
+                </div>
+
+                <div className="appointment-patient-block">
+                  <span className="person-avatar purple">
+                    {getInitials(
+                      appointment.patient_name,
+                    )}
+                  </span>
+
+                  <div>
+                    <strong>
+                      {
+                        appointment.patient_name
+                      }
+                    </strong>
+
+                    <small>
+                      {appointment.patient_email ||
+                        "Patient email not available"}
+                    </small>
+                  </div>
+                </div>
+
+                <div className="appointment-provider-block">
+                  <span>
+                    Provider
+                  </span>
+
+                  <strong>
+                    {
+                      appointment.doctor_name
+                    }
+                  </strong>
+
+                  <small>
+                    {appointment.appointment_type ||
+                      "Appointment"}
+                  </small>
+                </div>
+
+                <div className="appointment-status-block">
+                  <span
+                    className={`appointment-lifecycle-status ${appointmentClass(
+                      status,
+                    )}`}
+                  >
+                    {appointmentLabel(
+                      appointment,
+                    )}
+                  </span>
+
+                  <small>
+                    {formatDate(
+                      appointment.appointment_date,
+                    )}
+                  </small>
+                </div>
+
+                <div className="appointment-action-block">
+                  {(status ===
+                    "SCHEDULED" ||
+                    status ===
+                      "CONFIRMED") && (
+                    <>
+                      <button
+                        type="button"
+                        className="appointment-action primary"
+                        disabled={
+                          busy
+                        }
+                        onClick={() =>
+                          onStatusChange(
+                            appointment.id,
+                            "CHECKED_IN",
+                          )
+                        }
+                      >
+                        {busy
+                          ? "Updating..."
+                          : "Mark Arrived"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="appointment-action danger"
+                        disabled={
+                          busy
+                        }
+                        onClick={() =>
+                          onStatusChange(
+                            appointment.id,
+                            "CANCELLED",
+                          )
+                        }
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
+
+                  {status ===
+                    "CHECKED_IN" && (
+                    <button
+                      type="button"
+                      className="appointment-action primary"
+                      disabled={
+                        busy
+                      }
+                      onClick={() =>
+                        onStatusChange(
+                          appointment.id,
+                          "IN_PROGRESS",
+                        )
+                      }
+                    >
+                      {busy
+                        ? "Updating..."
+                        : "Start Visit"}
+                    </button>
+                  )}
+
+                  {status ===
+                    "IN_PROGRESS" && (
+                    <button
+                      type="button"
+                      className="appointment-action primary"
+                      disabled={
+                        busy
+                      }
+                      onClick={() =>
+                        onStatusChange(
+                          appointment.id,
+                          "COMPLETED",
+                        )
+                      }
+                    >
+                      {busy
+                        ? "Updating..."
+                        : "Complete"}
+                    </button>
+                  )}
+
+                  {(status ===
+                    "COMPLETED" ||
+                    status ===
+                      "NO_SHOW" ||
+                    status ===
+                      "CANCELLED") && (
+                    <span className="appointment-action-final">
+                      No action required
+                    </span>
+                  )}
+                </div>
+              </article>
+            );
+          },
+        )}
+      </div>
+    )}
+  </div>
+);
 
 const AdminTable = ({
   admins,
@@ -3183,36 +4884,76 @@ const AdminTable = ({
       <table className="admin-table">
         <thead>
           <tr>
-            <th>Administrator</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Access</th>
+            <th>
+              Administrator
+            </th>
+
+            <th>
+              Email
+            </th>
+
+            <th>
+              Role
+            </th>
+
+            <th>
+              Access
+            </th>
           </tr>
         </thead>
+
         <tbody>
-          {admins.map((user) => (
-            <tr key={user.id}>
-              <td>
-                <div className="person-cell">
-                  <span className="person-avatar orange">
-                    {getInitials(user.name)}
+          {admins.map(
+            (user) => (
+              <tr
+                key={
+                  user.id
+                }
+              >
+                <td>
+                  <div className="person-cell">
+                    <span className="person-avatar orange">
+                      {getInitials(
+                        user.name,
+                      )}
+                    </span>
+
+                    <span>
+                      <strong>
+                        {
+                          user.name
+                        }
+                      </strong>
+
+                      <small>
+                        {
+                          user.email
+                        }
+                      </small>
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  {
+                    user.email
+                  }
+                </td>
+
+                <td>
+                  {user.role ||
+                    "ADMIN"}
+                </td>
+
+                <td>
+                  <span className="table-status success">
+                    <i />
+                    Privileged
                   </span>
-                  <span>
-                    <strong>{user.name}</strong>
-                    <small>{user.email}</small>
-                  </span>
-                </div>
-              </td>
-              <td>{user.email}</td>
-              <td>{user.role || "ADMIN"}</td>
-              <td>
-                <span className="table-status success">
-                  <i />
-                  Privileged
-                </span>
-              </td>
-            </tr>
-          ))}
+                </td>
+              </tr>
+            ),
+          )}
         </tbody>
       </table>
     </div>
@@ -3228,8 +4969,14 @@ const EmptyDirectory = ({
 }) => (
   <div className="empty-directory">
     <span>⌕</span>
-    <h3>{title}</h3>
-    <p>{detail}</p>
+
+    <h3>
+      {title}
+    </h3>
+
+    <p>
+      {detail}
+    </p>
   </div>
 );
 

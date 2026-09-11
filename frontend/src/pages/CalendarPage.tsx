@@ -1,4 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import PublicCalendar from "../components/PublicCalendar";
 import API_URL from "../config";
 import "./CalendarPage.css";
@@ -15,7 +20,11 @@ interface CalendarDoctor {
 interface CalendarSlot {
   start_time: string;
   end_time: string;
-  status: "available" | "booked" | "break" | "not_available";
+  status:
+    | "available"
+    | "booked"
+    | "break"
+    | "not_available";
 }
 
 interface CalendarDay {
@@ -36,31 +45,48 @@ export interface PublicCalendarResponse {
   time_slots: string[];
 }
 
-const getLocalDateString = (date: Date = new Date()) => {
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+const getLocalDateString = (
+  date: Date = new Date()
+): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
 
-const parseLocalDate = (dateString: string) =>
+const parseLocalDate = (
+  dateString: string
+): Date =>
   new Date(`${dateString}T00:00:00`);
 
-const formatDateString = (date: Date) => getLocalDateString(date);
+const formatDateString = (
+  date: Date
+): string =>
+  getLocalDateString(date);
 
 /*
- * The public calendar API allows an inclusive 43-day window
- * (maximum date difference = 42 days).
+ * The public calendar API supports an inclusive
+ * 42-day window.
  *
- * A 42-day window gives PublicCalendar enough data for:
- * - month grids
- * - adjacent-month days
- * - week view
- * - weeks crossing month boundaries
+ * The range starts on Sunday so the calendar can safely
+ * render month grids and adjacent-month days.
  */
-const getCalendarRange = (dateString: string) => {
-  const selectedDate = parseLocalDate(dateString);
+const getCalendarRange = (
+  dateString: string
+) => {
+  const selectedDate =
+    parseLocalDate(dateString);
 
   const firstDayOfMonth = new Date(
     selectedDate.getFullYear(),
@@ -68,251 +94,529 @@ const getCalendarRange = (dateString: string) => {
     1
   );
 
-  const calendarStart = new Date(firstDayOfMonth);
-  calendarStart.setDate(
-    firstDayOfMonth.getDate() - firstDayOfMonth.getDay()
+  const calendarStart = new Date(
+    firstDayOfMonth
   );
 
-  const calendarEnd = new Date(calendarStart);
-  calendarEnd.setDate(calendarStart.getDate() + 41);
+  calendarStart.setDate(
+    firstDayOfMonth.getDate() -
+      firstDayOfMonth.getDay()
+  );
+
+  const calendarEnd = new Date(
+    calendarStart
+  );
+
+  calendarEnd.setDate(
+    calendarStart.getDate() + 41
+  );
 
   return {
-    startDate: formatDateString(calendarStart),
-    endDate: formatDateString(calendarEnd),
+    startDate:
+      formatDateString(calendarStart),
+    endDate:
+      formatDateString(calendarEnd),
   };
 };
+
+/* =========================================================
+   SEARCH / FILTER
+========================================================= */
 
 const buildFilteredCalendar = (
   data: PublicCalendarResponse,
   query: string
 ): PublicCalendarResponse => {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery =
+    query.trim().toLowerCase();
 
   if (!normalizedQuery) {
     return data;
   }
 
-  const matchingDoctors = data.doctors.filter((doctor) =>
-    [
-      doctor.name,
-      doctor.specialization,
-      doctor.department,
-    ]
-      .filter(Boolean)
-      .some((value) =>
-        String(value).toLowerCase().includes(normalizedQuery)
-      )
+  const matchingDoctors =
+    data.doctors.filter(
+      (doctor) =>
+        [
+          doctor.name,
+          doctor.specialization,
+          doctor.department,
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value)
+              .toLowerCase()
+              .includes(
+                normalizedQuery
+              )
+          )
+    );
+
+  const filteredDays: Record<
+    string,
+    CalendarDay
+  > = {};
+
+  Object.entries(data.days).forEach(
+    ([dateKey, day]) => {
+      const doctors: CalendarDay["doctors"] =
+        {};
+
+      let availableSlots = 0;
+      let bookedSlots = 0;
+      let breakSlots = 0;
+      let notAvailableSlots = 0;
+
+      matchingDoctors.forEach(
+        (doctor) => {
+          const doctorSlots =
+            day.doctors[
+              String(doctor.id)
+            ];
+
+          if (!doctorSlots) {
+            return;
+          }
+
+          doctors[
+            String(doctor.id)
+          ] = doctorSlots;
+
+          Object.values(
+            doctorSlots
+          ).forEach((slot) => {
+            if (
+              slot.status ===
+              "available"
+            ) {
+              availableSlots += 1;
+            } else if (
+              slot.status ===
+              "booked"
+            ) {
+              bookedSlots += 1;
+            } else if (
+              slot.status ===
+              "break"
+            ) {
+              breakSlots += 1;
+            } else {
+              notAvailableSlots += 1;
+            }
+          });
+        }
+      );
+
+      filteredDays[dateKey] = {
+        ...day,
+        available_slots:
+          availableSlots,
+        booked_slots:
+          bookedSlots,
+        break_slots:
+          breakSlots,
+        not_available_slots:
+          notAvailableSlots,
+        doctors,
+      };
+    }
   );
 
-  const filteredDays: Record<string, CalendarDay> = {};
-
-  Object.entries(data.days).forEach(([dateKey, day]) => {
-    const doctors: CalendarDay["doctors"] = {};
-
-    let availableSlots = 0;
-    let bookedSlots = 0;
-    let breakSlots = 0;
-    let notAvailableSlots = 0;
-
-    matchingDoctors.forEach((doctor) => {
-      const doctorSlots = day.doctors[String(doctor.id)];
-
-      if (!doctorSlots) {
-        return;
-      }
-
-      doctors[String(doctor.id)] = doctorSlots;
-
-      Object.values(doctorSlots).forEach((slot) => {
-        if (slot.status === "available") availableSlots += 1;
-        else if (slot.status === "booked") bookedSlots += 1;
-        else if (slot.status === "break") breakSlots += 1;
-        else notAvailableSlots += 1;
-      });
-    });
-
-    filteredDays[dateKey] = {
-      ...day,
-      available_slots: availableSlots,
-      booked_slots: bookedSlots,
-      break_slots: breakSlots,
-      not_available_slots: notAvailableSlots,
-      doctors,
-    };
-  });
-
-  const filteredTimeSlots = Array.from(
-    new Set(
-      Object.values(filteredDays).flatMap((day) =>
-        Object.values(day.doctors).flatMap((slots) =>
-          Object.keys(slots)
+  const filteredTimeSlots =
+    Array.from(
+      new Set(
+        Object.values(
+          filteredDays
+        ).flatMap((day) =>
+          Object.values(
+            day.doctors
+          ).flatMap((slots) =>
+            Object.keys(slots)
+          )
         )
       )
-    )
-  ).sort();
+    ).sort();
 
   return {
     ...data,
     doctors: matchingDoctors,
     days: filteredDays,
-    time_slots: filteredTimeSlots,
+    time_slots:
+      filteredTimeSlots,
   };
 };
 
-const CalendarPage: React.FC = () => {
-  const [calendarData, setCalendarData] =
-    useState<PublicCalendarResponse | null>(null);
+/* =========================================================
+   PAGE
+========================================================= */
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [selectedDate, setSelectedDate] = useState(() =>
+const CalendarPage: React.FC = () => {
+  const [
+    calendarData,
+    setCalendarData,
+  ] =
+    useState<PublicCalendarResponse | null>(
+      null
+    );
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [
+    selectedDate,
+    setSelectedDate,
+  ] = useState(() =>
     getLocalDateString()
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const baseUrl = API_URL || "http://localhost:8000";
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
 
-  const fetchCalendar = useCallback(
-    async (dateString: string, signal?: AbortSignal) => {
-      try {
-        setLoading(true);
-        setError("");
+  const [
+    lastUpdated,
+    setLastUpdated,
+  ] =
+    useState<Date | null>(null);
 
-        const { startDate, endDate } =
-          getCalendarRange(dateString);
+  /*
+   * Normalize the configured API URL so both:
+   * http://localhost:8000
+   * and
+   * http://localhost:8000/
+   * work correctly.
+   */
+  const baseUrl = (
+    API_URL ||
+    "http://localhost:8000"
+  ).replace(/\/+$/, "");
 
-        const params = new URLSearchParams({
-          start_date: startDate,
-          end_date: endDate,
-        });
+  /* =======================================================
+     FETCH PUBLIC CALENDAR
+  ======================================================= */
 
-        const response = await fetch(
-          `${baseUrl}/public/calendar?${params.toString()}`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-            },
-            signal,
+  const fetchCalendar =
+    useCallback(
+      async (
+        dateString: string,
+        signal?: AbortSignal,
+        background = false
+      ) => {
+        try {
+          /*
+           * Initial load uses the loading state.
+           * Background/live refreshes stay completely silent:
+           * the already-rendered calendar remains visible.
+           */
+          if (!background) {
+            setLoading(true);
+            setError("");
           }
-        );
 
-        if (!response.ok) {
-          let detail = "";
+          const {
+            startDate,
+            endDate,
+          } =
+            getCalendarRange(
+              dateString
+            );
 
-          try {
-            const payload = await response.json();
-            detail =
-              typeof payload?.detail === "string"
-                ? payload.detail
-                : "";
-          } catch {
-            // Keep the friendly UI message below.
+          const params =
+            new URLSearchParams({
+              start_date: startDate,
+              end_date: endDate,
+            });
+
+          const response =
+            await fetch(
+              `${baseUrl}/public/calendar?${params.toString()}`,
+              {
+                method: "GET",
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+                signal,
+              }
+            );
+
+          if (!response.ok) {
+            let detail = "";
+
+            try {
+              const payload =
+                await response.json();
+
+              detail =
+                typeof payload?.detail ===
+                "string"
+                  ? payload.detail
+                  : "";
+            } catch {
+              // Keep the friendly fallback message.
+            }
+
+            throw new Error(
+              detail ||
+                `Calendar request failed with status ${response.status}`
+            );
           }
 
-          throw new Error(
-            detail ||
-              `Calendar request failed with status ${response.status}`
+          const data: PublicCalendarResponse =
+            await response.json();
+
+          if (
+            !data ||
+            !Array.isArray(
+              data.doctors
+            ) ||
+            !data.days ||
+            !Array.isArray(
+              data.time_slots
+            )
+          ) {
+            throw new Error(
+              "Invalid calendar response."
+            );
+          }
+
+          setCalendarData(data);
+          setLastUpdated(
+            new Date()
           );
-        }
+        } catch (err) {
+          if (
+            err instanceof DOMException &&
+            err.name ===
+              "AbortError"
+          ) {
+            return;
+          }
 
-        const data: PublicCalendarResponse =
-          await response.json();
-
-        if (
-          !data ||
-          !Array.isArray(data.doctors) ||
-          !data.days ||
-          !Array.isArray(data.time_slots)
-        ) {
-          throw new Error("Invalid calendar response.");
-        }
-
-        setCalendarData(data);
-        setLastUpdated(new Date());
-      } catch (err) {
-        if (
-          err instanceof DOMException &&
-          err.name === "AbortError"
-        ) {
-          return;
-        }
-
-        console.error("Public calendar error:", err);
-
-        if (!signal?.aborted) {
-          setCalendarData(null);
-          setError(
-            err instanceof Error && err.message
-              ? err.message
-              : "Unable to load appointment calendar. Please try again."
+          console.error(
+            "Public calendar error:",
+            err
           );
+
+          if (
+            !signal?.aborted &&
+            !background
+          ) {
+            setCalendarData(
+              null
+            );
+
+            setError(
+              err instanceof Error &&
+              err.message
+                ? err.message
+                : "Unable to load appointment calendar. Please try again."
+            );
+          }
+        } finally {
+          /*
+           * Never toggle the page loading state for a
+           * background refresh.
+           */
+          if (
+            !signal?.aborted &&
+            !background
+          ) {
+            setLoading(false);
+          }
         }
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-      }
-    },
-    [baseUrl]
-  );
+      },
+      [baseUrl]
+    );
+
+  /* =======================================================
+     INITIAL / DATE CHANGE FETCH
+  ======================================================= */
 
   useEffect(() => {
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
     void fetchCalendar(
       selectedDate,
       controller.signal
     );
 
-    return () => controller.abort();
-  }, [selectedDate, fetchCalendar]);
+    return () =>
+      controller.abort();
+  }, [
+    selectedDate,
+    fetchCalendar,
+  ]);
 
-  /*
-   * Keep public availability fresh without requiring a page reload.
-   * The interval is cancelled automatically when the page unmounts
-   * or the selected month changes.
-   */
+  /* =======================================================
+     LIVE REFRESH
+  ======================================================= */
+
   useEffect(() => {
-    const refreshTimer = window.setInterval(() => {
-      void fetchCalendar(selectedDate);
-    }, 60_000);
+    let refreshController:
+      | AbortController
+      | null = null;
 
-    return () => window.clearInterval(refreshTimer);
-  }, [selectedDate, fetchCalendar]);
+    const refreshCalendar = () => {
+      /*
+       * Do not create background requests while
+       * the browser tab is hidden.
+       */
+      if (
+        document.visibilityState !==
+        "visible"
+      ) {
+        return;
+      }
 
-  const visibleCalendarData = useMemo(
-    () =>
-      calendarData
-        ? buildFilteredCalendar(
-            calendarData,
-            searchQuery
-          )
-        : null,
-    [calendarData, searchQuery]
-  );
+      /*
+       * Cancel the previous live refresh request
+       * before starting another one.
+       */
+      refreshController?.abort();
+
+      refreshController =
+        new AbortController();
+
+      void fetchCalendar(
+        selectedDate,
+        refreshController.signal,
+        true
+      );
+    };
+
+    /*
+     * Refresh every 10 seconds while the page
+     * is visible.
+     *
+     * This keeps booking/cancellation changes
+     * synchronized with the public calendar.
+     */
+    const refreshTimer =
+      window.setInterval(() => {
+        refreshCalendar();
+      }, 10_000);
+
+    /*
+     * If the user returns to this tab, refresh
+     * immediately instead of waiting for the
+     * next 10-second interval.
+     */
+    const handleVisibilityChange =
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          refreshCalendar();
+        } else {
+          refreshController?.abort();
+          refreshController = null;
+        }
+      };
+
+    /*
+     * Refresh when the browser window receives
+     * focus again.
+     */
+    const handleWindowFocus =
+      () => {
+        refreshCalendar();
+      };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    window.addEventListener(
+      "focus",
+      handleWindowFocus
+    );
+
+    return () => {
+      window.clearInterval(
+        refreshTimer
+      );
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+
+      window.removeEventListener(
+        "focus",
+        handleWindowFocus
+      );
+
+      refreshController?.abort();
+    };
+  }, [
+    selectedDate,
+    fetchCalendar,
+  ]);
+
+  /* =======================================================
+     FILTERED DATA
+  ======================================================= */
+
+  const visibleCalendarData =
+    useMemo(
+      () =>
+        calendarData
+          ? buildFilteredCalendar(
+              calendarData,
+              searchQuery
+            )
+          : null,
+      [
+        calendarData,
+        searchQuery,
+      ]
+    );
 
   const matchingDoctorCount =
-    visibleCalendarData?.doctors.length ?? 0;
+    visibleCalendarData
+      ?.doctors.length ?? 0;
 
   const totalDoctorCount =
-    calendarData?.doctors.length ?? 0;
+    calendarData?.doctors.length ??
+    0;
 
-  const handleDateChange = (date: string) => {
-    if (!date) return;
+  /* =======================================================
+     ACTIONS
+  ======================================================= */
+
+  const handleDateChange = (
+    date: string
+  ) => {
+    if (!date) {
+      return;
+    }
+
     setSelectedDate(date);
   };
 
   const handleLogin = () => {
-    window.location.assign("/login");
+    window.location.assign(
+      "/login"
+    );
   };
 
   const handleRegister = () => {
-    window.location.assign("/register");
+    window.location.assign(
+      "/register"
+    );
   };
 
-  const scrollTo = (id: string) => {
+  const scrollTo = (
+    id: string
+  ) => {
     document
       .getElementById(id)
       ?.scrollIntoView({
@@ -331,23 +635,43 @@ const CalendarPage: React.FC = () => {
   const handleSearchKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    if (event.key === "Escape") {
+    if (
+      event.key === "Escape"
+    ) {
       setSearchQuery("");
       event.currentTarget.blur();
     }
   };
 
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return "Waiting for live data";
+  const formatLastUpdated = (
+    date: Date | null
+  ) => {
+    if (!date) {
+      return "Waiting for live data";
+    }
 
-    return `Updated ${date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })}`;
+    return `Updated ${date.toLocaleTimeString(
+      [],
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    )}`;
   };
 
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
-    <div className="home-page" id="home-top">
+    <div
+      className="home-page"
+      id="home-top"
+    >
+      {/* ===================================================
+          HEADER
+      =================================================== */}
+
       <header className="home-header">
         <div className="home-header-inner">
           <button
@@ -356,10 +680,15 @@ const CalendarPage: React.FC = () => {
             onClick={scrollToHome}
             aria-label="HealthCare Plus home"
           >
-            <div className="home-logo-mark">+</div>
+            <div className="home-logo-mark">
+              +
+            </div>
 
             <div className="home-logo-text">
-              <span>HealthCare</span>
+              <span>
+                HealthCare
+              </span>
+
               <strong>+</strong>
             </div>
           </button>
@@ -371,7 +700,9 @@ const CalendarPage: React.FC = () => {
             <button
               type="button"
               className="home-nav-link active"
-              onClick={scrollToHome}
+              onClick={
+                scrollToHome
+              }
             >
               Home
             </button>
@@ -380,7 +711,9 @@ const CalendarPage: React.FC = () => {
               type="button"
               className="home-nav-link"
               onClick={() =>
-                scrollTo("appointment-calendar")
+                scrollTo(
+                  "appointment-calendar"
+                )
               }
             >
               Calendar
@@ -390,7 +723,9 @@ const CalendarPage: React.FC = () => {
               type="button"
               className="home-nav-link"
               onClick={() =>
-                scrollTo("how-it-works")
+                scrollTo(
+                  "how-it-works"
+                )
               }
             >
               About
@@ -399,7 +734,11 @@ const CalendarPage: React.FC = () => {
             <button
               type="button"
               className="home-nav-link"
-              onClick={() => scrollTo("contact")}
+              onClick={() =>
+                scrollTo(
+                  "contact"
+                )
+              }
             >
               Contact
             </button>
@@ -417,9 +756,13 @@ const CalendarPage: React.FC = () => {
               type="search"
               value={searchQuery}
               onChange={(event) =>
-                setSearchQuery(event.target.value)
+                setSearchQuery(
+                  event.target.value
+                )
               }
-              onKeyDown={handleSearchKeyDown}
+              onKeyDown={
+                handleSearchKeyDown
+              }
               placeholder="Search doctors, specialty..."
               aria-label="Search doctors or specialty"
             />
@@ -428,7 +771,9 @@ const CalendarPage: React.FC = () => {
               <button
                 type="button"
                 className="home-search-clear"
-                onClick={() => setSearchQuery("")}
+                onClick={() =>
+                  setSearchQuery("")
+                }
                 aria-label="Clear doctor search"
               >
                 ×
@@ -448,7 +793,9 @@ const CalendarPage: React.FC = () => {
             <button
               type="button"
               className="home-register-button"
-              onClick={handleRegister}
+              onClick={
+                handleRegister
+              }
             >
               Register
             </button>
@@ -456,7 +803,15 @@ const CalendarPage: React.FC = () => {
         </div>
       </header>
 
+      {/* ===================================================
+          MAIN
+      =================================================== */}
+
       <main>
+        {/* =================================================
+            HERO
+        ================================================= */}
+
         <section className="home-hero">
           <div className="home-hero-content">
             <div className="home-hero-badge">
@@ -465,21 +820,31 @@ const CalendarPage: React.FC = () => {
             </div>
 
             <h1>
-              Book with <span>Confidence.</span>
+              Book with{" "}
+              <span>
+                Confidence.
+              </span>
             </h1>
 
             <p>
-              Explore live appointment availability
-              across active doctors, compare schedules,
-              and choose a time that works for you.
+              Explore live appointment
+              availability across active
+              doctors, compare schedules,
+              and choose a time that works
+              for you.
             </p>
 
             <div className="home-hero-feature-row">
               <div className="home-hero-feature">
-                <span className="hero-feature-icon">▣</span>
+                <span className="hero-feature-icon">
+                  ▣
+                </span>
 
                 <div>
-                  <strong>Live Availability</strong>
+                  <strong>
+                    Live Availability
+                  </strong>
+
                   <span>
                     Refreshes automatically
                   </span>
@@ -487,10 +852,15 @@ const CalendarPage: React.FC = () => {
               </div>
 
               <div className="home-hero-feature">
-                <span className="hero-feature-icon">●</span>
+                <span className="hero-feature-icon">
+                  ●
+                </span>
 
                 <div>
-                  <strong>All Doctors in One View</strong>
+                  <strong>
+                    All Doctors in One View
+                  </strong>
+
                   <span>
                     Search by name or specialty
                   </span>
@@ -498,10 +868,15 @@ const CalendarPage: React.FC = () => {
               </div>
 
               <div className="home-hero-feature">
-                <span className="hero-feature-icon">✓</span>
+                <span className="hero-feature-icon">
+                  ✓
+                </span>
 
                 <div>
-                  <strong>Secure Booking</strong>
+                  <strong>
+                    Secure Booking
+                  </strong>
+
                   <span>
                     Login or register to book
                   </span>
@@ -512,12 +887,18 @@ const CalendarPage: React.FC = () => {
 
           <div className="home-hero-visual">
             <div className="home-hero-visual-content">
-              <span>Expert Doctors.</span>
-              <strong>Better Care.</strong>
+              <span>
+                Expert Doctors.
+              </span>
+
+              <strong>
+                Better Care.
+              </strong>
 
               <p>
-                Modern healthcare scheduling
-                for you and your family.
+                Modern healthcare
+                scheduling for you and
+                your family.
               </p>
 
               <div className="hero-visual-line" />
@@ -530,9 +911,13 @@ const CalendarPage: React.FC = () => {
                 </div>
 
                 <div className="hospital-windows">
-                  {Array.from({ length: 18 }).map(
+                  {Array.from({
+                    length: 18,
+                  }).map(
                     (_, index) => (
-                      <span key={index} />
+                      <span
+                        key={index}
+                      />
                     )
                   )}
                 </div>
@@ -546,6 +931,10 @@ const CalendarPage: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* =================================================
+            CALENDAR
+        ================================================= */}
 
         <section
           id="appointment-calendar"
@@ -563,8 +952,9 @@ const CalendarPage: React.FC = () => {
               </h2>
 
               <p>
-                Search doctors or specialties and
-                explore current availability.
+                Search doctors or
+                specialties and explore
+                current availability.
               </p>
             </div>
 
@@ -572,9 +962,14 @@ const CalendarPage: React.FC = () => {
               <span className="calendar-live-dot" />
 
               <div>
-                <strong>Live availability</strong>
+                <strong>
+                  Live availability
+                </strong>
+
                 <span>
-                  {formatLastUpdated(lastUpdated)}
+                  {formatLastUpdated(
+                    lastUpdated
+                  )}
                 </span>
               </div>
 
@@ -582,108 +977,136 @@ const CalendarPage: React.FC = () => {
                 type="button"
                 className="calendar-refresh-button"
                 onClick={() =>
-                  void fetchCalendar(selectedDate)
+                  void fetchCalendar(
+                    selectedDate,
+                    undefined,
+                    true
+                  )
                 }
-                disabled={loading}
               >
-                {loading ? "Refreshing..." : "Refresh"}
+                Refresh
               </button>
             </div>
           </div>
 
-          {calendarData && searchQuery && (
-            <div className="calendar-search-summary">
-              <span>
-                Showing{" "}
-                <strong>
-                  {matchingDoctorCount}
-                </strong>{" "}
-                of{" "}
-                <strong>
-                  {totalDoctorCount}
-                </strong>{" "}
-                doctors for "
-                {searchQuery.trim()}"
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </button>
-            </div>
-          )}
-
-          <div className="home-calendar-card">
-            {loading && !calendarData && (
-              <div className="home-calendar-loading">
-                <div className="loading-spinner" />
-                <p>
-                  Loading appointment availability...
-                </p>
-              </div>
-            )}
-
-            {loading && calendarData && (
-              <div
-                className="calendar-refresh-overlay"
-                aria-live="polite"
-              >
-                <span className="calendar-mini-spinner" />
-                Updating availability...
-              </div>
-            )}
-
-            {!loading && error && (
-              <div className="home-calendar-error">
-                <div className="error-icon">!</div>
-
-                <h3>Calendar unavailable</h3>
-
-                <p>{error}</p>
+          {calendarData &&
+            searchQuery && (
+              <div className="calendar-search-summary">
+                <span>
+                  Showing{" "}
+                  <strong>
+                    {matchingDoctorCount}
+                  </strong>{" "}
+                  of{" "}
+                  <strong>
+                    {totalDoctorCount}
+                  </strong>{" "}
+                  doctors for "
+                  {searchQuery.trim()}"
+                </span>
 
                 <button
                   type="button"
                   onClick={() =>
-                    void fetchCalendar(selectedDate)
+                    setSearchQuery("")
                   }
                 >
-                  Try Again
+                  Clear search
                 </button>
               </div>
             )}
 
+          <div className="home-calendar-card">
+            {loading &&
+              !calendarData && (
+                <div className="home-calendar-loading">
+                  <div className="loading-spinner" />
+
+                  <p>
+                    Loading appointment
+                    availability...
+                  </p>
+                </div>
+              )}
+
+            {!loading &&
+              error && (
+                <div className="home-calendar-error">
+                  <div className="error-icon">
+                    !
+                  </div>
+
+                  <h3>
+                    Calendar unavailable
+                  </h3>
+
+                  <p>{error}</p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void fetchCalendar(
+                        selectedDate
+                      )
+                    }
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
             {!loading &&
               !error &&
               visibleCalendarData &&
-              visibleCalendarData.doctors.length > 0 && (
+              visibleCalendarData
+                .doctors.length >
+                0 && (
                 <PublicCalendar
-                  data={visibleCalendarData}
-                  selectedDate={selectedDate}
-                  onDateChange={handleDateChange}
-                  onLogin={handleLogin}
-                  onRegister={handleRegister}
+                  data={
+                    visibleCalendarData
+                  }
+                  selectedDate={
+                    selectedDate
+                  }
+                  onDateChange={
+                    handleDateChange
+                  }
+                  onLogin={
+                    handleLogin
+                  }
+                  onRegister={
+                    handleRegister
+                  }
                 />
               )}
 
             {!loading &&
               !error &&
               visibleCalendarData &&
-              visibleCalendarData.doctors.length === 0 && (
+              visibleCalendarData
+                .doctors.length ===
+                0 && (
                 <div className="calendar-no-results">
-                  <div className="no-results-icon">⌕</div>
+                  <div className="no-results-icon">
+                    ⌕
+                  </div>
 
-                  <h3>No matching doctors</h3>
+                  <h3>
+                    No matching doctors
+                  </h3>
 
                   <p>
-                    Try a different doctor name,
-                    specialty, or department.
+                    Try a different
+                    doctor name,
+                    specialty, or
+                    department.
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => setSearchQuery("")}
+                    onClick={() =>
+                      setSearchQuery("")
+                    }
                   >
                     Show all doctors
                   </button>
@@ -691,6 +1114,10 @@ const CalendarPage: React.FC = () => {
               )}
           </div>
         </section>
+
+        {/* =================================================
+            HOW IT WORKS
+        ================================================= */}
 
         <section
           id="how-it-works"
@@ -706,51 +1133,80 @@ const CalendarPage: React.FC = () => {
             </h2>
 
             <p>
-              From finding an available slot to
-              confirming your appointment.
+              From finding an available
+              slot to confirming your
+              appointment.
             </p>
           </div>
 
           <div className="home-process-grid">
             <div className="home-process-card">
-              <div className="process-number">01</div>
-              <div className="process-icon">◷</div>
+              <div className="process-number">
+                01
+              </div>
 
-              <h3>Check Availability</h3>
+              <div className="process-icon">
+                ◷
+              </div>
+
+              <h3>
+                Check Availability
+              </h3>
 
               <p>
-                View current schedules and
-                appointment availability for
-                active doctors in one calendar.
+                View current schedules
+                and appointment
+                availability for active
+                doctors in one calendar.
               </p>
             </div>
 
             <div className="home-process-card">
-              <div className="process-number">02</div>
-              <div className="process-icon">→</div>
+              <div className="process-number">
+                02
+              </div>
 
-              <h3>Select a Slot</h3>
+              <div className="process-icon">
+                →
+              </div>
+
+              <h3>
+                Select a Slot
+              </h3>
 
               <p>
-                Choose a suitable date and an
-                available appointment time.
+                Choose a suitable date
+                and an available
+                appointment time.
               </p>
             </div>
 
             <div className="home-process-card">
-              <div className="process-number">03</div>
-              <div className="process-icon">✓</div>
+              <div className="process-number">
+                03
+              </div>
 
-              <h3>Book Securely</h3>
+              <div className="process-icon">
+                ✓
+              </div>
+
+              <h3>
+                Book Securely
+              </h3>
 
               <p>
-                Login or register and continue
-                through the appointment booking
+                Login or register and
+                continue through the
+                appointment booking
                 process.
               </p>
             </div>
           </div>
         </section>
+
+        {/* =================================================
+            CTA
+        ================================================= */}
 
         <section className="home-final-cta">
           <div>
@@ -764,16 +1220,19 @@ const CalendarPage: React.FC = () => {
             </h2>
 
             <p>
-              Explore available appointments
-              and schedule your visit when it
-              works for you.
+              Explore available
+              appointments and schedule
+              your visit when it works
+              for you.
             </p>
           </div>
 
           <div className="home-final-actions">
             <button
               type="button"
-              onClick={handleRegister}
+              onClick={
+                handleRegister
+              }
               className="home-final-primary"
             >
               Get Started
@@ -791,6 +1250,10 @@ const CalendarPage: React.FC = () => {
         </section>
       </main>
 
+      {/* ===================================================
+          FOOTER
+      =================================================== */}
+
       <footer
         className="home-footer"
         id="contact"
@@ -803,28 +1266,38 @@ const CalendarPage: React.FC = () => {
               onClick={scrollToHome}
               aria-label="HealthCare Plus home"
             >
-              <div className="home-logo-mark">+</div>
+              <div className="home-logo-mark">
+                +
+              </div>
 
               <div className="home-logo-text">
-                <span>HealthCare</span>
+                <span>
+                  HealthCare
+                </span>
+
                 <strong>+</strong>
               </div>
             </button>
 
             <p>
-              Making healthcare scheduling
-              simple, accessible, and reliable.
+              Making healthcare
+              scheduling simple,
+              accessible, and reliable.
             </p>
           </div>
 
           <div className="home-footer-links">
             <div>
-              <strong>Platform</strong>
+              <strong>
+                Platform
+              </strong>
 
               <button
                 type="button"
                 onClick={() =>
-                  scrollTo("appointment-calendar")
+                  scrollTo(
+                    "appointment-calendar"
+                  )
                 }
               >
                 Calendar
@@ -839,19 +1312,25 @@ const CalendarPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handleRegister}
+                onClick={
+                  handleRegister
+                }
               >
                 Register
               </button>
             </div>
 
             <div>
-              <strong>Information</strong>
+              <strong>
+                Information
+              </strong>
 
               <button
                 type="button"
                 onClick={() =>
-                  scrollTo("how-it-works")
+                  scrollTo(
+                    "how-it-works"
+                  )
                 }
               >
                 How It Works
@@ -859,7 +1338,9 @@ const CalendarPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={scrollToHome}
+                onClick={
+                  scrollToHome
+                }
               >
                 Home
               </button>
@@ -869,12 +1350,15 @@ const CalendarPage: React.FC = () => {
 
         <div className="home-footer-bottom">
           <span>
-            © {new Date().getFullYear()} HealthCare+.
-            All rights reserved.
+            ©{" "}
+            {new Date().getFullYear()}{" "}
+            HealthCare+. All rights
+            reserved.
           </span>
 
           <span>
-            Secure Healthcare Scheduling
+            Secure Healthcare
+            Scheduling
           </span>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./PublicCalendar.css";
 
 interface CalendarDoctor {
@@ -8,6 +8,7 @@ interface CalendarDoctor {
   department?: string | null;
   profile_photo?: string | null;
   requires_referral: boolean;
+  timezone?: string | null;
 }
 
 interface CalendarSlot {
@@ -33,12 +34,13 @@ interface CalendarDay {
   >;
 }
 
-export interface PublicCalendarResponse {
+interface PublicCalendarResponse {
   start_date: string;
   end_date: string;
   doctors: CalendarDoctor[];
   days: Record<string, CalendarDay>;
   time_slots: string[];
+  server_time?: string;
 }
 
 interface PublicCalendarProps {
@@ -58,6 +60,14 @@ interface SelectedSlot {
   slot: CalendarSlot;
 }
 
+interface LocalDateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
 const PublicCalendar: React.FC<PublicCalendarProps> = ({
   data,
   selectedDate,
@@ -70,6 +80,30 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
 
   const [selectedSlot, setSelectedSlot] =
     useState<SelectedSlot | null>(null);
+
+  /*
+   * ==========================================================
+   * LIVE CLOCK
+   * ==========================================================
+   *
+   * Re-render every second so a slot changes from Available
+   * to Not Available exactly when its start time is reached.
+   *
+   * Backend polling still handles external changes such as
+   * another patient booking/cancelling a slot.
+   */
+
+  const [, setNowTick] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowTick((value) => value + 1);
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   // ==========================================================
   // DATE HELPERS
@@ -110,7 +144,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
     dateString: string
   ) => {
     const date = parseDate(dateString);
-
     const day = date.getDay();
 
     date.setDate(
@@ -177,18 +210,271 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
   const today = formatDate(new Date());
 
   // ==========================================================
+  // LIVE DOCTOR TIME
+  // ==========================================================
+
+  const getDoctorLocalNowParts = (
+    timezone?: string | null
+  ): LocalDateTimeParts => {
+    const fallbackTimezone =
+      Intl.DateTimeFormat().resolvedOptions()
+        .timeZone || "America/New_York";
+
+    const targetTimezone =
+      timezone || fallbackTimezone;
+
+    try {
+      const formatter =
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: targetTimezone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        });
+
+      const parts =
+        formatter.formatToParts(new Date());
+
+      const getPart = (type: string) => {
+        return Number(
+          parts.find(
+            (part) => part.type === type
+          )?.value || 0
+        );
+      };
+
+      return {
+        year: getPart("year"),
+        month: getPart("month"),
+        day: getPart("day"),
+        hour: getPart("hour"),
+        minute: getPart("minute"),
+      };
+    } catch {
+      const now = new Date();
+
+      return {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+      };
+    }
+  };
+
+  const isSlotPastInDoctorTimezone = (
+    date: string,
+    doctor: CalendarDoctor,
+    slot: CalendarSlot
+  ) => {
+    if (slot.status !== "available") {
+      return false;
+    }
+
+    const now =
+      getDoctorLocalNowParts(
+        doctor.timezone
+      );
+
+    const [hours, minutes] =
+      slot.start_time
+        .split(":")
+        .map(Number);
+
+    const [year, month, day] =
+      date.split("-").map(Number);
+
+    /*
+     * Different date:
+     * Earlier date = already past
+     * Future date = not past
+     */
+
+    if (year !== now.year) {
+      return year < now.year;
+    }
+
+    if (month !== now.month) {
+      return month < now.month;
+    }
+
+    if (day !== now.day) {
+      return day < now.day;
+    }
+
+    /*
+     * Same local date:
+     * Slot becomes unavailable at its START time.
+     */
+
+    const slotMinutes =
+      hours * 60 + minutes;
+
+    const currentMinutes =
+      now.hour * 60 + now.minute;
+
+    return currentMinutes >= slotMinutes;
+  };
+
+  // ==========================================================
   // SELECTED DAY DATA
   // ==========================================================
 
-  const selectedDay =
-    data.days[selectedDate];
-
   // ==========================================================
-  // SUMMARY
+  // SLOT HELPERS
   // ==========================================================
 
-  const summary = useMemo(() => {
-    if (!selectedDay) {
+  const getDoctorSlot = (
+    date: string,
+    doctorId: number,
+    time: string
+  ) => {
+    return (
+      data.days[date]
+        ?.doctors[
+          String(doctorId)
+        ]?.[time] || null
+    );
+  };
+
+  /*
+   * Convert the API slot into the current live slot state.
+   *
+   * Backend may still return "available" for a moment between
+   * polling cycles. Frontend immediately corrects that state
+   * using the doctor's local time.
+   */
+
+  const getEffectiveSlot = (
+    date: string,
+    doctor: CalendarDoctor,
+    time: string
+  ): CalendarSlot | null => {
+    const rawSlot =
+      getDoctorSlot(
+        date,
+        doctor.id,
+        time
+      );
+
+    if (!rawSlot) {
+      return null;
+    }
+
+    if (
+      isSlotPastInDoctorTimezone(
+        date,
+        doctor,
+        rawSlot
+      )
+    ) {
+      return {
+        ...rawSlot,
+        status: "not_available",
+      };
+    }
+
+    return rawSlot;
+  };
+
+  // ==========================================================
+  // LIVE DAY SUMMARY
+  // ==========================================================
+
+  // ==========================================================
+  // ACTIVE BREAK
+  // ==========================================================
+
+  const isWorkingSlotStatus = (
+    status?: CalendarSlot["status"]
+  ) =>
+    status === "available" ||
+    status === "booked";
+
+  const isActiveBreak = (
+    date: string,
+    doctorId: number,
+    time: string
+  ) => {
+    const slot = getDoctorSlot(
+      date,
+      doctorId,
+      time
+    );
+
+    if (slot?.status !== "break") {
+      return false;
+    }
+
+    const currentIndex =
+      data.time_slots.indexOf(time);
+
+    if (currentIndex === -1) {
+      return false;
+    }
+
+    let hasWorkingSlotBefore = false;
+    let hasWorkingSlotAfter = false;
+
+    for (
+      let index = currentIndex - 1;
+      index >= 0;
+      index--
+    ) {
+      const previousSlot =
+        getDoctorSlot(
+          date,
+          doctorId,
+          data.time_slots[index]
+        );
+
+      if (
+        isWorkingSlotStatus(
+          previousSlot?.status
+        )
+      ) {
+        hasWorkingSlotBefore = true;
+        break;
+      }
+    }
+
+    for (
+      let index = currentIndex + 1;
+      index < data.time_slots.length;
+      index++
+    ) {
+      const nextSlot =
+        getDoctorSlot(
+          date,
+          doctorId,
+          data.time_slots[index]
+        );
+
+      if (
+        isWorkingSlotStatus(
+          nextSlot?.status
+        )
+      ) {
+        hasWorkingSlotAfter = true;
+        break;
+      }
+    }
+
+    return (
+      hasWorkingSlotBefore &&
+      hasWorkingSlotAfter
+    );
+  };
+
+
+  const getDaySummary = (date: string) => {
+    const day = data.days[date];
+
+    if (!day) {
       return {
         available: 0,
         booked: 0,
@@ -197,17 +483,76 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
       };
     }
 
+    let available = 0;
+    let booked = 0;
+    let breaks = 0;
+    let unavailable = 0;
+
+    data.doctors.forEach((doctor) => {
+      const doctorSlots =
+        day.doctors[
+          String(doctor.id)
+        ];
+
+      if (!doctorSlots) {
+        return;
+      }
+
+      Object.entries(doctorSlots).forEach(
+        ([time]) => {
+          const slot =
+            getEffectiveSlot(
+              date,
+              doctor,
+              time
+            );
+
+          if (!slot) {
+            return;
+          }
+
+          if (
+            slot.status ===
+            "available"
+          ) {
+            available++;
+          } else if (
+            slot.status ===
+            "booked"
+          ) {
+            booked++;
+          } else if (
+            slot.status ===
+            "break"
+          ) {
+            if (
+              isActiveBreak(
+                date,
+                doctor.id,
+                time
+              )
+            ) {
+              breaks++;
+            } else {
+              unavailable++;
+            }
+          } else {
+            unavailable++;
+          }
+        }
+      );
+    });
+
     return {
-      available:
-        selectedDay.available_slots,
-      booked:
-        selectedDay.booked_slots,
-      breaks:
-        selectedDay.break_slots,
-      unavailable:
-        selectedDay.not_available_slots,
+      available,
+      booked,
+      breaks,
+      unavailable,
     };
-  }, [selectedDay]);
+  };
+
+  const summary =
+    getDaySummary(selectedDate);
 
   // ==========================================================
   // MINI CALENDAR DATES
@@ -243,24 +588,22 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
 
     const dates: string[] = [];
 
-    // Previous month dates
     for (
       let index = firstWeekday - 1;
       index >= 0;
       index--
     ) {
-      const date = new Date(
-        year,
-        month,
-        -index
-      );
-
       dates.push(
-        formatDate(date)
+        formatDate(
+          new Date(
+            year,
+            month,
+            -index
+          )
+        )
       );
     }
 
-    // Current month dates
     for (
       let day = 1;
       day <= totalDays;
@@ -277,7 +620,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
       );
     }
 
-    // Next month dates
     let nextDay = 1;
 
     while (
@@ -333,7 +675,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
 
     const dates: string[] = [];
 
-    // Previous month dates
     for (
       let index = firstWeekday - 1;
       index >= 0;
@@ -350,7 +691,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
       );
     }
 
-    // Current month dates
     for (
       let day = 1;
       day <= totalDays;
@@ -367,7 +707,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
       );
     }
 
-    // Next month dates
     let nextDay = 1;
 
     while (
@@ -505,21 +844,8 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
   };
 
   // ==========================================================
-  // SLOT HELPERS
+  // INITIALS
   // ==========================================================
-
-  const getDoctorSlot = (
-    date: string,
-    doctorId: number,
-    time: string
-  ) => {
-    return (
-      data.days[date]
-        ?.doctors[
-          String(doctorId)
-        ]?.[time] || null
-    );
-  };
 
   const getInitials = (
     name: string
@@ -548,9 +874,23 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
     date: string,
     slot: CalendarSlot
   ) => {
+    /*
+     * Final frontend protection:
+     * Even if an old "available" object reaches this handler,
+     * verify its current live status again.
+     */
+
+    const effectiveSlot =
+      getEffectiveSlot(
+        date,
+        doctor,
+        slot.start_time
+      );
+
     if (
-      slot.status !==
-      "available"
+      !effectiveSlot ||
+      effectiveSlot.status !==
+        "available"
     ) {
       return;
     }
@@ -559,7 +899,7 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
       doctorId: doctor.id,
       doctorName: doctor.name,
       date,
-      slot,
+      slot: effectiveSlot,
     });
   };
 
@@ -739,18 +1079,22 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                 const isPast =
                   date < today;
 
-                const dayData =
-                  data.days[date];
-
                 const isWeekend =
                   parsed.getDay() === 0 ||
                   parsed.getDay() === 6;
 
+                /*
+                 * Use live summary instead of stale API
+                 * available_slots for today's date.
+                 */
+
+                const daySummary =
+                  getDaySummary(date);
+
                 const hasAvailability =
-                  Boolean(
-                    dayData &&
-                    dayData.available_slots > 0
-                  );
+                  !isPast &&
+                  daySummary.available >
+                    0;
 
                 return (
                   <button
@@ -784,7 +1128,7 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                         date
                       )
                     }
-                    aria-label={`${getLongDate(date)}${hasAvailability ? `, ${dayData?.available_slots} available slots` : ""}`}
+                    aria-label={`${getLongDate(date)}${hasAvailability ? `, ${daySummary.available} available slots` : ""}`}
                   >
                     <span className="mini-calendar-number">
                       {parsed.getDate()}
@@ -796,7 +1140,7 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                           className="mini-calendar-availability"
                           aria-hidden="true"
                         />
-                    )}
+                      )}
                   </button>
                 );
               }
@@ -920,10 +1264,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
   // ==========================================================
   // MONTH VIEW
   // ==========================================================
-  // Past dates are still visible/selectable in the calendar,
-  // but historical availability/break statistics are hidden.
-  // This keeps the month view focused on dates that can still
-  // be booked instead of showing old schedule information.
 
   const renderMonthView = () => {
     return (
@@ -953,20 +1293,29 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
         <div className="public-month-grid">
 
           {monthDates.map((date) => {
-            const day = data.days[date];
-            const selected = parseDate(selectedDate);
-            const parsed = parseDate(date);
+            const day =
+              data.days[date];
+
+            const selected =
+              parseDate(selectedDate);
+
+            const parsed =
+              parseDate(date);
 
             const currentMonth =
-              parsed.getMonth() === selected.getMonth() &&
-              parsed.getFullYear() === selected.getFullYear();
+              parsed.getMonth() ===
+                selected.getMonth() &&
+              parsed.getFullYear() ===
+                selected.getFullYear();
 
-            const isSelected = date === selectedDate;
+            const isSelected =
+              date === selectedDate;
 
-            // Never show historical availability/break data.
-            // Date strings are normalized as YYYY-MM-DD, so this
-            // comparison is safe for calendar dates.
-            const isPast = date < today;
+            const isPast =
+              date < today;
+
+            const liveSummary =
+              getDaySummary(date);
 
             const showDayStats =
               Boolean(day) && !isPast;
@@ -995,7 +1344,7 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                 aria-label={
                   isPast
                     ? `${getLongDate(date)}, past date`
-                    : getLongDate(date)
+                    : `${getLongDate(date)}, ${liveSummary.available} available slots`
                 }
               >
 
@@ -1006,23 +1355,26 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                 {showDayStats && (
                   <div className="month-day-stats">
 
-                    {day.available_slots > 0 && (
+                    {liveSummary.available >
+                      0 && (
                       <span className="month-stat available">
-                        {day.available_slots}{" "}
+                        {liveSummary.available}{" "}
                         available
                       </span>
                     )}
 
-                    {day.booked_slots > 0 && (
+                    {liveSummary.booked >
+                      0 && (
                       <span className="month-stat booked">
-                        {day.booked_slots}{" "}
+                        {liveSummary.booked}{" "}
                         booked
                       </span>
                     )}
 
-                    {day.break_slots > 0 && (
+                    {liveSummary.breaks >
+                      0 && (
                       <span className="month-stat break">
-                        {day.break_slots}{" "}
+                        {liveSummary.breaks}{" "}
                         break
                       </span>
                     )}
@@ -1063,6 +1415,9 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                 date ===
                 selectedDate;
 
+              const liveSummary =
+                getDaySummary(date);
+
               return (
                 <button
                   key={date}
@@ -1102,7 +1457,7 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
 
                   {day && (
                     <small>
-                      {day.available_slots}{" "}
+                      {liveSummary.available}{" "}
                       available
                     </small>
                   )}
@@ -1136,9 +1491,9 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                       data.doctors.filter(
                         (doctor) => {
                           const slot =
-                            getDoctorSlot(
+                            getEffectiveSlot(
                               date,
-                              doctor.id,
+                              doctor,
                               time
                             );
 
@@ -1153,9 +1508,9 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                       data.doctors.filter(
                         (doctor) => {
                           const slot =
-                            getDoctorSlot(
+                            getEffectiveSlot(
                               date,
-                              doctor.id,
+                              doctor,
                               time
                             );
 
@@ -1181,9 +1536,9 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
 
                     const firstSlot =
                       firstAvailable
-                        ? getDoctorSlot(
+                        ? getEffectiveSlot(
                             date,
-                            firstAvailable.id,
+                            firstAvailable,
                             time
                           )
                         : null;
@@ -1263,95 +1618,6 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
         </div>
 
       </div>
-    );
-  };
-
-  // ==========================================================
-  // EFFECTIVE SLOT STATUS
-  // ==========================================================
-  // A break is meaningful only when it sits inside the doctor's
-  // actual working window. If the break is after the doctor's
-  // last working slot (or before the first one), do not show it.
-  // This prevents trailing "Break" rows after a doctor's day ends.
-
-  const isWorkingSlotStatus = (
-    status?: CalendarSlot["status"]
-  ) =>
-    status === "available" ||
-    status === "booked";
-
-  const isActiveBreak = (
-    date: string,
-    doctorId: number,
-    time: string
-  ) => {
-    const slot = getDoctorSlot(
-      date,
-      doctorId,
-      time
-    );
-
-    if (slot?.status !== "break") {
-      return false;
-    }
-
-    const currentIndex =
-      data.time_slots.indexOf(time);
-
-    if (currentIndex === -1) {
-      return false;
-    }
-
-    let hasWorkingSlotBefore = false;
-    let hasWorkingSlotAfter = false;
-
-    for (
-      let index = currentIndex - 1;
-      index >= 0;
-      index--
-    ) {
-      const previousSlot =
-        getDoctorSlot(
-          date,
-          doctorId,
-          data.time_slots[index]
-        );
-
-      if (
-        isWorkingSlotStatus(
-          previousSlot?.status
-        )
-      ) {
-        hasWorkingSlotBefore = true;
-        break;
-      }
-    }
-
-    for (
-      let index = currentIndex + 1;
-      index < data.time_slots.length;
-      index++
-    ) {
-      const nextSlot =
-        getDoctorSlot(
-          date,
-          doctorId,
-          data.time_slots[index]
-        );
-
-      if (
-        isWorkingSlotStatus(
-          nextSlot?.status
-        )
-      ) {
-        hasWorkingSlotAfter = true;
-        break;
-      }
-    }
-
-    return (
-      hasWorkingSlotBefore &&
-      hasWorkingSlotAfter
     );
   };
 
@@ -1448,9 +1714,9 @@ const PublicCalendar: React.FC<PublicCalendarProps> = ({
                   (doctor) => {
 
                     const rawSlot =
-                      getDoctorSlot(
+                      getEffectiveSlot(
                         selectedDate,
-                        doctor.id,
+                        doctor,
                         time
                       );
 

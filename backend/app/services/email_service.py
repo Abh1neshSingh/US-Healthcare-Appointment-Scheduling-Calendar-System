@@ -1,10 +1,19 @@
-from app.database.connection import settings
+import logging
+from html import escape
+
 import requests
 
+from app.database.connection import settings
+
+
+logger = logging.getLogger(__name__)
 
 BREVO_API_KEY = settings.BREVO_API_KEY
 SENDER_EMAIL = settings.SENDER_EMAIL
 SENDER_NAME = "US Healthcare Appointment Scheduler"
+
+BREVO_EMAIL_URL = "https://api.brevo.com/v3/smtp/email"
+REQUEST_TIMEOUT = 15
 
 
 def send_appointment_confirmation_email(
@@ -16,12 +25,18 @@ def send_appointment_confirmation_email(
     end_time: str,
     appointment_type: str,
     appointment_id: int,
-):
+) -> bool:
     """
-    Send appointment confirmation email using Brevo API.
+    Send appointment confirmation email using the Brevo API.
     """
 
-    url = "https://api.brevo.com/v3/smtp/email"
+    # Escape dynamic values before inserting them into HTML.
+    safe_patient_name = escape(patient_name)
+    safe_doctor_name = escape(doctor_name)
+    safe_appointment_date = escape(appointment_date)
+    safe_start_time = escape(start_time)
+    safe_end_time = escape(end_time)
+    safe_appointment_type = escape(appointment_type)
 
     headers = {
         "accept": "application/json",
@@ -37,7 +52,7 @@ def send_appointment_confirmation_email(
         "to": [
             {
                 "email": patient_email,
-                "name": patient_name,
+                "name": safe_patient_name,
             }
         ],
         "subject": "Appointment Confirmation",
@@ -46,7 +61,7 @@ def send_appointment_confirmation_email(
             <body>
                 <h2>Appointment Confirmed</h2>
 
-                <p>Hello {patient_name},</p>
+                <p>Hello {safe_patient_name},</p>
 
                 <p>
                     Your appointment has been successfully booked.
@@ -62,22 +77,22 @@ def send_appointment_confirmation_email(
 
                     <li>
                         <strong>Doctor:</strong>
-                        {doctor_name}
+                        {safe_doctor_name}
                     </li>
 
                     <li>
                         <strong>Date:</strong>
-                        {appointment_date}
+                        {safe_appointment_date}
                     </li>
 
                     <li>
                         <strong>Time:</strong>
-                        {start_time} - {end_time}
+                        {safe_start_time} - {safe_end_time}
                     </li>
 
                     <li>
                         <strong>Appointment Type:</strong>
-                        {appointment_type}
+                        {safe_appointment_type}
                     </li>
                 </ul>
 
@@ -97,27 +112,28 @@ def send_appointment_confirmation_email(
     }
 
     try:
-
         response = requests.post(
-            url,
+            BREVO_EMAIL_URL,
             headers=headers,
             json=payload,
-            timeout=15,
+            timeout=REQUEST_TIMEOUT,
         )
 
         response.raise_for_status()
 
-        print(
-            f"Appointment confirmation email sent to "
-            f"{patient_email}"
+        logger.info(
+            "Appointment confirmation email sent successfully "
+            "for appointment_id=%s",
+            appointment_id,
         )
 
         return True
 
-    except Exception as error:
-
-        print(
-            f"Failed to send appointment email: {error}"
+    except requests.RequestException as exc:
+        logger.error(
+            "Failed to send appointment confirmation email "
+            "for appointment_id=%s: %s",
+            appointment_id,
+            exc,
         )
-
         return False

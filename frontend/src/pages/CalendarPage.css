@@ -2148,3 +2148,590 @@
     animation: none !important;
   }
 }
+/* =========================================================
+   ADVANCED PRODUCTION OVERRIDES
+   Calendar Page — accessibility, interaction, responsive
+   stability and premium healthcare SaaS polish
+   ========================================================= */
+
+/* ---------- Design tokens ---------- */
+
+:root {
+  --hc-blue: #1769e0;
+  --hc-blue-hover: #125bc4;
+  --hc-navy: #102a56;
+  --hc-text: #263b5b;
+  --hc-muted: #70849c;
+  --hc-border: #d9e5f0;
+  --hc-border-strong: #c7d8e9;
+  --hc-surface: #ffffff;
+  --hc-surface-soft: #f7fbff;
+  --hc-focus: rgba(23, 105, 224, 0.18);
+  --hc-success: #168b62;
+  --hc-danger: #c83f48;
+  --hc-warning: #a56b00;
+  --hc-radius-sm: 7px;
+  --hc-radius-md: 11px;
+  --hc-radius-lg: 16px;
+  --hc-shadow-sm: 0 5px 18px rgba(31, 72, 112, 0.055);
+  --hc-shadow-md: 0 14px 40px rgba(31, 72, 112, 0.085);
+}
+
+/* ---------- Global interaction quality ---------- */
+
+.home-page *,
+.home-page *::before,
+.home-page *::after {
+  box-sizing: border-box;
+}
+
+.home-page button,
+.home-page input,
+.home-page textarea,
+.home-page select {
+  font: inherit;
+}
+
+.home-page button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-page button:disabled {
+  pointer-events: none;
+}
+
+.home-page :focus-visible {
+  outline: 2px solid var(--hc-blue);
+  outline-offset: 3px;
+}
+
+/* ---------- Header production polish ---------- */
+
+.home-header {
+  isolation: isolate;
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.home-header-inner {
+  min-width: 0;
+}
+
+.home-logo {
+  transition: transform 0.18s ease;
+}
+
+.home-logo:hover {
+  transform: translateY(-1px);
+}
+
+.home-logo-mark {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.home-logo:hover .home-logo-mark {
+  transform: scale(1.035);
+  box-shadow: 0 7px 18px rgba(23, 105, 224, 0.24);
+}
+
+.home-nav-link {
+  transition:
+    color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.home-login-button,
+.home-register-button,
+.home-final-primary,
+.home-final-secondary,
+.home-calendar-error button,
+.calendar-no-results button {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.home-login-button:hover,
+.home-register-button:hover,
+.home-final-primary:hover,
+.home-final-secondary:hover,
+.home-calendar-error button:hover,
+.calendar-no-results button:hover {
+  transform: translateY(-1px);
+}
+
+/* ---------- Search ---------- */
+
+.home-header-search {
+  min-width: 0;
+}
+
+.home-header-search input {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.home-header-search input::placeholder {
+  opacity: 0.9;
+}
+
+/* ---------- Hero stability ---------- */
+
+.home-hero-content,
+.home-hero-visual {
+  min-width: 0;
+}
+
+.home-hero h1,
+.home-hero-content > p {
+  overflow-wrap: anywhere;
+}
+
+.home-hero-feature-row {
+  min-width: 0;
+}
+
+.home-hero-feature > div {
+  min-width: 0;
+}
+
+/* ---------- Calendar shell ---------- */
+
+.home-calendar-section {
+  position: relative;
+}
+
+.home-calendar-card {
+  isolation: isolate;
+  contain: layout paint;
+}
+
+.home-calendar-card > * {
+  min-width: 0;
+}
+
+.calendar-section-toolbar {
+  position: relative;
+}
+
+.calendar-section-toolbar > div:first-child {
+  min-width: 0;
+}
+
+.calendar-section-toolbar h2 {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Live status ---------- */
+
+.calendar-live-indicator {
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-live-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.45) 48%,
+    transparent 72%
+  );
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.calendar-live-indicator:hover::after {
+  animation: hc-live-sheen 0.9s ease forwards;
+}
+
+@keyframes hc-live-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* ---------- Refresh control ---------- */
+
+.calendar-refresh-button {
+  position: relative;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.calendar-refresh-button:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
+
+.calendar-refresh-button:disabled {
+  background: #f5f8fb;
+  border-color: #dbe5ee;
+  color: #8192a5;
+}
+
+/* ---------- Search summary ---------- */
+
+.calendar-search-summary {
+  overflow: hidden;
+}
+
+.calendar-search-summary > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.calendar-search-summary strong {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Loading state ---------- */
+
+.home-calendar-loading {
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.home-calendar-loading p {
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.loading-spinner,
+.calendar-mini-spinner {
+  will-change: transform;
+}
+
+/* ---------- Error state ---------- */
+
+.home-calendar-error {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.home-calendar-error h3,
+.home-calendar-error p {
+  overflow-wrap: anywhere;
+}
+
+.home-calendar-error button {
+  min-width: 112px;
+}
+
+/* ---------- Empty state ---------- */
+
+.calendar-no-results {
+  overflow: hidden;
+}
+
+.calendar-no-results h3,
+.calendar-no-results p {
+  overflow-wrap: anywhere;
+}
+
+.calendar-no-results button {
+  min-width: 112px;
+}
+
+/* ---------- Process cards ---------- */
+
+.home-process-card {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.home-process-card:hover {
+  border-color: #d0e0ef;
+}
+
+/* ---------- CTA ---------- */
+
+.home-final-cta > * {
+  position: relative;
+  z-index: 2;
+}
+
+.home-final-actions {
+  position: relative;
+  z-index: 3;
+}
+
+/* ---------- Footer ---------- */
+
+.home-footer-links button {
+  transition:
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.home-footer-links button:hover {
+  transform: translateX(2px);
+}
+
+/* =========================================================
+   LARGE DESKTOP — 1600+
+   ========================================================= */
+
+@media (min-width: 1600px) {
+  .home-header-inner,
+  .home-calendar-section,
+  .home-footer-inner,
+  .home-footer-bottom {
+    width: min(1560px, calc(100% - 80px));
+  }
+
+  .home-calendar-card {
+    box-shadow: 0 18px 50px rgba(31, 72, 112, 0.09);
+  }
+}
+
+/* =========================================================
+   TABLET — 1024 to 1150
+   ========================================================= */
+
+@media (max-width: 1150px) and (min-width: 901px) {
+  .home-header-inner {
+    width: calc(100% - 42px);
+  }
+
+  .home-navigation {
+    gap: 18px;
+  }
+
+  .home-header-actions {
+    gap: 7px;
+  }
+
+  .home-calendar-section {
+    width: calc(100% - 42px);
+  }
+
+  .home-final-cta {
+    width: calc(100% - 42px);
+  }
+}
+
+/* =========================================================
+   TABLET — 769 to 900
+   ========================================================= */
+
+@media (max-width: 900px) and (min-width: 769px) {
+  .home-header-inner {
+    width: calc(100% - 30px);
+  }
+
+  .home-logo-text {
+    font-size: 17px;
+  }
+
+  .home-navigation {
+    gap: 14px;
+  }
+
+  .home-nav-link {
+    font-size: 12px;
+  }
+
+  .home-calendar-section {
+    width: calc(100% - 30px);
+  }
+
+  .home-final-cta {
+    width: calc(100% - 30px);
+  }
+}
+
+/* =========================================================
+   MOBILE — 768 and below
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .home-page {
+    overflow-x: clip;
+  }
+
+  .home-header {
+    position: sticky;
+  }
+
+  .home-header-inner {
+    width: calc(100% - 20px);
+  }
+
+  .home-logo {
+    max-width: 52%;
+  }
+
+  .home-logo-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home-header-actions {
+    min-width: 0;
+  }
+
+  .home-login-button,
+  .home-register-button {
+    white-space: nowrap;
+  }
+
+  .home-calendar-section {
+    width: calc(100% - 16px);
+  }
+
+  .home-calendar-card {
+    width: 100%;
+    box-shadow: 0 8px 26px rgba(31, 72, 112, 0.075);
+  }
+
+  .calendar-search-summary {
+    width: 100%;
+  }
+
+  .home-final-actions {
+    width: 100%;
+  }
+
+  .home-final-primary,
+  .home-final-secondary {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE — 480 and below
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .home-header-inner {
+    width: calc(100% - 12px);
+  }
+
+  .home-logo {
+    max-width: 48%;
+  }
+
+  .home-logo-text strong {
+    font-size: 17px;
+  }
+
+  .home-header-actions {
+    gap: 5px;
+  }
+
+  .home-login-button,
+  .home-register-button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .home-calendar-section {
+    width: calc(100% - 8px);
+  }
+
+  .calendar-section-toolbar {
+    margin-left: 2px;
+    margin-right: 2px;
+  }
+
+  .calendar-live-indicator {
+    border-radius: 10px;
+  }
+
+  .calendar-search-summary {
+    border-radius: 9px;
+  }
+
+  .home-final-cta {
+    width: calc(100% - 8px);
+  }
+}
+
+/* =========================================================
+   TOUCH DEVICES
+   ========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  .home-login-button,
+  .home-register-button,
+  .home-final-primary,
+  .home-final-secondary,
+  .calendar-refresh-button,
+  .home-calendar-error button,
+  .calendar-no-results button {
+    min-height: 42px;
+  }
+
+  .home-footer-links button {
+    min-height: 34px;
+  }
+
+  .home-process-card:hover,
+  .home-logo:hover,
+  .home-login-button:hover,
+  .home-register-button:hover,
+  .home-final-primary:hover,
+  .home-final-secondary:hover,
+  .calendar-refresh-button:hover,
+  .home-calendar-error button:hover,
+  .calendar-no-results button:hover {
+    transform: none;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION / ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page *,
+  .home-page *::before,
+  .home-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .calendar-live-indicator::after {
+    display: none;
+  }
+}
+
+/* =========================================================
+   PRINT
+   ========================================================= */
+
+@media print {
+  .home-header,
+  .home-final-cta,
+  .home-footer,
+  .calendar-live-indicator,
+  .calendar-refresh-overlay,
+  .calendar-refresh-button {
+    display: none !important;
+  }
+
+  .home-page {
+    background: #fff;
+  }
+
+  .home-calendar-section,
+  .home-calendar-card {
+    width: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+}

@@ -1,4 +1,13 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -14,7 +23,10 @@ class Referral(Base):
         index=True,
     )
 
-    # Patient receiving the referral
+    # ==================================================
+    # PATIENT
+    # ==================================================
+
     patient_id = Column(
         Integer,
         ForeignKey("patients.id"),
@@ -22,7 +34,10 @@ class Referral(Base):
         index=True,
     )
 
-    # Doctor who issued the referral (usually PCP)
+    # ==================================================
+    # REFERRING DOCTOR
+    # ==================================================
+
     referring_doctor_id = Column(
         Integer,
         ForeignKey("doctors.id"),
@@ -30,7 +45,10 @@ class Referral(Base):
         index=True,
     )
 
-    # Specialist doctor the patient is being referred to
+    # ==================================================
+    # SPECIALIST DOCTOR
+    # ==================================================
+
     specialist_doctor_id = Column(
         Integer,
         ForeignKey("doctors.id"),
@@ -38,7 +56,10 @@ class Referral(Base):
         index=True,
     )
 
-    # Referral information
+    # ==================================================
+    # REFERRAL INFORMATION
+    # ==================================================
+
     referral_number = Column(
         String,
         unique=True,
@@ -67,7 +88,10 @@ class Referral(Base):
         nullable=True,
     )
 
-    # Prior authorization information
+    # ==================================================
+    # PRIOR AUTHORIZATION
+    # ==================================================
+
     authorization_required = Column(
         Boolean,
         default=False,
@@ -85,13 +109,20 @@ class Referral(Base):
         nullable=True,
     )
 
+    # ==================================================
+    # TIMESTAMPS
+    # ==================================================
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
-    # Relationships
+    # ==================================================
+    # RELATIONSHIPS
+    # ==================================================
+
     patient = relationship(
         "Patient",
         foreign_keys=[patient_id],

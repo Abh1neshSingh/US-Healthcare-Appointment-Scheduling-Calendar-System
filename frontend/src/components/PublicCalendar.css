@@ -18,6 +18,7 @@
 .public-calendar *::after {
   box-sizing: border-box;
 }
+
 .public-calendar button {
   font-family: inherit;
 }
@@ -41,7 +42,7 @@
 
 
 /* ============================================================
-   LEFT SIDEBAR — REFINED DATE NAVIGATOR
+   LEFT SIDEBAR
    ============================================================ */
 
 .public-calendar-sidebar {
@@ -50,12 +51,17 @@
   padding: 22px 18px;
   border-right: 1px solid #dce7f3;
   background:
-    linear-gradient(180deg, #f7fbff 0%, #f3f8fd 100%);
+    linear-gradient(
+      180deg,
+      #f7fbff 0%,
+      #f3f8fd 100%
+    );
   color: #17365f;
 }
 
 .mini-calendar-section {
-  padding: 0 2px;
+  padding: 0 2px 18px;
+  border-bottom: 1px solid #e1eaf3;
 }
 
 .mini-calendar-section h3 {
@@ -116,7 +122,8 @@
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 2px 7px rgba(30, 72, 112, 0.05);
+  box-shadow:
+    0 2px 7px rgba(30, 72, 112, 0.05);
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
@@ -143,7 +150,8 @@
 
 .mini-calendar-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
   gap: 4px;
   margin-top: 16px;
   padding: 0 1px;
@@ -165,7 +173,8 @@
 
 .mini-calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
   gap: 5px 4px;
   margin-top: 8px;
   padding: 2px 1px;
@@ -249,7 +258,8 @@
   color: #ffffff;
 }
 
-.mini-calendar-day.selected .mini-calendar-availability {
+.mini-calendar-day.selected
+  .mini-calendar-availability {
   background: #ffffff;
 }
 
@@ -264,19 +274,11 @@
   background: #14a66a;
 }
 
-.mini-calendar-day.outside-month .mini-calendar-availability {
+.mini-calendar-day.outside-month
+  .mini-calendar-availability {
   opacity: 0.45;
 }
 
-
-/* ============================================================
-   SIDEBAR DIVIDER
-   ============================================================ */
-
-.mini-calendar-section {
-  padding-bottom: 18px;
-  border-bottom: 1px solid #e1eaf3;
-}
 
 /* ============================================================
    SELECTED DATE CARD
@@ -291,7 +293,8 @@
   border: 1px solid #d9e6f3;
   border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 5px 16px rgba(31, 72, 112, 0.055);
+  box-shadow:
+    0 5px 16px rgba(31, 72, 112, 0.055);
 }
 
 .selected-date-icon {
@@ -356,7 +359,8 @@
 
 .sidebar-summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
 }
@@ -423,9 +427,14 @@
   border: 1px solid #d8e6f4;
   border-radius: 12px;
   background:
-    linear-gradient(145deg, #173b6d 0%, #20528c 100%);
+    linear-gradient(
+      145deg,
+      #173b6d 0%,
+      #20528c 100%
+    );
   color: #ffffff;
-  box-shadow: 0 9px 24px rgba(26, 69, 111, 0.11);
+  box-shadow:
+    0 9px 24px rgba(26, 69, 111, 0.11);
 }
 
 .public-sidebar-info::after {
@@ -464,8 +473,6 @@
 /* ============================================================
    RIGHT MAIN CALENDAR
    ============================================================ */
-
-
 
 .public-calendar-main {
   min-width: 0;
@@ -657,6 +664,7 @@
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -825,7 +833,9 @@
   cursor: default;
   transition:
     transform 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .slot-status.available {
@@ -837,7 +847,8 @@
 
 .slot-status.available:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(16, 120, 80, 0.12);
+  box-shadow:
+    0 3px 8px rgba(16, 120, 80, 0.12);
 }
 
 .slot-status.booked {
@@ -856,16 +867,7 @@
   border-color: #ccd6e2;
   background: #e9eef4;
   color: #566b86;
-}
-
-.status-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  height: 12px;
-  font-size: 9px;
-  font-weight: 800;
+  cursor: default;
 }
 
 .slot-status:disabled {
@@ -891,7 +893,8 @@
   font-weight: 500;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 5px 15px rgba(20, 50, 90, 0.18);
+  box-shadow:
+    0 5px 15px rgba(20, 50, 90, 0.18);
 }
 
 
@@ -940,7 +943,8 @@
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns:
+    repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -1079,7 +1083,8 @@
 
 .public-week-header {
   display: grid;
-  grid-template-columns: 75px repeat(7, 1fr);
+  grid-template-columns:
+    75px repeat(7, 1fr);
   border-bottom: 1px solid #dce6f1;
   background: #f8fbff;
 }
@@ -1107,6 +1112,9 @@
   color: #243e64;
   font-family: inherit;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .public-week-day-header:hover {
@@ -1139,7 +1147,8 @@
 
 .public-week-row {
   display: grid;
-  grid-template-columns: 75px repeat(7, 1fr);
+  grid-template-columns:
+    75px repeat(7, 1fr);
   min-height: 45px;
   border-bottom: 1px solid #edf2f7;
 }
@@ -1175,10 +1184,17 @@
   background: #dff6ea;
   color: #08734b;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .week-available:hover {
   background: #d1f1e1;
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 8px rgba(16, 120, 80, 0.10);
 }
 
 .week-available span {
@@ -1214,7 +1230,8 @@
 
 .public-month-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns:
+    repeat(7, 1fr);
   border-bottom: 1px solid #dce6f1;
   background: #f8fbff;
 }
@@ -1230,7 +1247,8 @@
 
 .public-month-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns:
+    repeat(7, 1fr);
 }
 
 .public-month-day {
@@ -1249,7 +1267,9 @@
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .public-month-day:hover {
@@ -1263,7 +1283,8 @@
 
 .public-month-day.selected-day {
   background: #f0f6ff;
-  box-shadow: inset 0 0 0 2px #1769e0;
+  box-shadow:
+    inset 0 0 0 2px #1769e0;
 }
 
 .month-day-number {
@@ -1318,6 +1339,42 @@
 
 
 /* ============================================================
+   PAST MONTH DATES
+   ============================================================ */
+
+.public-month-day.past-day {
+  background: #fbfcfe;
+  color: #a8b5c6;
+}
+
+.public-month-day.past-day:hover {
+  background: #f7f9fc;
+}
+
+.public-month-day.past-day
+  .month-day-number {
+  color: #a6b3c2;
+}
+
+.public-month-day.past-day.selected-day {
+  background: #f0f6ff;
+  box-shadow:
+    inset 0 0 0 2px #1769e0;
+}
+
+.public-month-day.past-day.selected-day
+  .month-day-number {
+  background: #1769e0;
+  color: #ffffff;
+}
+
+.public-month-day.past-day
+  .month-day-stats {
+  display: none;
+}
+
+
+/* ============================================================
    SLOT MODAL
    ============================================================ */
 
@@ -1340,7 +1397,8 @@
   border: 1px solid #dce6f1;
   border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 24px 70px rgba(17, 44, 79, 0.22);
+  box-shadow:
+    0 24px 70px rgba(17, 44, 79, 0.22);
   text-align: center;
 }
 
@@ -1356,10 +1414,14 @@
   color: #526782;
   font-size: 20px;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .slot-modal-close:hover {
   background: #e6edf5;
+  color: #17345e;
 }
 
 .slot-modal-icon {
@@ -1474,13 +1536,36 @@
 
 
 /* ============================================================
+   ACCESSIBLE KEYBOARD FOCUS
+   ============================================================ */
+
+.public-calendar button:focus-visible {
+  outline: 3px solid rgba(23, 105, 224, 0.20);
+  outline-offset: 2px;
+}
+
+.public-calendar
+  .public-month-day:focus-visible,
+.public-calendar
+  .mini-calendar-day:focus-visible,
+.public-calendar
+  .public-week-day-header:focus-visible,
+.public-calendar
+  .slot-status.available:focus-visible {
+  position: relative;
+  z-index: 3;
+}
+
+
+/* ============================================================
    LARGE TABLET
    ============================================================ */
 
 @media (max-width: 1200px) {
 
   .public-calendar-layout {
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns:
+      260px minmax(0, 1fr);
   }
 
   .public-calendar-sidebar {
@@ -1505,7 +1590,6 @@
         minmax(120px, 1fr)
       );
   }
-
 }
 
 
@@ -1551,7 +1635,8 @@
   }
 
   .sidebar-summary-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns:
+      repeat(4, 1fr);
   }
 
   .public-calendar-top {
@@ -1568,7 +1653,6 @@
     justify-content: flex-start;
     flex-wrap: wrap;
   }
-
 }
 
 
@@ -1587,7 +1671,8 @@
   }
 
   .sidebar-summary-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 
   .public-calendar-top {
@@ -1672,7 +1757,6 @@
   .public-day-summary {
     margin: 14px;
   }
-
 }
 
 
@@ -1756,60 +1840,4 @@
   .public-slot-modal {
     padding: 25px 18px;
   }
-
-}
-
-
-/* ============================================================
-   PAST MONTH DATES
-   Historical dates remain visible/selectable, but their
-   historical availability statistics are intentionally hidden
-   by PublicCalendar.tsx.
-   ============================================================ */
-
-.public-month-day.past-day {
-  background: #fbfcfe;
-  color: #a8b5c6;
-}
-
-.public-month-day.past-day:hover {
-  background: #f7f9fc;
-}
-
-.public-month-day.past-day .month-day-number {
-  color: #a6b3c2;
-}
-
-.public-month-day.past-day.selected-day {
-  background: #f0f6ff;
-  box-shadow: inset 0 0 0 2px #1769e0;
-}
-
-.public-month-day.past-day.selected-day .month-day-number {
-  background: #1769e0;
-  color: #ffffff;
-}
-
-/* Never allow stale/historical stat pills to visually survive
-   if another stylesheet or browser state supplies them. */
-.public-month-day.past-day .month-day-stats {
-  display: none;
-}
-
-
-/* ============================================================
-   ACCESSIBLE KEYBOARD FOCUS
-   ============================================================ */
-
-.public-calendar button:focus-visible {
-  outline: 3px solid rgba(23, 105, 224, 0.20);
-  outline-offset: 2px;
-}
-
-.public-calendar .public-month-day:focus-visible,
-.public-calendar .mini-calendar-day:focus-visible,
-.public-calendar .public-week-day-header:focus-visible,
-.public-calendar .slot-status.available:focus-visible {
-  position: relative;
-  z-index: 3;
 }

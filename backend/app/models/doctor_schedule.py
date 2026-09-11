@@ -1,4 +1,13 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Time
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Time,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -8,7 +17,11 @@ from app.database.connection import Base
 class DoctorSchedule(Base):
     __tablename__ = "doctor_schedules"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     doctor_id = Column(
         Integer,
@@ -17,10 +30,20 @@ class DoctorSchedule(Base):
         index=True,
     )
 
-    day_of_week = Column(String, nullable=False)
+    day_of_week = Column(
+        String,
+        nullable=False,
+    )
 
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
+    start_time = Column(
+        Time,
+        nullable=False,
+    )
+
+    end_time = Column(
+        Time,
+        nullable=False,
+    )
 
     slot_duration = Column(
         Integer,
@@ -28,8 +51,15 @@ class DoctorSchedule(Base):
         default=30,
     )
 
-    break_start = Column(Time, nullable=True)
-    break_end = Column(Time, nullable=True)
+    break_start = Column(
+        Time,
+        nullable=True,
+    )
+
+    break_end = Column(
+        Time,
+        nullable=True,
+    )
 
     is_available = Column(
         Boolean,
@@ -37,12 +67,19 @@ class DoctorSchedule(Base):
         nullable=False,
     )
 
-    effective_from = Column(Date, nullable=True)
+    effective_from = Column(
+        Date,
+        nullable=True,
+    )
 
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
     )
+
+    # ==================================================
+    # RELATIONSHIPS
+    # ==================================================
 
     doctor = relationship(
         "Doctor",
