@@ -1,10 +1,12 @@
 /* ============================================================
    PUBLIC CALENDAR
    Corporate Healthcare Scheduling UI
+   Clean Professional Healthcare Theme
    ============================================================ */
 
 .public-calendar {
   width: 100%;
+  max-width: 100%;
   background: #ffffff;
   border: 1px solid #dbe5f0;
   border-radius: 18px;
@@ -19,8 +21,13 @@
   box-sizing: border-box;
 }
 
-.public-calendar button {
+.public-calendar button,
+.public-calendar select {
   font-family: inherit;
+}
+
+.public-calendar button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .public-calendar .mini-calendar-day {
@@ -35,6 +42,7 @@
 
 .public-calendar-layout {
   width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: 286px minmax(0, 1fr);
   align-items: stretch;
@@ -477,6 +485,7 @@
 .public-calendar-main {
   min-width: 0;
   width: 100%;
+  overflow: hidden;
   background: #ffffff;
 }
 
@@ -497,6 +506,7 @@
 
 .public-calendar-title {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .calendar-label {
@@ -524,15 +534,118 @@
 
 
 /* ============================================================
-   CONTROLS
+   MAIN CONTROLS
    ============================================================ */
 
 .public-calendar-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: flex-end;
   gap: 9px;
   flex-shrink: 0;
 }
+
+
+/* ============================================================
+   DOCTOR FILTER
+   ============================================================ */
+
+.doctor-filter {
+  min-width: 210px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.doctor-filter label {
+  display: block;
+  color: #73859a;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.doctor-filter-select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.doctor-filter-icon {
+  position: absolute;
+  z-index: 2;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1769e0;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.doctor-filter select {
+  width: 100%;
+  height: 34px;
+  padding: 0 32px 0 29px;
+  border: 1px solid #cbd8e8;
+  border-radius: 8px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent 50%,
+      #60758e 50%
+    ),
+    linear-gradient(
+      135deg,
+      #60758e 50%,
+      transparent 50%
+    );
+  background-position:
+    calc(100% - 13px) 14px,
+    calc(100% - 9px) 14px;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+  color: #17355e;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.doctor-filter select:hover {
+  border-color: #9db6d5;
+  background-color: #f9fbfe;
+}
+
+.doctor-filter select:focus {
+  border-color: #1769e0;
+  box-shadow:
+    0 0 0 3px
+      rgba(23, 105, 224, 0.10);
+}
+
+.doctor-filter select option {
+  color: #17355e;
+  background: #ffffff;
+}
+
+
+/* ============================================================
+   VIEW SWITCHER
+   ============================================================ */
 
 .view-switcher {
   display: flex;
@@ -555,7 +668,9 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .view-switcher button:last-child {
@@ -593,12 +708,16 @@
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .calendar-navigation button:hover {
   background: #f2f7fd;
   border-color: #9db6d5;
+  color: #1769e0;
 }
 
 .calendar-navigation .today-button {
@@ -606,6 +725,115 @@
   padding: 0 12px;
   font-size: 11px;
   font-weight: 700;
+}
+
+
+/* ============================================================
+   SELECTED DOCTOR STRIP
+   ============================================================ */
+
+.selected-doctor-strip {
+  min-height: 57px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #e2eaf3;
+  background:
+    linear-gradient(
+      90deg,
+      #f4f8fd 0%,
+      #fbfdff 100%
+    );
+}
+
+.selected-doctor-strip-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.selected-doctor-strip-avatar {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e5effc;
+  color: #1769e0;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.selected-doctor-strip-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.selected-doctor-strip-main > div:last-child {
+  min-width: 0;
+}
+
+.selected-doctor-strip-main span {
+  display: block;
+  color: #8191a5;
+  font-size: 7.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.selected-doctor-strip-main strong {
+  display: inline-block;
+  max-width: 300px;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #17355e;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-doctor-strip-main small {
+  display: inline-block;
+  margin-left: 6px;
+  color: #71839b;
+  font-size: 8.5px;
+  font-weight: 550;
+  line-height: 1.2;
+}
+
+.selected-doctor-strip > button {
+  flex-shrink: 0;
+  height: 29px;
+  padding: 0 10px;
+  border: 1px solid #c9d9e8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1769e0;
+  font-family: inherit;
+  font-size: 8.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.selected-doctor-strip > button:hover {
+  background: #eef5fd;
+  border-color: #a9c1da;
+  transform: translateY(-1px);
 }
 
 
@@ -635,6 +863,7 @@
 .legend-dot {
   width: 8px;
   height: 8px;
+  flex: 0 0 8px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -662,7 +891,8 @@
 
 .public-calendar-content {
   width: 100%;
-  overflow-x: auto;
+  min-width: 0;
+  overflow-x: hidden;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
@@ -673,40 +903,46 @@
    ============================================================ */
 
 .public-day-view {
-  min-width: 760px;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .public-schedule-header {
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns:
-    82px repeat(
-      var(--doctor-count, 5),
-      minmax(130px, 1fr)
+    70px
+    repeat(
+      var(--doctor-count, 1),
+      minmax(0, 1fr)
     );
   border-bottom: 1px solid #dce6f1;
   background: #f8fbff;
 }
 
 .public-time-header {
+  min-width: 0;
+  min-height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 62px;
   border-right: 1px solid #dce6f1;
   color: #18345d;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
 .public-doctor-header {
-  min-height: 62px;
   min-width: 0;
-  padding: 8px 9px;
+  min-height: 62px;
+  padding: 7px 7px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   border-right: 1px solid #dce6f1;
+  overflow: hidden;
 }
 
 .public-doctor-header:last-child {
@@ -714,18 +950,18 @@
 }
 
 .doctor-avatar {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   border-radius: 50%;
   background: #e7f0fc;
   color: #1769e0;
-  font-size: 10px;
-  font-weight: 700;
-  overflow: hidden;
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .doctor-avatar img {
@@ -736,13 +972,16 @@
 
 .doctor-header-info {
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .doctor-header-info strong {
   display: block;
+  min-width: 0;
   overflow: hidden;
   color: #122e59;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -751,10 +990,11 @@
 
 .doctor-header-info span {
   display: block;
+  min-width: 0;
   margin-top: 2px;
   overflow: hidden;
   color: #657995;
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -762,19 +1002,23 @@
 
 
 /* ============================================================
-   SCHEDULE BODY
+   DAY SCHEDULE BODY
    ============================================================ */
 
 .public-schedule-body {
   width: 100%;
+  min-width: 0;
 }
 
 .public-schedule-row {
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns:
-    82px repeat(
-      var(--doctor-count, 5),
-      minmax(130px, 1fr)
+    70px
+    repeat(
+      var(--doctor-count, 1),
+      minmax(0, 1fr)
     );
   min-height: 37px;
   border-bottom: 1px solid #edf2f7;
@@ -785,14 +1029,15 @@
 }
 
 .public-time-cell {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: 4px 3px;
   border-right: 1px solid #e5ebf3;
   background: #fcfdff;
   color: #253f64;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -800,11 +1045,13 @@
 .public-slot-cell {
   position: relative;
   min-width: 0;
+  width: 100%;
   display: flex;
   align-items: center;
-  padding: 3px 5px;
+  padding: 3px 4px;
   border-right: 1px solid #edf2f7;
   background: #ffffff;
+  overflow: visible;
 }
 
 .public-slot-cell:last-child {
@@ -818,19 +1065,23 @@
 
 .slot-status {
   width: 100%;
+  min-width: 0;
   min-height: 27px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 3px 6px;
+  gap: 4px;
+  padding: 3px 5px;
   border: 1px solid transparent;
   border-radius: 5px;
+  overflow: hidden;
   font-family: inherit;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 650;
   line-height: 1;
   cursor: default;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -874,6 +1125,675 @@
   opacity: 1;
 }
 
+.status-icon {
+  flex: 0 0 auto;
+  font-size: 9px;
+  line-height: 1;
+}
+
+
+/* ============================================================
+   MANY DOCTORS
+   ============================================================ */
+
+.public-day-view.many-doctors
+  .public-schedule-header,
+.public-day-view.many-doctors
+  .public-schedule-row {
+  grid-template-columns:
+    58px
+    repeat(
+      var(--doctor-count, 1),
+      minmax(0, 1fr)
+    );
+}
+
+.public-day-view.many-doctors
+  .public-doctor-header {
+  min-width: 0;
+  min-height: 57px;
+  padding: 5px 4px;
+  gap: 5px;
+}
+
+.public-day-view.many-doctors
+  .doctor-avatar {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  font-size: 7px;
+}
+
+.public-day-view.many-doctors
+  .doctor-header-info strong {
+  font-size: 7.5px;
+  line-height: 1.2;
+}
+
+.public-day-view.many-doctors
+  .doctor-header-info span {
+  margin-top: 1px;
+  font-size: 6.5px;
+}
+
+.public-day-view.many-doctors
+  .public-time-header {
+  min-height: 57px;
+  font-size: 8px;
+}
+
+.public-day-view.many-doctors
+  .public-time-cell {
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 7.5px;
+}
+
+.public-day-view.many-doctors
+  .public-slot-cell {
+  padding: 2px 2px;
+}
+
+.public-day-view.many-doctors
+  .slot-status {
+  min-height: 25px;
+  padding: 2px 2px;
+  gap: 2px;
+  font-size: 6.8px;
+  border-radius: 4px;
+}
+
+.public-day-view.many-doctors
+  .status-icon {
+  font-size: 7px;
+}
+
+
+/* ============================================================
+   VERY MANY DOCTORS
+   ============================================================ */
+
+.public-day-view.many-doctors
+  .doctor-header-info {
+  min-width: 0;
+}
+
+.public-day-view.many-doctors
+  .doctor-header-info strong,
+.public-day-view.many-doctors
+  .doctor-header-info span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   SINGLE DOCTOR MODE
+   BEAUTIFUL APPOINTMENT CARD GRID
+   ============================================================ */
+
+/*
+ * IMPORTANT
+ *
+ * All Doctors:
+ *   normal timetable remains unchanged.
+ *
+ * Single Doctor:
+ *   timetable becomes appointment cards.
+ *
+ * Each existing TSX row:
+ *
+ *   .public-schedule-row
+ *      ├── .public-time-cell
+ *      └── .public-slot-cell
+ *
+ * becomes one visual appointment card.
+ */
+
+.public-day-view.single-doctor {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+
+/* ------------------------------------------------------------
+   SINGLE DOCTOR HEADER
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .public-schedule-header {
+  width: 100%;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: 1fr;
+
+  min-height: 74px;
+
+  border-bottom: 1px solid #dce6f1;
+
+  background:
+    linear-gradient(
+      90deg,
+      #f5f9fe 0%,
+      #ffffff 100%
+    );
+}
+
+.public-day-view.single-doctor
+  .public-time-header {
+  display: none;
+}
+
+.public-day-view.single-doctor
+  .public-doctor-header {
+  width: 100%;
+  min-width: 0;
+  min-height: 74px;
+
+  padding: 11px 17px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  border-right: 0;
+
+  background: transparent;
+
+  overflow: hidden;
+}
+
+.public-day-view.single-doctor
+  .doctor-avatar {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+
+  border: 1px solid #d5e4f4;
+
+  background:
+    linear-gradient(
+      145deg,
+      #eaf3fd 0%,
+      #deebfa 100%
+    );
+
+  color: #1769e0;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  box-shadow:
+    0 3px 9px
+      rgba(35, 81, 126, 0.08);
+}
+
+.public-day-view.single-doctor
+  .doctor-header-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.public-day-view.single-doctor
+  .doctor-header-info strong {
+  display: block;
+  max-width: 100%;
+
+  color: #122f59;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  line-height: 1.3;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-day-view.single-doctor
+  .doctor-header-info span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #6d8098;
+
+  font-size: 9px;
+  font-weight: 550;
+
+  line-height: 1.3;
+}
+
+
+/* ------------------------------------------------------------
+   CARD GRID BACKGROUND
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .public-schedule-body {
+  width: 100%;
+  min-width: 0;
+
+  display: grid;
+
+  /*
+   * Desktop:
+   * 4 appointment cards per row.
+   */
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+
+  padding: 16px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f8fbfe 0%,
+      #f5f9fd 100%
+    );
+}
+
+
+/* ------------------------------------------------------------
+   EACH TIME SLOT = CARD
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .public-schedule-row {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 84px;
+
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  grid-template-rows:
+    auto 1fr;
+
+  border: 1px solid #dce7f2;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 3px 10px
+      rgba(28, 65, 103, 0.045);
+
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.public-day-view.single-doctor
+  .public-schedule-row:last-child {
+  border-bottom: 1px solid #dce7f2;
+}
+
+.public-day-view.single-doctor
+  .public-schedule-row:hover {
+  transform: translateY(-2px);
+
+  border-color: #c5d8ea;
+
+  box-shadow:
+    0 8px 20px
+      rgba(28, 65, 103, 0.09);
+}
+
+
+/* ------------------------------------------------------------
+   CARD TIME
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .public-time-cell {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  padding: 7px 10px 5px;
+
+  border-right: 0;
+  border-bottom: 1px solid #edf2f7;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fbfdff 0%,
+      #f8fbfe 100%
+    );
+
+  color: #355271;
+
+  font-size: 9px;
+  font-weight: 750;
+
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+.public-day-view.single-doctor
+  .public-time-cell::before {
+  content: "◷";
+
+  margin-right: 5px;
+
+  color: #1769e0;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+/* ------------------------------------------------------------
+   CARD SLOT CONTENT
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .public-slot-cell {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 49px;
+
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+
+  padding: 7px;
+
+  border-right: 0;
+
+  background: #ffffff;
+
+  overflow: visible;
+}
+
+
+/* ------------------------------------------------------------
+   CARD STATUS BUTTON
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .slot-status {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 35px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  padding: 7px 8px;
+
+  border-width: 1px;
+
+  border-radius: 7px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  line-height: 1;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+
+/* ------------------------------------------------------------
+   AVAILABLE
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .slot-status.available {
+  border-color: #a5e1c5;
+
+  background:
+    linear-gradient(
+      180deg,
+      #e6f9ef 0%,
+      #dcf4e7 100%
+    );
+
+  color: #08734b;
+
+  cursor: pointer;
+}
+
+.public-day-view.single-doctor
+  .slot-status.available:hover {
+  transform: translateY(-1px);
+
+  border-color: #7ed3aa;
+
+  background:
+    linear-gradient(
+      180deg,
+      #def7e9 0%,
+      #d2f0df 100%
+    );
+
+  box-shadow:
+    0 5px 11px
+      rgba(16, 120, 80, 0.12);
+}
+
+
+/* ------------------------------------------------------------
+   BOOKED
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .slot-status.booked {
+  border-color: #efb3b6;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fde9ea 0%,
+      #fbdfe1 100%
+    );
+
+  color: #b4232a;
+}
+
+
+/* ------------------------------------------------------------
+   BREAK
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .slot-status.break {
+  border-color: #f0d28a;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fff5da 0%,
+      #ffefc8 100%
+    );
+
+  color: #875800;
+}
+
+
+/* ------------------------------------------------------------
+   NOT AVAILABLE
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .slot-status.not_available {
+  border-color: #d0d9e4;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f1f4f7 0%,
+      #e8edf2 100%
+    );
+
+  color: #63758c;
+}
+
+
+/* ------------------------------------------------------------
+   SINGLE DOCTOR ICON
+   ------------------------------------------------------------ */
+
+.public-day-view.single-doctor
+  .status-icon {
+  flex: 0 0 auto;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+
+/* ============================================================
+   SINGLE DOCTOR — 3 COLUMN
+   ============================================================ */
+
+@media (max-width: 1250px) and (min-width: 951px) {
+
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 11px;
+
+    padding: 14px;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-row {
+    min-height: 82px;
+  }
+
+  .public-day-view.single-doctor
+    .slot-status {
+    font-size: 8.5px;
+  }
+}
+
+
+/* ============================================================
+   SINGLE DOCTOR — TABLET
+   ============================================================ */
+
+@media (max-width: 950px) and (min-width: 769px) {
+
+  .public-day-view.single-doctor {
+    min-width: 0;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 10px;
+
+    padding: 13px;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-row {
+    min-height: 80px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell {
+    font-size: 8.5px;
+  }
+
+  .public-day-view.single-doctor
+    .slot-status {
+    font-size: 8px;
+  }
+}
+
+
+/* ============================================================
+   12+ DOCTORS
+   ============================================================ */
+
+@media (min-width: 1100px) {
+
+  .public-day-view.many-doctors
+    .public-schedule-header,
+  .public-day-view.many-doctors
+    .public-schedule-row {
+    grid-template-columns:
+      54px
+      repeat(
+        var(--doctor-count, 1),
+        minmax(0, 1fr)
+      );
+  }
+
+  .public-day-view.many-doctors
+    .public-doctor-header {
+    padding-left: 3px;
+    padding-right: 3px;
+    gap: 4px;
+  }
+
+  .public-day-view.many-doctors
+    .doctor-avatar {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+  }
+
+  .public-day-view.many-doctors
+    .doctor-header-info strong {
+    font-size: 7px;
+  }
+
+  .public-day-view.many-doctors
+    .doctor-header-info span {
+    font-size: 6px;
+  }
+
+  .public-day-view.many-doctors
+    .slot-status {
+    font-size: 6.5px;
+  }
+}
+
 
 /* ============================================================
    SLOT HOVER HINT
@@ -885,16 +1805,24 @@
   top: calc(100% + 5px);
   left: 50%;
   transform: translateX(-50%);
+
   padding: 5px 9px;
+
   border-radius: 5px;
+
   background: #173a6b;
   color: #ffffff;
+
   font-size: 10px;
   font-weight: 500;
+
   white-space: nowrap;
+
   pointer-events: none;
+
   box-shadow:
-    0 5px 15px rgba(20, 50, 90, 0.18);
+    0 5px 15px
+      rgba(20, 50, 90, 0.18);
 }
 
 
@@ -905,8 +1833,10 @@
 .public-day-summary {
   margin: 16px 20px 0;
   padding: 15px;
+
   border: 1px solid #dfe8f2;
   border-radius: 10px;
+
   background: #f9fbfe;
 }
 
@@ -914,7 +1844,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 15px;
+
   margin-bottom: 12px;
 }
 
@@ -926,36 +1858,47 @@
 
 .summary-heading span {
   color: #1769e0;
+
   font-size: 9px;
   font-weight: 700;
+
   letter-spacing: 1px;
 }
 
 .summary-heading strong {
   color: #19345d;
+
   font-size: 13px;
 }
 
 .summary-heading small {
   color: #6a7e98;
+
   font-size: 11px;
 }
 
 .summary-cards {
   display: grid;
+
   grid-template-columns:
     repeat(4, 1fr);
+
   gap: 8px;
 }
 
 .summary-card {
   min-height: 68px;
+
   padding: 10px;
+
   display: flex;
   flex-direction: column;
+
   justify-content: center;
   align-items: center;
+
   border-radius: 8px;
+
   text-align: center;
 }
 
@@ -966,6 +1909,7 @@
 
 .summary-card span {
   margin-top: 4px;
+
   font-size: 10px;
   font-weight: 600;
 }
@@ -997,24 +1941,34 @@
 
 .public-booking-cta {
   margin: 16px 20px 20px;
+
   padding: 13px 15px;
+
   display: flex;
   align-items: center;
+
   gap: 11px;
+
   border: 1px solid #dce7f4;
   border-radius: 10px;
+
   background: #f4f8fd;
 }
 
 .booking-cta-icon {
   width: 38px;
   height: 38px;
+
   flex: 0 0 38px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 9px;
+
   background: #e2edfc;
+
   font-size: 16px;
 }
 
@@ -1025,35 +1979,48 @@
 
 .booking-cta-content strong {
   display: block;
+
   color: #17345e;
+
   font-size: 12px;
 }
 
 .booking-cta-content span {
   display: block;
+
   margin-top: 2px;
+
   color: #667a94;
+
   font-size: 10px;
 }
 
 .booking-cta-actions {
   display: flex;
+
   gap: 7px;
 }
 
 .booking-cta-actions button {
   height: 34px;
+
   padding: 0 14px;
+
   border-radius: 6px;
+
   font-family: inherit;
+
   font-size: 10px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
 .cta-login {
   border: 1px solid #1769e0;
+
   background: #ffffff;
+
   color: #1769e0;
 }
 
@@ -1063,7 +2030,9 @@
 
 .cta-register {
   border: 1px solid #1769e0;
+
   background: #1769e0;
+
   color: #ffffff;
 }
 
@@ -1077,15 +2046,18 @@
    ============================================================ */
 
 .public-week-view {
-  min-width: 760px;
   width: 100%;
+  min-width: 0;
 }
 
 .public-week-header {
   display: grid;
+
   grid-template-columns:
-    75px repeat(7, 1fr);
+    75px repeat(7, minmax(0, 1fr));
+
   border-bottom: 1px solid #dce6f1;
+
   background: #f8fbff;
 }
 
@@ -1093,25 +2065,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
   color: #536984;
+
   font-size: 10px;
   font-weight: 700;
 }
 
 .public-week-day-header {
+  min-width: 0;
   min-height: 68px;
+
   padding: 7px;
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
   justify-content: center;
+
   gap: 2px;
+
   border: 0;
   border-right: 1px solid #dce6f1;
+
   background: transparent;
+
   color: #243e64;
+
   font-family: inherit;
+
   cursor: pointer;
+
   transition:
     background 0.15s ease,
     color 0.15s ease;
@@ -1147,15 +2132,20 @@
 
 .public-week-row {
   display: grid;
+
   grid-template-columns:
-    75px repeat(7, 1fr);
+    75px repeat(7, minmax(0, 1fr));
+
   min-height: 45px;
+
   border-bottom: 1px solid #edf2f7;
 }
 
 .public-week-cell {
   min-width: 0;
+
   padding: 4px;
+
   border-right: 1px solid #edf2f7;
 }
 
@@ -1168,22 +2158,32 @@
 .week-break,
 .week-unavailable {
   width: 100%;
+
   min-height: 34px;
+
   border-radius: 5px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   text-align: center;
+
   font-family: inherit;
+
   font-size: 9px;
   font-weight: 650;
 }
 
 .week-available {
   border: 1px solid #a9e4ca;
+
   background: #dff6ea;
+
   color: #08734b;
+
   cursor: pointer;
+
   transition:
     background 0.15s ease,
     transform 0.15s ease,
@@ -1192,25 +2192,33 @@
 
 .week-available:hover {
   background: #d1f1e1;
+
   transform: translateY(-1px);
+
   box-shadow:
-    0 3px 8px rgba(16, 120, 80, 0.10);
+    0 3px 8px
+      rgba(16, 120, 80, 0.10);
 }
 
 .week-available span {
   margin-right: 3px;
+
   font-size: 12px;
 }
 
 .week-booked {
   border: 1px solid #f3b6b8;
+
   background: #fde3e4;
+
   color: #b4232a;
 }
 
 .week-break {
   border: 1px solid #f5d78b;
+
   background: #fff0c9;
+
   color: #875800;
 }
 
@@ -1225,48 +2233,70 @@
 
 .public-month-view {
   width: 100%;
-  min-width: 650px;
+  min-width: 0;
 }
 
 .public-month-weekdays {
   display: grid;
+
   grid-template-columns:
-    repeat(7, 1fr);
+    repeat(7, minmax(0, 1fr));
+
   border-bottom: 1px solid #dce6f1;
+
   background: #f8fbff;
 }
 
 .public-month-weekday {
+  min-width: 0;
+
   padding: 9px 6px;
+
   text-align: center;
+
   color: #536984;
+
   font-size: 10px;
   font-weight: 700;
+
   text-transform: uppercase;
 }
 
 .public-month-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(7, 1fr);
+    repeat(7, minmax(0, 1fr));
 }
 
 .public-month-day {
-  min-height: 94px;
   min-width: 0;
+  min-height: 94px;
+
   padding: 8px;
+
   display: flex;
   flex-direction: column;
+
   align-items: flex-start;
+
   gap: 6px;
+
   border: 0;
+
   border-right: 1px solid #e5ebf3;
   border-bottom: 1px solid #e5ebf3;
+
   background: #ffffff;
+
   color: #17345e;
+
   font-family: inherit;
+
   text-align: left;
+
   cursor: pointer;
+
   transition:
     background 0.15s ease,
     box-shadow 0.15s ease;
@@ -1283,6 +2313,7 @@
 
 .public-month-day.selected-day {
   background: #f0f6ff;
+
   box-shadow:
     inset 0 0 0 2px #1769e0;
 }
@@ -1290,10 +2321,13 @@
 .month-day-number {
   width: 25px;
   height: 25px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 50%;
+
   font-size: 12px;
   font-weight: 700;
 }
@@ -1306,19 +2340,27 @@
 
 .month-day-stats {
   width: 100%;
+
   display: flex;
   flex-direction: column;
+
   gap: 3px;
 }
 
 .month-stat {
   width: 100%;
+
   padding: 3px 5px;
+
   border-radius: 4px;
+
   font-size: 8px;
   font-weight: 650;
+
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
@@ -1358,6 +2400,7 @@
 
 .public-month-day.past-day.selected-day {
   background: #f0f6ff;
+
   box-shadow:
     inset 0 0 0 2px #1769e0;
 }
@@ -1380,40 +2423,65 @@
 
 .public-slot-overlay {
   position: fixed;
+
   z-index: 1000;
+
   inset: 0;
+
   display: flex;
+
   align-items: center;
   justify-content: center;
+
   padding: 20px;
-  background: rgba(13, 35, 66, 0.42);
+
+  background:
+    rgba(13, 35, 66, 0.42);
+
   backdrop-filter: blur(4px);
 }
 
 .public-slot-modal {
   position: relative;
+
   width: min(440px, 100%);
+
   padding: 30px;
+
   border: 1px solid #dce6f1;
+
   border-radius: 16px;
+
   background: #ffffff;
+
   box-shadow:
-    0 24px 70px rgba(17, 44, 79, 0.22);
+    0 24px 70px
+      rgba(17, 44, 79, 0.22);
+
   text-align: center;
 }
 
 .slot-modal-close {
   position: absolute;
+
   top: 12px;
   right: 14px;
+
   width: 32px;
   height: 32px;
+
   border: 0;
+
   border-radius: 50%;
+
   background: #f1f5f9;
+
   color: #526782;
+
   font-size: 20px;
+
   cursor: pointer;
+
   transition:
     background 0.15s ease,
     color 0.15s ease;
@@ -1427,96 +2495,133 @@
 .slot-modal-icon {
   width: 54px;
   height: 54px;
+
   margin: 0 auto 13px;
+
   display: flex;
+
   align-items: center;
   justify-content: center;
+
   border-radius: 50%;
+
   background: #e4f7ed;
+
   color: #0a8a59;
+
   font-size: 25px;
   font-weight: 700;
 }
 
 .slot-modal-label {
   color: #1769e0;
+
   font-size: 10px;
   font-weight: 700;
+
   letter-spacing: 1.1px;
 }
 
 .public-slot-modal h3 {
   margin: 8px 0 3px;
+
   color: #112e59;
+
   font-size: 21px;
 }
 
 .slot-modal-date {
   margin: 0;
+
   color: #697d96;
+
   font-size: 13px;
 }
 
 .slot-modal-time {
   margin: 20px 0;
+
   padding: 13px;
+
   display: flex;
+
   align-items: center;
   justify-content: center;
+
   gap: 9px;
+
   border: 1px solid #dce8f6;
+
   border-radius: 9px;
+
   background: #f5f9fe;
 }
 
 .slot-modal-time span {
   color: #1769e0;
+
   font-size: 16px;
   font-weight: 700;
 }
 
 .slot-modal-time small {
   color: #8292a8;
+
   font-size: 11px;
 }
 
 .slot-modal-message {
   padding: 13px;
+
   border-radius: 8px;
+
   background: #f7f9fc;
 }
 
 .slot-modal-message strong {
   color: #263f63;
+
   font-size: 13px;
 }
 
 .slot-modal-message p {
   margin: 4px 0 0;
+
   color: #71829a;
+
   font-size: 11px;
+
   line-height: 1.5;
 }
 
 .slot-modal-actions {
   margin-top: 18px;
+
   display: flex;
+
   gap: 9px;
 }
 
 .slot-modal-actions button {
   flex: 1;
+
   height: 42px;
+
   border-radius: 7px;
+
   font-family: inherit;
+
   font-size: 12px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
 .slot-modal-login {
   border: 1px solid #1769e0;
+
   background: #1769e0;
+
   color: #ffffff;
 }
 
@@ -1526,7 +2631,9 @@
 
 .slot-modal-register {
   border: 1px solid #1769e0;
+
   background: #ffffff;
+
   color: #1769e0;
 }
 
@@ -1539,8 +2646,11 @@
    ACCESSIBLE KEYBOARD FOCUS
    ============================================================ */
 
-.public-calendar button:focus-visible {
-  outline: 3px solid rgba(23, 105, 224, 0.20);
+.public-calendar button:focus-visible,
+.public-calendar select:focus-visible {
+  outline: 3px solid
+    rgba(23, 105, 224, 0.20);
+
   outline-offset: 2px;
 }
 
@@ -1553,12 +2663,77 @@
 .public-calendar
   .slot-status.available:focus-visible {
   position: relative;
+
   z-index: 3;
 }
 
 
 /* ============================================================
-   LARGE TABLET
+   LARGE DESKTOP
+   ============================================================ */
+
+@media (min-width: 1400px) {
+
+  .public-calendar-sidebar {
+    width: 292px;
+    min-width: 292px;
+  }
+
+  .public-calendar-layout {
+    grid-template-columns:
+      292px minmax(0, 1fr);
+  }
+
+  .public-calendar-top {
+    padding-left: 26px;
+    padding-right: 26px;
+  }
+
+  .public-schedule-header,
+  .public-schedule-row {
+    grid-template-columns:
+      72px
+      repeat(
+        var(--doctor-count, 1),
+        minmax(0, 1fr)
+      );
+  }
+
+  .public-day-view.many-doctors
+    .public-schedule-header,
+  .public-day-view.many-doctors
+    .public-schedule-row {
+    grid-template-columns:
+      56px
+      repeat(
+        var(--doctor-count, 1),
+        minmax(0, 1fr)
+      );
+  }
+
+  /*
+   * Single doctor stays card based even on
+   * large desktop screens.
+   */
+  .public-day-view.single-doctor
+    .public-schedule-header {
+    grid-template-columns: 1fr;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+    gap: 13px;
+
+    padding: 17px;
+  }
+}
+
+
+/* ============================================================
+   LARGE TABLET / LAPTOP
    ============================================================ */
 
 @media (max-width: 1200px) {
@@ -1571,24 +2746,80 @@
   .public-calendar-sidebar {
     width: 260px;
     min-width: 260px;
+
     padding: 19px 15px;
   }
 
   .public-calendar-top {
     padding: 19px 20px 15px;
+
+    gap: 14px;
   }
 
-  .public-day-view {
-    min-width: 720px;
+  .doctor-filter {
+    min-width: 190px;
+    max-width: 220px;
+  }
+
+  .public-calendar-title h2 {
+    font-size: 20px;
   }
 
   .public-schedule-header,
   .public-schedule-row {
     grid-template-columns:
-      75px repeat(
-        var(--doctor-count, 5),
-        minmax(120px, 1fr)
+      68px
+      repeat(
+        var(--doctor-count, 1),
+        minmax(0, 1fr)
       );
+  }
+
+  .public-day-view.many-doctors
+    .public-schedule-header,
+  .public-day-view.many-doctors
+    .public-schedule-row {
+    grid-template-columns:
+      55px
+      repeat(
+        var(--doctor-count, 1),
+        minmax(0, 1fr)
+      );
+  }
+
+  .public-day-view.many-doctors
+    .doctor-avatar {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+  }
+
+  .public-day-view.many-doctors
+    .doctor-header-info strong {
+    font-size: 7px;
+  }
+
+  .public-day-view.many-doctors
+    .doctor-header-info span {
+    font-size: 6px;
+  }
+
+  .public-day-view.many-doctors
+    .slot-status {
+    font-size: 6.5px;
+  }
+
+  /*
+   * Single doctor gets 3 cards at this width.
+   */
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 11px;
+
+    padding: 14px;
   }
 }
 
@@ -1606,30 +2837,37 @@
   .public-calendar-sidebar {
     width: 100%;
     min-width: 0;
+
     border-right: 0;
+
     border-bottom: 1px solid #dfe7f0;
+
     padding: 15px;
   }
 
   .mini-calendar-section {
     max-width: 420px;
+
     margin: 0 auto;
   }
 
   .public-selected-date-card {
     max-width: 420px;
+
     margin-left: auto;
     margin-right: auto;
   }
 
   .public-sidebar-overview {
     max-width: 420px;
+
     margin-left: auto;
     margin-right: auto;
   }
 
   .public-sidebar-info {
     max-width: 420px;
+
     margin-left: auto;
     margin-right: auto;
   }
@@ -1641,23 +2879,49 @@
 
   .public-calendar-top {
     flex-direction: column;
+
     align-items: stretch;
   }
 
   .public-calendar-controls {
     width: 100%;
+
+    align-items: flex-end;
+
     justify-content: space-between;
+
+    flex-wrap: wrap;
+  }
+
+  .doctor-filter {
+    flex: 1 1 210px;
+
+    max-width: 280px;
   }
 
   .public-status-legend {
     justify-content: flex-start;
+
     flex-wrap: wrap;
+  }
+
+  /*
+   * Single doctor remains a real card grid.
+   */
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 10px;
+
+    padding: 13px;
   }
 }
 
 
 /* ============================================================
-   MOBILE
+   SMALL TABLET / LARGE MOBILE
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -1677,6 +2941,7 @@
 
   .public-calendar-top {
     padding: 16px;
+
     gap: 13px;
   }
 
@@ -1689,22 +2954,41 @@
   }
 
   .public-calendar-controls {
+    width: 100%;
+
     flex-direction: column;
+
     align-items: stretch;
+
     gap: 8px;
+  }
+
+  .doctor-filter {
+    width: 100%;
+
+    max-width: none;
+
+    min-width: 0;
+
+    order: 1;
   }
 
   .view-switcher {
     width: 100%;
+
+    order: 2;
   }
 
   .view-switcher button {
     flex: 1;
+
     min-width: 0;
   }
 
   .calendar-navigation {
     justify-content: space-between;
+
+    order: 3;
   }
 
   .calendar-navigation .today-button {
@@ -1713,6 +2997,7 @@
 
   .public-status-legend {
     padding: 10px 14px;
+
     gap: 10px;
   }
 
@@ -1720,13 +3005,26 @@
     font-size: 9px;
   }
 
+
+  /* ----------------------------------------------------------
+     MOBILE GENERAL CALENDAR
+     ---------------------------------------------------------- */
+
   .public-calendar-content {
     overflow-x: auto;
+
     -webkit-overflow-scrolling: touch;
   }
 
+  /*
+   * All Doctors needs horizontal room on mobile.
+   */
   .public-day-view {
     min-width: 700px;
+  }
+
+  .public-day-view.many-doctors {
+    min-width: 760px;
   }
 
   .public-week-view {
@@ -1737,13 +3035,124 @@
     min-width: 620px;
   }
 
+
+  /* ----------------------------------------------------------
+     SINGLE DOCTOR MOBILE
+     ---------------------------------------------------------- */
+
+  /*
+   * Single doctor DOES NOT need horizontal scrolling.
+   */
+  .public-day-view.single-doctor {
+    width: 100%;
+
+    min-width: 0;
+
+    overflow: visible;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-header {
+    min-width: 0;
+
+    grid-template-columns: 1fr;
+  }
+
+  .public-day-view.single-doctor
+    .public-doctor-header {
+    min-height: 68px;
+
+    padding: 10px 13px;
+  }
+
+  .public-day-view.single-doctor
+    .doctor-avatar {
+    width: 38px;
+    height: 38px;
+
+    flex-basis: 38px;
+  }
+
+  .public-day-view.single-doctor
+    .doctor-header-info strong {
+    font-size: 11px;
+  }
+
+  .public-day-view.single-doctor
+    .doctor-header-info span {
+    font-size: 8px;
+  }
+
+  /*
+   * Two beautiful cards per row on mobile.
+   */
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    width: 100%;
+
+    min-width: 0;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 9px;
+
+    padding: 11px;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-row {
+    min-height: 77px;
+
+    border-radius: 9px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell {
+    min-height: 29px;
+
+    padding: 6px 8px 4px;
+
+    font-size: 8px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell::before {
+    font-size: 9px;
+  }
+
+  .public-day-view.single-doctor
+    .public-slot-cell {
+    min-height: 46px;
+
+    padding: 6px;
+  }
+
+  .public-day-view.single-doctor
+    .slot-status {
+    min-height: 32px;
+
+    padding: 6px 5px;
+
+    font-size: 8px;
+
+    border-radius: 6px;
+  }
+
+
+  /* ----------------------------------------------------------
+     BOOKING CTA
+     ---------------------------------------------------------- */
+
   .public-booking-cta {
     margin: 14px;
+
     flex-wrap: wrap;
   }
 
   .booking-cta-content {
-    flex: 1 1 calc(100% - 55px);
+    flex: 1 1
+      calc(100% - 55px);
   }
 
   .booking-cta-actions {
@@ -1756,6 +3165,41 @@
 
   .public-day-summary {
     margin: 14px;
+  }
+
+
+  /* ----------------------------------------------------------
+     SELECTED DOCTOR STRIP
+     ---------------------------------------------------------- */
+
+  .selected-doctor-strip {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 10px 14px;
+  }
+
+  .selected-doctor-strip-main {
+    width: 100%;
+  }
+
+  .selected-doctor-strip-main strong {
+    max-width: 210px;
+  }
+
+  .selected-doctor-strip-main small {
+    display: block;
+
+    margin-left: 0;
+
+    margin-top: 2px;
+  }
+
+  .selected-doctor-strip > button {
+    width: 100%;
   }
 }
 
@@ -1780,6 +3224,16 @@
 
   .public-calendar-title p {
     font-size: 10px;
+  }
+
+  .doctor-filter label {
+    font-size: 7.5px;
+  }
+
+  .doctor-filter select {
+    height: 36px;
+
+    font-size: 9px;
   }
 
   .public-status-legend {
@@ -1815,6 +3269,72 @@
     font-size: 8px;
   }
 
+
+  /* ----------------------------------------------------------
+     SINGLE DOCTOR SMALL PHONE
+     ---------------------------------------------------------- */
+
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 7px;
+
+    padding: 9px;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-row {
+    min-height: 73px;
+
+    border-radius: 8px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell {
+    min-height: 28px;
+
+    padding: 6px 7px 4px;
+
+    font-size: 7.5px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell::before {
+    margin-right: 3px;
+
+    font-size: 8px;
+  }
+
+  .public-day-view.single-doctor
+    .public-slot-cell {
+    min-height: 44px;
+
+    padding: 5px;
+  }
+
+  .public-day-view.single-doctor
+    .slot-status {
+    min-height: 30px;
+
+    padding: 5px 3px;
+
+    gap: 3px;
+
+    font-size: 7.5px;
+  }
+
+  .public-day-view.single-doctor
+    .status-icon {
+    font-size: 8px;
+  }
+
+
+  /* ----------------------------------------------------------
+     CTA
+     ---------------------------------------------------------- */
+
   .public-booking-cta {
     padding: 12px;
   }
@@ -1822,6 +3342,7 @@
   .booking-cta-icon {
     width: 35px;
     height: 35px;
+
     flex-basis: 35px;
   }
 
@@ -1833,11 +3354,83 @@
     font-size: 9px;
   }
 
+
+  /* ----------------------------------------------------------
+     MODAL
+     ---------------------------------------------------------- */
+
   .slot-modal-actions {
     flex-direction: column;
   }
 
   .public-slot-modal {
     padding: 25px 18px;
+  }
+
+  .selected-doctor-strip-main strong {
+    max-width: 175px;
+  }
+}
+
+
+/* ============================================================
+   EXTRA SMALL PHONE
+   ============================================================ */
+
+@media (max-width: 360px) {
+
+  .public-day-view.single-doctor
+    .public-schedule-body {
+    gap: 6px;
+
+    padding: 8px;
+  }
+
+  .public-day-view.single-doctor
+    .public-schedule-row {
+    min-height: 70px;
+  }
+
+  .public-day-view.single-doctor
+    .public-time-cell {
+    padding-left: 6px;
+    padding-right: 6px;
+
+    font-size: 7px;
+  }
+
+  .public-day-view.single-doctor
+    .slot-status {
+    min-height: 29px;
+
+    padding-left: 2px;
+    padding-right: 2px;
+
+    font-size: 7px;
+  }
+
+  .public-day-view.single-doctor
+    .status-icon {
+    font-size: 7px;
+  }
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .public-calendar *,
+  .public-calendar *::before,
+  .public-calendar *::after {
+    scroll-behavior: auto !important;
+
+    transition-duration: 0.01ms !important;
+
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
   }
 }

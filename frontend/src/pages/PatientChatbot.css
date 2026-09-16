@@ -1,0 +1,2288 @@
+/* =========================================================
+   HEALTHCARE+ PATIENT APPOINTMENT ASSISTANT
+   ADVANCED PREMIUM UI
+   ---------------------------------------------------------
+   Built specifically for the current PatientChatbot.tsx
+   - Professional healthcare visual language
+   - Clean white / soft blue-gray surfaces
+   - Real-chat focused layout
+   - Responsive desktop / tablet / mobile
+   - Accessible keyboard states
+   - Typing indicator
+   - Connection status
+   - Appointment summary
+   - Secure-chat presentation
+   ========================================================= */
+
+
+/* =========================================================
+   01. DESIGN SYSTEM
+   ========================================================= */
+
+.patient-chatbot-launcher,
+.patient-chatbot {
+  --pc-primary: #1769aa;
+  --pc-primary-strong: #145b93;
+  --pc-primary-deep: #0f4f82;
+  --pc-primary-soft: #eef7ff;
+  --pc-primary-soft-2: #f5faff;
+  --pc-primary-border: #cfe3f4;
+
+  --pc-text: #243746;
+  --pc-text-strong: #183247;
+  --pc-text-soft: #617887;
+  --pc-text-muted: #8a9ba7;
+  --pc-text-faint: #a5b3bc;
+
+  --pc-border: #dce7ee;
+  --pc-border-strong: #cbdbe5;
+  --pc-border-soft: #eaf0f4;
+
+  --pc-surface: #ffffff;
+  --pc-surface-soft: #f8fafc;
+  --pc-surface-muted: #f3f7fa;
+  --pc-surface-blue: #f1f8fd;
+
+  --pc-success: #4f8a70;
+  --pc-success-soft: #eef8f3;
+  --pc-success-border: #d5e9de;
+
+  --pc-danger: #b15d61;
+  --pc-danger-soft: #fff5f5;
+  --pc-danger-border: #efd9da;
+
+  --pc-warning: #a97936;
+  --pc-warning-soft: #fff8eb;
+
+  --pc-shadow-xs:
+    0 1px 3px rgba(20, 51, 70, 0.035);
+
+  --pc-shadow-sm:
+    0 3px 10px rgba(20, 51, 70, 0.055);
+
+  --pc-shadow-md:
+    0 10px 28px rgba(20, 51, 70, 0.09);
+
+  --pc-shadow-lg:
+    0 22px 55px rgba(20, 51, 70, 0.15);
+
+  --pc-shadow-xl:
+    0 30px 85px rgba(15, 43, 62, 0.20);
+
+  --pc-radius-xs: 7px;
+  --pc-radius-sm: 9px;
+  --pc-radius-md: 12px;
+  --pc-radius-lg: 15px;
+  --pc-radius-xl: 20px;
+  --pc-radius-2xl: 24px;
+
+  --pc-transition-fast: 140ms ease;
+  --pc-transition: 180ms ease;
+  --pc-transition-slow: 240ms ease;
+
+  --pc-font-size-xs: 8px;
+  --pc-font-size-sm: 9px;
+  --pc-font-size-md: 10px;
+  --pc-font-size-body: 11px;
+  --pc-font-size-message: 11.5px;
+
+  box-sizing: border-box;
+}
+
+.patient-chatbot *,
+.patient-chatbot-launcher *,
+.patient-chatbot::before,
+.patient-chatbot::after,
+.patient-chatbot-launcher::before,
+.patient-chatbot-launcher::after {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   02. LAUNCHER
+   ========================================================= */
+
+.patient-chatbot-launcher {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 1200;
+
+  width: 238px;
+  min-height: 70px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(210, 225, 235, 0.96);
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(248, 251, 253, 0.98) 100%
+    );
+
+  color: var(--pc-text);
+
+  box-shadow:
+    0 16px 42px rgba(20, 54, 75, 0.10),
+    0 3px 10px rgba(20, 54, 75, 0.045);
+
+  cursor: pointer;
+
+  font-family: inherit;
+  text-align: left;
+
+  isolation: isolate;
+
+  transition:
+    transform var(--pc-transition),
+    box-shadow var(--pc-transition),
+    border-color var(--pc-transition),
+    background var(--pc-transition);
+}
+
+.patient-chatbot-launcher::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  border-radius: inherit;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(23, 105, 170, 0.07),
+      transparent 42%
+    );
+
+  pointer-events: none;
+  z-index: -1;
+}
+
+.patient-chatbot-launcher:hover {
+  transform: translateY(-3px);
+
+  border-color: #bdd5e5;
+
+  box-shadow:
+    0 22px 52px rgba(20, 54, 75, 0.14),
+    0 5px 13px rgba(20, 54, 75, 0.055);
+}
+
+.patient-chatbot-launcher:active {
+  transform: translateY(-1px);
+}
+
+.patient-chatbot-launcher:focus-visible {
+  outline: 3px solid rgba(23, 105, 170, 0.16);
+  outline-offset: 3px;
+}
+
+
+/* =========================================================
+   03. LAUNCHER ICON
+   ========================================================= */
+
+.patient-chatbot-launcher-icon {
+  position: relative;
+
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #cfe2f0;
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f6fbff 0%,
+      #e9f4fb 100%
+    );
+
+  color: var(--pc-primary);
+
+  font-size: 19px;
+  font-weight: 800;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 2px 6px rgba(23, 105, 170, 0.055);
+}
+
+.patient-chatbot-launcher-icon::after {
+  content: "";
+
+  position: absolute;
+  right: 4px;
+  top: 4px;
+
+  width: 8px;
+  height: 8px;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+
+  background: #62a080;
+
+  box-shadow:
+    0 0 0 2px rgba(98, 160, 128, 0.08);
+}
+
+
+/* =========================================================
+   04. LAUNCHER TEXT
+   ========================================================= */
+
+.patient-chatbot-launcher > span:last-child {
+  min-width: 0;
+}
+
+.patient-chatbot-launcher strong,
+.patient-chatbot-launcher small {
+  display: block;
+}
+
+.patient-chatbot-launcher strong {
+  color: var(--pc-text-strong);
+
+  font-size: 12.5px;
+  font-weight: 760;
+
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+
+.patient-chatbot-launcher small {
+  margin-top: 4px;
+
+  color: var(--pc-text-muted);
+
+  font-size: 9.25px;
+  font-weight: 550;
+
+  line-height: 1.35;
+}
+
+
+/* =========================================================
+   05. MAIN CHAT WINDOW
+   ========================================================= */
+
+.patient-chatbot {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 1300;
+
+  width: min(440px, calc(100vw - 32px));
+  height: min(730px, calc(100vh - 42px));
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid #d5e3eb;
+  border-radius: 24px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f8fafc 0%,
+      #f3f7f9 100%
+    );
+
+  color: var(--pc-text);
+
+  font-family: inherit;
+
+  box-shadow:
+    var(--pc-shadow-xl),
+    0 6px 20px rgba(20, 54, 75, 0.06);
+
+  isolation: isolate;
+
+  animation:
+    patient-chatbot-open
+    220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.patient-chatbot::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(23, 105, 170, 0.045),
+      transparent 32%
+    );
+
+  z-index: -1;
+}
+
+@keyframes patient-chatbot-open {
+  from {
+    opacity: 0;
+    transform:
+      translateY(13px)
+      scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+
+/* =========================================================
+   06. HEADER
+   ========================================================= */
+
+.patient-chatbot-header {
+  position: relative;
+
+  min-height: 76px;
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  border-bottom: 1px solid #dbe6ec;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfdfe 100%
+    );
+
+  box-shadow:
+    0 2px 9px rgba(25, 57, 76, 0.025);
+}
+
+.patient-chatbot-header::after {
+  content: "";
+
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -1px;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #d7e5ed 18%,
+      #d7e5ed 82%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   07. HEADER BRAND
+   ========================================================= */
+
+.patient-chatbot-brand {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+.patient-chatbot-avatar {
+  position: relative;
+
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #cfe1ed;
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f5fbff 0%,
+      #e9f4fa 100%
+    );
+
+  color: var(--pc-primary);
+
+  font-size: 19px;
+  font-weight: 800;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 3px 8px rgba(23, 105, 170, 0.045);
+}
+
+.patient-chatbot-avatar::after {
+  content: "";
+
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+
+  width: 11px;
+  height: 11px;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+
+  background: #64a180;
+
+  box-shadow:
+    0 0 0 2px rgba(100, 161, 128, 0.08);
+}
+
+
+/* =========================================================
+   08. BRAND COPY
+   ========================================================= */
+
+.patient-chatbot-brand strong,
+.patient-chatbot-brand span {
+  display: block;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-chatbot-brand strong {
+  max-width: 235px;
+
+  color: var(--pc-text-strong);
+
+  font-size: 13px;
+  font-weight: 760;
+
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+
+.patient-chatbot-brand span {
+  margin-top: 4px;
+
+  color: var(--pc-text-muted);
+
+  font-size: 9.25px;
+  font-weight: 550;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   09. HEADER ACTIONS
+   ========================================================= */
+
+.patient-chatbot-header-actions {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-left: 8px;
+}
+
+.patient-chatbot-header-actions button {
+  width: 33px;
+  height: 33px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+
+  border: 1px solid #d8e4eb;
+  border-radius: 10px;
+
+  background: #f9fbfc;
+  color: #637985;
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  transition:
+    background var(--pc-transition-fast),
+    border-color var(--pc-transition-fast),
+    color var(--pc-transition-fast),
+    transform var(--pc-transition-fast),
+    box-shadow var(--pc-transition-fast);
+}
+
+.patient-chatbot-header-actions button:hover {
+  border-color: #bfd4e0;
+
+  background: #f0f6f9;
+
+  color: #244c61;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 3px 8px rgba(25, 59, 78, 0.055);
+}
+
+.patient-chatbot-header-actions button:active {
+  transform: translateY(0);
+}
+
+.patient-chatbot-header-actions button:focus-visible {
+  outline: 3px solid rgba(23, 105, 170, 0.13);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   10. SECURITY / CONNECTION BAR
+   ========================================================= */
+
+.patient-chatbot-security {
+  min-height: 36px;
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+
+  padding: 7px 16px;
+
+  border-bottom: 1px solid #e3ebef;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fbfdfe 0%,
+      #f7fafb 100%
+    );
+
+  color: #778b97;
+
+  font-size: 9px;
+  font-weight: 560;
+
+  line-height: 1.3;
+
+  letter-spacing: 0.018em;
+}
+
+.patient-chatbot-security > span:first-child {
+  display: inline-grid;
+  place-items: center;
+
+  width: 6px;
+  height: 6px;
+
+  margin-right: 7px;
+
+  color: #62a080;
+
+  font-size: 8px;
+
+  animation:
+    patient-security-pulse
+    2.8s ease-in-out infinite;
+}
+
+@keyframes patient-security-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+
+/* =========================================================
+   11. CONNECTION STATUS
+   ========================================================= */
+
+.patient-chatbot-connection-status {
+  min-height: 21px;
+
+  display: inline-flex;
+  align-items: center;
+
+  margin-left: auto;
+  padding: 4px 8px;
+
+  border: 1px solid #dce7ec;
+  border-radius: 999px;
+
+  background: #ffffff;
+
+  color: #718590;
+
+  font-size: 8px;
+  font-weight: 650;
+
+  line-height: 1;
+
+  letter-spacing: 0;
+
+  white-space: nowrap;
+
+  box-shadow:
+    0 1px 3px rgba(24, 55, 73, 0.025);
+}
+
+.patient-chatbot-security
+  .patient-chatbot-connection-status {
+  animation:
+    patient-status-in
+    180ms ease-out;
+}
+
+@keyframes patient-status-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =========================================================
+   12. ERROR MESSAGE
+   ========================================================= */
+
+.patient-chatbot-error {
+  position: relative;
+
+  flex: 0 0 auto;
+
+  margin: 10px 13px 0;
+
+  padding: 10px 12px 10px 13px;
+
+  border: 1px solid var(--pc-danger-border);
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fffafa 0%,
+      var(--pc-danger-soft) 100%
+    );
+
+  color: #95585b;
+
+  font-size: 10px;
+  font-weight: 560;
+
+  line-height: 1.48;
+
+  box-shadow:
+    0 2px 8px rgba(110, 54, 54, 0.035);
+
+  animation:
+    patient-error-in
+    180ms ease-out;
+}
+
+.patient-chatbot-error::before {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+
+  width: 3px;
+
+  border-radius: 0 4px 4px 0;
+
+  background: #c47b7e;
+}
+
+@keyframes patient-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =========================================================
+   13. CHAT BODY
+   ========================================================= */
+
+.patient-chatbot-body {
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  padding: 19px 15px 16px;
+
+  scroll-behavior: smooth;
+
+  scrollbar-width: thin;
+  scrollbar-color:
+    #c4d3dc
+    transparent;
+
+  overscroll-behavior: contain;
+}
+
+.patient-chatbot-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.patient-chatbot-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.patient-chatbot-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+
+  background: #c5d4dd;
+}
+
+.patient-chatbot-body::-webkit-scrollbar-thumb:hover {
+  background: #afc2cd;
+}
+
+
+/* =========================================================
+   14. MESSAGE ROW
+   ========================================================= */
+
+.patient-chat-message {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  margin-bottom: 15px;
+
+  animation:
+    patient-message-in
+    170ms ease-out;
+}
+
+.patient-chat-message:last-child {
+  margin-bottom: 4px;
+}
+
+.patient-chat-message.bot-message {
+  align-items: flex-start;
+}
+
+.patient-chat-message.patient-message {
+  align-items: flex-end;
+}
+
+@keyframes patient-message-in {
+  from {
+    opacity: 0;
+    transform:
+      translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* =========================================================
+   15. MESSAGE BUBBLE BASE
+   ========================================================= */
+
+.patient-chat-bubble {
+  max-width: 89%;
+
+  padding: 11px 13px;
+
+  border-radius: 15px;
+
+  font-size: var(--pc-font-size-message);
+  font-weight: 450;
+
+  line-height: 1.58;
+
+  word-break: break-word;
+  overflow-wrap: anywhere;
+
+  transition:
+    box-shadow var(--pc-transition-fast),
+    border-color var(--pc-transition-fast);
+}
+
+
+/* =========================================================
+   16. BOT BUBBLE
+   ========================================================= */
+
+.bot-message .patient-chat-bubble {
+  border: 1px solid #dce7ed;
+
+  border-bottom-left-radius: 5px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fcfdfe 100%
+    );
+
+  color: #2b414f;
+
+  box-shadow:
+    0 2px 8px rgba(28, 55, 71, 0.035);
+}
+
+.bot-message .patient-chat-bubble:hover {
+  border-color: #d4e2e9;
+
+  box-shadow:
+    0 4px 11px rgba(28, 55, 71, 0.045);
+}
+
+
+/* =========================================================
+   17. PATIENT BUBBLE
+   ========================================================= */
+
+.patient-message .patient-chat-bubble {
+  border: 1px solid #16587f;
+
+  border-bottom-right-radius: 5px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #1769aa 0%,
+      #145c91 100%
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 13px rgba(23, 105, 170, 0.15);
+}
+
+
+/* =========================================================
+   18. QUICK ACTIONS
+   ========================================================= */
+
+.patient-chat-options {
+  width: 89%;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 8px;
+}
+
+.patient-chat-options button {
+  position: relative;
+
+  min-height: 34px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 7px 11px;
+
+  border: 1px solid #cfdfe8;
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f8fbfc 100%
+    );
+
+  color: #315a6e;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 9.75px;
+  font-weight: 650;
+
+  line-height: 1.25;
+
+  box-shadow:
+    0 1px 3px rgba(20, 48, 64, 0.025);
+
+  transition:
+    background var(--pc-transition-fast),
+    border-color var(--pc-transition-fast),
+    color var(--pc-transition-fast),
+    transform var(--pc-transition-fast),
+    box-shadow var(--pc-transition-fast);
+}
+
+.patient-chat-options button::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55),
+      transparent
+    );
+
+  opacity: 0;
+
+  transition:
+    opacity var(--pc-transition-fast);
+}
+
+.patient-chat-options button:hover:not(:disabled) {
+  border-color: #abc8da;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fafdff 0%,
+      #eef7fc 100%
+    );
+
+  color: #1e526d;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 4px 10px rgba(20, 61, 82, 0.07);
+}
+
+.patient-chat-options button:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.patient-chat-options button:active:not(:disabled) {
+  transform: translateY(0);
+
+  box-shadow:
+    0 1px 3px rgba(20, 48, 64, 0.03);
+}
+
+.patient-chat-options button:focus-visible {
+  outline: 3px solid rgba(23, 105, 170, 0.13);
+  outline-offset: 2px;
+}
+
+.patient-chat-options button:disabled {
+  opacity: 0.48;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   19. TYPING INDICATOR
+   ========================================================= */
+
+.patient-chatbot-typing-message {
+  margin-bottom: 12px;
+}
+
+.patient-chatbot-typing {
+  min-width: 58px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  padding: 12px 13px !important;
+}
+
+.patient-chatbot-typing span {
+  width: 5px;
+  height: 5px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: #7f9aa9;
+
+  animation:
+    patient-typing-dot
+    1.15s infinite ease-in-out;
+}
+
+.patient-chatbot-typing span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.patient-chatbot-typing span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes patient-typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+
+/* =========================================================
+   20. APPOINTMENT SUMMARY
+   ========================================================= */
+
+.patient-chat-summary {
+  position: relative;
+
+  margin: 9px 0 16px;
+
+  padding: 16px 15px 14px 17px;
+
+  border: 1px solid #d4e2e9;
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fafdfe 100%
+    );
+
+  box-shadow:
+    0 5px 16px rgba(22, 50, 66, 0.05);
+
+  animation:
+    patient-summary-in
+    200ms ease-out;
+}
+
+.patient-chat-summary::before {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  top: 13px;
+  bottom: 13px;
+
+  width: 3px;
+
+  border-radius: 0 5px 5px 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      #5c8ba3,
+      #79a3b8
+    );
+}
+
+.patient-chat-summary::after {
+  content: "";
+
+  position: absolute;
+  left: 13px;
+  top: 12px;
+
+  width: 22px;
+  height: 22px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(23, 105, 170, 0.07),
+      transparent 70%
+    );
+
+  pointer-events: none;
+}
+
+@keyframes patient-summary-in {
+  from {
+    opacity: 0;
+    transform:
+      translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* =========================================================
+   21. SUMMARY TITLE
+   ========================================================= */
+
+.patient-chat-summary-title {
+  position: relative;
+  z-index: 1;
+
+  margin-bottom: 11px;
+
+  padding-left: 3px;
+
+  color: #1c4357;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.075em;
+
+  line-height: 1.3;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   22. SUMMARY ROW
+   ========================================================= */
+
+.patient-chat-summary-row {
+  min-height: 31px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 7px 0;
+
+  border-top: 1px solid #edf2f5;
+}
+
+.patient-chat-summary-row:first-of-type {
+  border-top: 0;
+}
+
+.patient-chat-summary-row span {
+  flex: 0 0 auto;
+
+  color: #7b8e9a;
+
+  font-size: 9.25px;
+  font-weight: 550;
+
+  line-height: 1.45;
+}
+
+.patient-chat-summary-row strong {
+  max-width: 63%;
+
+  color: #294351;
+
+  font-size: 9.5px;
+  font-weight: 720;
+
+  line-height: 1.45;
+
+  text-align: right;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   23. INPUT CONTAINER
+   ========================================================= */
+
+.patient-chatbot-input {
+  position: relative;
+
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 11px 12px;
+
+  border-top: 1px solid #dce6eb;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfdfe 100%
+    );
+
+  box-shadow:
+    0 -3px 10px rgba(23, 53, 70, 0.025);
+}
+
+
+/* =========================================================
+   24. INPUT
+   ========================================================= */
+
+.patient-chatbot-input input {
+  flex: 1 1 auto;
+
+  min-width: 0;
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid #cfdee6;
+  border-radius: 12px;
+
+  outline: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fbfcfd 0%,
+      #f7fafb 100%
+    );
+
+  color: #263c4a;
+
+  font-family: inherit;
+
+  font-size: 11px;
+  font-weight: 450;
+
+  line-height: 1.2;
+
+  box-shadow:
+    inset 0 1px 1px rgba(20, 47, 62, 0.018);
+
+  transition:
+    border-color var(--pc-transition-fast),
+    background var(--pc-transition-fast),
+    box-shadow var(--pc-transition-fast),
+    transform var(--pc-transition-fast);
+}
+
+.patient-chatbot-input input::placeholder {
+  color: #9aaab4;
+}
+
+.patient-chatbot-input input:hover {
+  border-color: #bfd1db;
+
+  background: #ffffff;
+}
+
+.patient-chatbot-input input:focus {
+  border-color: #93b6cb;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px rgba(23, 105, 170, 0.065),
+    0 2px 7px rgba(20, 54, 72, 0.035);
+}
+
+.patient-chatbot-input input:disabled {
+  opacity: 0.62;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   25. SEND BUTTON
+   ========================================================= */
+
+.patient-chatbot-input button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #1769aa 0%,
+      #145c91 100%
+    );
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 19px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  box-shadow:
+    0 5px 12px rgba(23, 105, 170, 0.15);
+
+  transition:
+    background var(--pc-transition-fast),
+    transform var(--pc-transition-fast),
+    opacity var(--pc-transition-fast),
+    box-shadow var(--pc-transition-fast);
+}
+
+.patient-chatbot-input button:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      145deg,
+      #145f9b 0%,
+      #104e80 100%
+    );
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 7px 15px rgba(23, 105, 170, 0.19);
+}
+
+.patient-chatbot-input button:active:not(:disabled) {
+  transform: translateY(0);
+
+  box-shadow:
+    0 3px 8px rgba(23, 105, 170, 0.12);
+}
+
+.patient-chatbot-input button:disabled {
+  opacity: 0.35;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+.patient-chatbot-input button:focus-visible {
+  outline: 3px solid rgba(23, 105, 170, 0.14);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   26. FOOTER
+   ========================================================= */
+
+.patient-chatbot-footer {
+  min-height: 32px;
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 7px 13px;
+
+  border-top: 1px solid #edf1f4;
+
+  background: #fbfcfd;
+
+  color: #8798a3;
+
+  font-size: 8px;
+  font-weight: 550;
+
+  line-height: 1.3;
+}
+
+.patient-chatbot-footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-chatbot-footer small {
+  flex: 0 0 auto;
+
+  color: #9aa8b1;
+
+  font-size: 7.5px;
+  font-weight: 500;
+
+  text-align: right;
+}
+
+
+/* =========================================================
+   27. SELECTION
+   ========================================================= */
+
+.patient-chatbot ::selection,
+.patient-chatbot-launcher ::selection {
+  background: #dcecf7;
+  color: #164b68;
+}
+
+
+/* =========================================================
+   28. TOUCH DEVICES
+   ========================================================= */
+
+@media (hover: none) {
+  .patient-chatbot-launcher:hover {
+    transform: none;
+  }
+
+  .patient-chat-options button:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .patient-chatbot-input button:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .patient-chatbot-header-actions button:hover {
+    transform: none;
+  }
+}
+
+
+/* =========================================================
+   29. LARGE DESKTOP
+   ========================================================= */
+
+@media (min-width: 1400px) {
+  .patient-chatbot {
+    right: 34px;
+    bottom: 30px;
+
+    width: 452px;
+    height: min(744px, calc(100vh - 48px));
+  }
+
+  .patient-chatbot-launcher {
+    right: 34px;
+    bottom: 30px;
+
+    width: 248px;
+  }
+}
+
+
+/* =========================================================
+   30. TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .patient-chatbot {
+    right: 20px;
+    bottom: 20px;
+
+    width: min(430px, calc(100vw - 40px));
+    height: min(710px, calc(100vh - 40px));
+  }
+
+  .patient-chatbot-launcher {
+    right: 20px;
+    bottom: 20px;
+  }
+}
+
+
+/* =========================================================
+   31. MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .patient-chatbot {
+    right: 10px;
+    bottom: 10px;
+
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+
+    border-radius: 20px;
+  }
+
+  .patient-chatbot-launcher {
+    right: 16px;
+    bottom: 16px;
+
+    width: auto;
+    min-width: 211px;
+
+    min-height: 62px;
+
+    padding: 10px 12px;
+
+    border-radius: 15px;
+  }
+
+  .patient-chatbot-launcher-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .patient-chatbot-header {
+    min-height: 70px;
+
+    padding: 12px 13px;
+  }
+
+  .patient-chatbot-avatar {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .patient-chatbot-brand strong {
+    max-width: 210px;
+
+    font-size: 12px;
+  }
+
+  .patient-chatbot-body {
+    padding:
+      16px
+      12px
+      14px;
+  }
+
+  .patient-chat-bubble {
+    max-width: 92%;
+
+    padding:
+      10px
+      12px;
+
+    font-size: 11.25px;
+  }
+
+  .patient-chat-options {
+    width: 92%;
+
+    gap: 6px;
+  }
+
+  .patient-chat-options button {
+    min-height: 32px;
+
+    padding:
+      7px
+      9px;
+
+    font-size: 9.5px;
+  }
+
+  .patient-chat-summary {
+    padding:
+      14px
+      13px
+      13px;
+  }
+
+  .patient-chatbot-input {
+    padding:
+      9px
+      10px;
+  }
+
+  .patient-chatbot-input input,
+  .patient-chatbot-input button {
+    height: 42px;
+  }
+
+  .patient-chatbot-input button {
+    width: 42px;
+    flex-basis: 42px;
+  }
+
+  .patient-chatbot-footer {
+    padding:
+      6px
+      10px;
+  }
+}
+
+
+/* =========================================================
+   32. SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .patient-chatbot {
+    right: 7px;
+    bottom: 7px;
+
+    width: calc(100vw - 14px);
+    height: calc(100vh - 14px);
+
+    border-radius: 18px;
+  }
+
+  .patient-chatbot-launcher {
+    right: 12px;
+    bottom: 12px;
+
+    width: calc(100vw - 24px);
+    min-width: 0;
+
+    min-height: 58px;
+
+    padding:
+      9px
+      11px;
+  }
+
+  .patient-chatbot-launcher-icon {
+    width: 37px;
+    height: 37px;
+    flex-basis: 37px;
+
+    font-size: 17px;
+  }
+
+  .patient-chatbot-launcher strong {
+    font-size: 11.5px;
+  }
+
+  .patient-chatbot-launcher small {
+    font-size: 8.5px;
+  }
+
+  .patient-chatbot-header {
+    min-height: 66px;
+
+    padding:
+      11px
+      11px;
+  }
+
+  .patient-chatbot-avatar {
+    width: 37px;
+    height: 37px;
+    flex-basis: 37px;
+
+    font-size: 17px;
+  }
+
+  .patient-chatbot-brand {
+    gap: 9px;
+  }
+
+  .patient-chatbot-brand strong {
+    max-width: 160px;
+
+    font-size: 11.5px;
+  }
+
+  .patient-chatbot-brand span {
+    margin-top: 3px;
+
+    font-size: 8.5px;
+  }
+
+  .patient-chatbot-header-actions {
+    gap: 5px;
+  }
+
+  .patient-chatbot-header-actions button {
+    width: 30px;
+    height: 30px;
+
+    border-radius: 9px;
+  }
+
+  .patient-chatbot-security {
+    min-height: 33px;
+
+    padding:
+      6px
+      11px;
+
+    font-size: 8.25px;
+  }
+
+  .patient-chatbot-connection-status {
+    min-height: 19px;
+
+    padding:
+      3px
+      7px;
+
+    font-size: 7.25px;
+  }
+
+  .patient-chatbot-error {
+    margin:
+      8px
+      9px
+      0;
+
+    padding:
+      9px
+      10px
+      9px
+      11px;
+
+    font-size: 9px;
+  }
+
+  .patient-chatbot-body {
+    padding:
+      13px
+      9px
+      11px;
+  }
+
+  .patient-chat-message {
+    margin-bottom: 11px;
+  }
+
+  .patient-chat-bubble {
+    max-width: 94%;
+
+    padding:
+      9px
+      10px;
+
+    border-radius: 13px;
+
+    font-size: 10.5px;
+
+    line-height: 1.5;
+  }
+
+  .patient-chat-options {
+    width: 94%;
+
+    gap: 5px;
+
+    margin-top: 6px;
+  }
+
+  .patient-chat-options button {
+    min-height: 29px;
+
+    padding:
+      6px
+      8px;
+
+    border-radius: 9px;
+
+    font-size: 8.75px;
+  }
+
+  .patient-chat-summary {
+    margin:
+      7px
+      0
+      12px;
+
+    padding:
+      12px
+      11px
+      11px
+      13px;
+
+    border-radius: 14px;
+  }
+
+  .patient-chat-summary-title {
+    margin-bottom: 8px;
+
+    font-size: 8.75px;
+  }
+
+  .patient-chat-summary-row {
+    min-height: 28px;
+
+    gap: 9px;
+
+    padding:
+      6px
+      0;
+  }
+
+  .patient-chat-summary-row span,
+  .patient-chat-summary-row strong {
+    font-size: 8.5px;
+  }
+
+  .patient-chatbot-input {
+    gap: 6px;
+
+    padding:
+      8px;
+  }
+
+  .patient-chatbot-input input {
+    height: 40px;
+
+    padding:
+      0
+      10px;
+
+    border-radius: 10px;
+
+    font-size: 10px;
+  }
+
+  .patient-chatbot-input button {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+
+    border-radius: 10px;
+
+    font-size: 17px;
+  }
+
+  .patient-chatbot-footer {
+    min-height: 28px;
+
+    padding:
+      6px
+      8px;
+
+    font-size: 6.75px;
+  }
+
+  .patient-chatbot-footer small {
+    font-size: 6.25px;
+  }
+}
+
+
+/* =========================================================
+   33. VERY SMALL HEIGHT
+   ========================================================= */
+
+@media (max-height: 600px) and (min-width: 601px) {
+  .patient-chatbot {
+    bottom: 10px;
+
+    height: calc(100vh - 20px);
+  }
+
+  .patient-chatbot-launcher {
+    bottom: 15px;
+  }
+
+  .patient-chatbot-header {
+    min-height: 61px;
+
+    padding:
+      9px
+      13px;
+  }
+
+  .patient-chatbot-avatar {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .patient-chatbot-security {
+    min-height: 29px;
+
+    padding:
+      5px
+      14px;
+  }
+
+  .patient-chatbot-body {
+    padding:
+      11px
+      13px
+      9px;
+  }
+
+  .patient-chat-message {
+    margin-bottom: 8px;
+  }
+
+  .patient-chat-bubble {
+    padding:
+      8px
+      10px;
+
+    line-height: 1.45;
+  }
+
+  .patient-chat-options {
+    margin-top: 5px;
+
+    gap: 5px;
+  }
+
+  .patient-chat-options button {
+    min-height: 27px;
+
+    padding:
+      5px
+      8px;
+  }
+
+  .patient-chat-summary {
+    margin:
+      5px
+      0
+      8px;
+
+    padding:
+      9px
+      10px
+      9px
+      12px;
+  }
+
+  .patient-chat-summary-row {
+    min-height: 25px;
+
+    padding:
+      4px
+      0;
+  }
+
+  .patient-chatbot-input {
+    padding:
+      6px
+      9px;
+  }
+
+  .patient-chatbot-input input,
+  .patient-chatbot-input button {
+    height: 37px;
+  }
+
+  .patient-chatbot-input button {
+    width: 37px;
+    flex-basis: 37px;
+  }
+
+  .patient-chatbot-footer {
+    min-height: 25px;
+
+    padding:
+      5px
+      9px;
+  }
+}
+
+
+/* =========================================================
+   34. LANDSCAPE MOBILE
+   ========================================================= */
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+  .patient-chatbot {
+    right: 8px;
+    bottom: 8px;
+
+    width: min(620px, calc(100vw - 16px));
+    height: calc(100vh - 16px);
+
+    border-radius: 16px;
+  }
+
+  .patient-chatbot-header {
+    min-height: 58px;
+
+    padding:
+      8px
+      11px;
+  }
+
+  .patient-chatbot-avatar {
+    width: 35px;
+    height: 35px;
+    flex-basis: 35px;
+  }
+
+  .patient-chatbot-security {
+    min-height: 27px;
+
+    padding:
+      4px
+      11px;
+  }
+
+  .patient-chatbot-body {
+    padding:
+      9px
+      11px;
+  }
+
+  .patient-chat-message {
+    margin-bottom: 7px;
+  }
+
+  .patient-chat-bubble {
+    padding:
+      7px
+      10px;
+
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .patient-chat-options {
+    margin-top: 4px;
+  }
+
+  .patient-chat-options button {
+    min-height: 26px;
+
+    padding:
+      5px
+      8px;
+
+    font-size: 8.5px;
+  }
+
+  .patient-chat-summary {
+    margin:
+      4px
+      0
+      7px;
+
+    padding: 8px;
+  }
+
+  .patient-chat-summary-row {
+    min-height: 23px;
+
+    padding:
+      3px
+      0;
+  }
+
+  .patient-chatbot-input {
+    padding:
+      6px
+      8px;
+  }
+
+  .patient-chatbot-input input,
+  .patient-chatbot-input button {
+    height: 35px;
+  }
+
+  .patient-chatbot-input button {
+    width: 35px;
+    flex-basis: 35px;
+  }
+
+  .patient-chatbot-footer {
+    min-height: 23px;
+
+    padding:
+      4px
+      8px;
+  }
+}
+
+
+/* =========================================================
+   35. ACCESSIBILITY - REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .patient-chatbot,
+  .patient-chat-message,
+  .patient-chat-summary,
+  .patient-chatbot-error {
+    animation: none !important;
+  }
+
+  .patient-chatbot-launcher,
+  .patient-chatbot-options button,
+  .patient-chatbot-input button,
+  .patient-chatbot-header-actions button {
+    transition: none !important;
+  }
+
+  .patient-chatbot-body {
+    scroll-behavior: auto;
+  }
+
+  .patient-chatbot-launcher-icon::after,
+  .patient-chatbot-security > span:first-child,
+  .patient-chatbot-typing span {
+    animation: none !important;
+  }
+}
+
+
+/* =========================================================
+   36. ACCESSIBILITY - HIGH CONTRAST
+   ========================================================= */
+
+@media (prefers-contrast: more) {
+  .patient-chatbot,
+  .patient-chatbot-launcher {
+    border-color: #91a9b7;
+  }
+
+  .patient-chat-bubble,
+  .patient-chat-options button,
+  .patient-chat-summary,
+  .patient-chatbot-input input {
+    border-color: #9bb0bc;
+  }
+
+  .patient-chatbot-brand strong,
+  .patient-chat-summary-row strong {
+    color: #152f40;
+  }
+
+  .patient-chat-options button {
+    color: #16465d;
+  }
+}
+
+
+/* =========================================================
+   37. DARK SYSTEM OVERRIDE
+   ---------------------------------------------------------
+   Intentionally kept disabled so the healthcare application
+   remains consistent with the project's light professional UI.
+   ========================================================= */
+
+
+/* =========================================================
+   38. PRINT
+   ========================================================= */
+
+@media print {
+  .patient-chatbot-launcher,
+  .patient-chatbot {
+    display: none !important;
+  }
+}
+
+
+/* =========================================================
+   39. SAFE OVERFLOW
+   ========================================================= */
+
+.patient-chatbot,
+.patient-chatbot-body,
+.patient-chat-message,
+.patient-chat-bubble,
+.patient-chat-summary {
+  max-width: 100%;
+}
+
+.patient-chatbot button,
+.patient-chatbot input {
+  font: inherit;
+}
+
+.patient-chatbot button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.patient-chatbot input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+
+/* =========================================================
+   40. FINAL POLISH
+   ========================================================= */
+
+.patient-chatbot-launcher,
+.patient-chatbot {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.patient-chatbot button:disabled {
+  pointer-events: auto;
+}
+
+.patient-chatbot input:focus-visible {
+  outline: none;
+}
+
+
+/* =========================================================
+   END
+   ========================================================= */

@@ -11,6 +11,8 @@ from app.api.referrals import router as referrals_router
 from app.api.public_calendar import router as public_calendar_router
 from app.api.public_home import router as public_home_router
 
+from chatbot.router import router as chatbot_router
+
 from app.database.connection import test_database_connection
 
 
@@ -46,6 +48,9 @@ app.include_router(public_calendar_router)
 
 # Public home page
 app.include_router(public_home_router)
+
+# Healthcare chatbot
+app.include_router(chatbot_router)
 
 
 @app.get("/")

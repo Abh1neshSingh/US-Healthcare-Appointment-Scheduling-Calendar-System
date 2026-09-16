@@ -25,11 +25,17 @@ services:
 
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:Abhi%4079057052@db:5432/ushcs_db
+
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: HS256
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
       BREVO_API_KEY: ${BREVO_API_KEY}
       SENDER_EMAIL: ${SENDER_EMAIL}
+
+      # Healthcare Chatbot Transformer
+      CHATBOT_TRANSFORMER_ENABLED: "true"
+      CHATBOT_TRANSFORMER_MODEL: "distilbert-base-uncased"
 
     depends_on:
       - db

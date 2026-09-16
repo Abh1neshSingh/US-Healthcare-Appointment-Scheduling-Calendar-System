@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import API_URL from "../config";
 import homeDoctor from "../assets/home-doctor.png";
 import "./HomePage.css";
+import HomeChatbot from "./HomeChatbot";
+
 
 interface HomeStats {
   doctors: number;
@@ -2661,6 +2663,19 @@ const HomePage: React.FC = () => {
         </div>
 
       </footer>
+      {/* =====================================================
+          HOME PAGE CARE ASSISTANT
+          -----------------------------------------------------
+          Uses the existing live doctor directory and the
+          existing booking gateway.
+
+          Existing HomePage features remain unchanged.
+      ===================================================== */}
+
+      <HomeChatbot
+        doctors={doctors}
+        onBook={openBookingGateway}
+      />
 
     </div>
   );

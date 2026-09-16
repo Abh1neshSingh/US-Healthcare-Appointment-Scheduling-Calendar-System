@@ -61,6 +61,8 @@ interface AppointmentBookingProps {
   initialDate?: string;
   initialDoctorId?: number | null;
   initialStartTime?: string;
+  initialAppointmentType?: string;
+  initialReason?: string;
 }
 
 type ReferralStatus =
@@ -137,6 +139,8 @@ function AppointmentBooking({
   initialDate,
   initialDoctorId,
   initialStartTime,
+  initialAppointmentType,
+  initialReason,
 }: AppointmentBookingProps) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
@@ -150,7 +154,18 @@ function AppointmentBooking({
     initialDate || getToday()
   );
 
-  const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
+  const [selectedTime, setSelectedTime] =
+    useState<TimeSlot | null>(null);
+
+  const [appointmentType, setAppointmentType] =
+    useState(
+      initialAppointmentType || "IN_PERSON"
+    );
+
+  const [appointmentReason, setAppointmentReason] =
+    useState(
+      initialReason || ""
+    );
 
   const [availability, setAvailability] =
     useState<AvailabilityResponse | null>(null);
@@ -391,6 +406,19 @@ function AppointmentBooking({
     initialDate,
     initialDoctorId,
     initialStartTime,
+  ]);
+
+  useEffect(() => {
+    if (initialAppointmentType) {
+      setAppointmentType(initialAppointmentType);
+    }
+
+    if (initialReason !== undefined) {
+      setAppointmentReason(initialReason);
+    }
+  }, [
+    initialAppointmentType,
+    initialReason,
   ]);
 
   useEffect(() => {
@@ -810,7 +838,10 @@ function AppointmentBooking({
             appointment_date: selectedDate,
             start_time: selectedTime.start_time,
             end_time: selectedTime.end_time,
-            appointment_type: "IN_PERSON",
+            appointment_type:
+              appointmentType || "IN_PERSON",
+            reason:
+              appointmentReason || undefined,
           }),
         }
       );
@@ -1938,7 +1969,9 @@ function AppointmentBooking({
                     </span>
 
                     <strong>
-                      In-person
+                      {appointmentType === "TELEHEALTH"
+                        ? "Telehealth"
+                        : "In-person"}
                     </strong>
                   </div>
 
@@ -2133,7 +2166,9 @@ function AppointmentBooking({
                     </span>
 
                     <strong>
-                      In-person
+                      {appointmentType === "TELEHEALTH"
+                        ? "Telehealth"
+                        : "In-person"}
                     </strong>
                   </div>
 

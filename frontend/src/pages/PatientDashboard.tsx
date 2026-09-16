@@ -14,9 +14,12 @@ import AppointmentBooking from "../components/AppointmentBooking";
 
 import DayView from "../components/DayView";
 
+
 import type {
   DayViewAppointment,
 } from "../components/DayView";
+
+import PatientChatbot from "./PatientChatbot";
 
 import "./PatientDashboard.css";
 
@@ -4483,7 +4486,7 @@ function PatientDashboard() {
                               )}
                             </span>
 
-                            <small
+                                                       <small
                               className={`appointment-status-text ${getAppointmentStatusClass(
                                 appointment,
                               )}`}
@@ -4509,6 +4512,12 @@ function PatientDashboard() {
 
         </div>
       )}
+
+      {/* ==================================================
+          PATIENT APPOINTMENT CHATBOT
+      ================================================== */}
+
+      <PatientChatbot />
 
     </div>
   );
